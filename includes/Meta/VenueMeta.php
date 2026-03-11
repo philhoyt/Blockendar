@@ -22,6 +22,12 @@ class VenueMeta {
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_meta' ] );
+
+		// Color picker on the Event Type term screens.
+		add_action( EventType::TAXONOMY . '_add_form_fields',  [ $this, 'render_color_add_field' ] );
+		add_action( EventType::TAXONOMY . '_edit_form_fields', [ $this, 'render_color_edit_field' ] );
+		add_action( 'created_' . EventType::TAXONOMY,          [ $this, 'save_color_field' ] );
+		add_action( 'edited_'  . EventType::TAXONOMY,          [ $this, 'save_color_field' ] );
 	}
 
 	/**
@@ -140,6 +146,68 @@ class VenueMeta {
 			'sanitize_callback' => [ $this, 'sanitize_hex_color' ],
 			'show_in_rest'      => true,
 		] );
+	}
+
+	/**
+	 * Render color field on the Add New Event Type form.
+	 */
+	public function render_color_add_field(): void {
+		?>
+		<div class="form-field">
+			<label for="blockendar_type_color"><?php esc_html_e( 'Calendar colour', 'blockendar' ); ?></label>
+			<input
+				type="color"
+				id="blockendar_type_color"
+				name="blockendar_type_color"
+				value="#3788d8"
+			/>
+			<p><?php esc_html_e( 'Colour used to display events of this type on the calendar.', 'blockendar' ); ?></p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render color field on the Edit Event Type form.
+	 *
+	 * @param \WP_Term $term Current term object.
+	 */
+	public function render_color_edit_field( \WP_Term $term ): void {
+		$color = get_term_meta( $term->term_id, 'blockendar_type_color', true );
+		$value = ( '' !== $color ) ? $color : '#3788d8';
+		?>
+		<tr class="form-field">
+			<th scope="row">
+				<label for="blockendar_type_color"><?php esc_html_e( 'Calendar colour', 'blockendar' ); ?></label>
+			</th>
+			<td>
+				<input
+					type="color"
+					id="blockendar_type_color"
+					name="blockendar_type_color"
+					value="<?php echo esc_attr( $value ); ?>"
+				/>
+				<p class="description"><?php esc_html_e( 'Colour used to display events of this type on the calendar.', 'blockendar' ); ?></p>
+			</td>
+		</tr>
+		<?php
+	}
+
+	/**
+	 * Save the color field when a term is created or updated.
+	 *
+	 * @param int $term_id Term ID.
+	 */
+	public function save_color_field( int $term_id ): void {
+		if ( ! isset( $_POST['blockendar_type_color'] ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_categories' ) ) {
+			return;
+		}
+
+		$color = $this->sanitize_hex_color( wp_unslash( $_POST['blockendar_type_color'] ) );
+		update_term_meta( $term_id, 'blockendar_type_color', $color );
 	}
 
 	/**

@@ -4,12 +4,42 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   Day grid cells
+   Base — typography and subtle border inherit from the theme
    -------------------------------------------------------------------------- */
 
-.wp-block-blockendar-calendar-view .fc-daygrid-day-frame {
-	aspect-ratio: 1;
+.wp-block-blockendar-calendar-view {
+	--fc-border-color:              color-mix(in srgb, currentColor 12%, transparent);
+	--fc-list-event-hover-bg-color: color-mix(in srgb, currentColor 5%, transparent);
+	font-family: inherit;
 }
+
+/* --------------------------------------------------------------------------
+   Header toolbar buttons
+   -------------------------------------------------------------------------- */
+
+.wp-block-blockendar-calendar-view .fc-button-primary {
+	font-family: inherit;
+	font-size:   0.875rem;
+	box-shadow:  none;
+}
+
+.wp-block-blockendar-calendar-view .fc-button-group > .fc-button {
+	display:         flex;
+	align-items:     center;
+	justify-content: center;
+}
+
+/* Column headers (Mon, Tue …) */
+.wp-block-blockendar-calendar-view .fc-col-header-cell-cushion {
+	text-decoration: none;
+	font-size:       0.8rem;
+	text-transform:  uppercase;
+	letter-spacing:  0.05em;
+}
+
+/* --------------------------------------------------------------------------
+   Day grid cells
+   -------------------------------------------------------------------------- */
 
 .wp-block-blockendar-calendar-view .fc-daygrid-day-top {
 	padding: 6px 8px 2px;
@@ -29,29 +59,67 @@
 
 .wp-block-blockendar-calendar-view .fc-event {
 	flex-direction: column;
-	align-items: flex-start;
+	align-items:    flex-start;
 }
 
 .wp-block-blockendar-calendar-view .fc-h-event .fc-event-title-container {
 	display: flex;
 }
 
-/* Time — hidden for now; styles retained if re-enabled */
+.fc-h-event .fc-event-main-frame {
+	align-items: center;
+}
+
 .wp-block-blockendar-calendar-view .fc-direction-ltr .fc-daygrid-event .fc-event-time {
-	display: none;
-	font-size: 0.8rem;
+	font-size:   0.8rem;
 	line-height: 1.2;
 }
 
 .wp-block-blockendar-calendar-view .fc-event-title {
-	font-size: 1rem;
-	line-height: 1.2;
-	font-weight: normal;
-	text-wrap: auto;
+	font-size:       1rem;
+	line-height:     1.2;
+	font-weight:     normal;
+	text-wrap:       auto;
 	text-wrap-style: balance;
 }
 
-/* Hide the all-day indicator dot */
+/* Hide the all-day indicator dot on desktop */
 .wp-block-blockendar-calendar-view .fc-daygrid-event-dot {
 	display: none;
+}
+
+/* --------------------------------------------------------------------------
+   List view
+   -------------------------------------------------------------------------- */
+
+.wp-block-blockendar-calendar-view .fc-list-day-text,
+.wp-block-blockendar-calendar-view .fc-list-day-side-text {
+	text-decoration: none;
+}
+
+.wp-block-blockendar-calendar-view .fc-list-event-title a {
+	text-decoration: none;
+}
+
+/* --------------------------------------------------------------------------
+   Mobile — dot only, no text
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 767px) {
+	/* Show dot, hide title and time */
+	.wp-block-blockendar-calendar-view .fc-daygrid-event-dot {
+		display: inline-block;
+	}
+
+	.wp-block-blockendar-calendar-view .fc-event-title,
+	.wp-block-blockendar-calendar-view .fc-direction-ltr .fc-daygrid-event .fc-event-time {
+		display: none;
+	}
+
+	/* Strip the pill — just the dot */
+	.wp-block-blockendar-calendar-view .fc-daygrid-event.fc-h-event {
+		background: transparent;
+		border:     none;
+		padding:    0;
+	}
 }
