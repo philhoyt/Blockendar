@@ -1,0 +1,57 @@
+/* ==========================================================================
+   Blockendar — Calendar View block styles
+   All rules are scoped to avoid bleeding into other FullCalendar instances.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Day grid cells
+   -------------------------------------------------------------------------- */
+
+.wp-block-blockendar-calendar-view .fc-daygrid-day-frame {
+	aspect-ratio: 1;
+}
+
+.wp-block-blockendar-calendar-view .fc-daygrid-day-top {
+	padding: 6px 8px 2px;
+}
+
+.wp-block-blockendar-calendar-view .fc-daygrid-day-events {
+	padding: 0 6px 6px;
+}
+
+.wp-block-blockendar-calendar-view .fc-daygrid-day-number {
+	text-decoration: none;
+}
+
+/* --------------------------------------------------------------------------
+   Event pills
+   -------------------------------------------------------------------------- */
+
+.wp-block-blockendar-calendar-view .fc-event {
+	flex-direction: column;
+	align-items: flex-start;
+}
+
+.wp-block-blockendar-calendar-view .fc-h-event .fc-event-title-container {
+	display: flex;
+}
+
+/* Time — hidden for now; styles retained if re-enabled */
+.wp-block-blockendar-calendar-view .fc-direction-ltr .fc-daygrid-event .fc-event-time {
+	display: none;
+	font-size: 0.8rem;
+	line-height: 1.2;
+}
+
+.wp-block-blockendar-calendar-view .fc-event-title {
+	font-size: 1rem;
+	line-height: 1.2;
+	font-weight: normal;
+	text-wrap: auto;
+	text-wrap-style: balance;
+}
+
+/* Hide the all-day indicator dot */
+.wp-block-blockendar-calendar-view .fc-daygrid-event-dot {
+	display: none;
+}

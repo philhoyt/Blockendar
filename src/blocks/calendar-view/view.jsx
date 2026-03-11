@@ -63,6 +63,7 @@ function BlockendarCalendar( { dataset } ) {
 				right:  viewButtons,
 			} }
 			events={ fetchEvents }
+			dayMaxEvents={ 3 }
 			eventClick={ ( info ) => {
 				if ( info.event.url ) {
 					info.jsEvent.preventDefault();
