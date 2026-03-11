@@ -23,6 +23,7 @@ use Blockendar\REST\EventsController;
 use Blockendar\REST\CalendarController;
 use Blockendar\REST\VenuesController;
 use Blockendar\Blocks\BlockRegistrar;
+use Blockendar\Blocks\TemplateRegistrar;
 use Blockendar\Admin\SettingsPage;
 
 /**
@@ -61,6 +62,9 @@ class Plugin {
 
 		// Block registration + editor sidebar enqueue.
 		( new BlockRegistrar() )->register();
+
+		// Block template for single event pages.
+		( new TemplateRegistrar() )->register();
 
 		// Admin settings page.
 		( new SettingsPage() )->register();
