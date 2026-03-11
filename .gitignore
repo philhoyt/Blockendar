@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output — committed so the plugin works without a build step
+# Uncomment the next line if you prefer to exclude built assets
+# build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

@@ -1,0 +1,1 @@
+(()=>{"use strict";const e=window.wp.blocks,n=JSON.parse('{"UU":"blockendar/event-tags","DD":"Event Tags"}'),t=(window.wp.i18n,window.wp.blockEditor),i=window.ReactJSXRuntime;(0,e.registerBlockType)(n.UU,{edit:function(){return(0,i.jsx)("div",{...(0,t.useBlockProps)(),children:(0,i.jsx)("p",{style:{textAlign:"center",padding:"1em",opacity:.6},children:n.DD})})}})})();

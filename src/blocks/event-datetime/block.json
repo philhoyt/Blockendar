@@ -1,0 +1,19 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockendar/event-datetime",
+	"version": "0.2.0",
+	"title": "Event Date & Time",
+	"category": "blockendar",
+	"icon": "clock",
+	"description": "Displays formatted start and end date/time with timezone.",
+	"textdomain": "blockendar",
+	"usesContext": [ "postId", "postType" ],
+	"supports": { "html": false },
+	"attributes": {
+		"showTimezone": { "type": "boolean", "default": true },
+		"showEndDate":  { "type": "boolean", "default": true }
+	},
+	"render": "file:./render.php",
+	"editorScript": "file:./index.js"
+}

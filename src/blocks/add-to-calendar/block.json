@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockendar/add-to-calendar",
+	"version": "0.2.0",
+	"title": "Add to Calendar",
+	"category": "blockendar",
+	"icon": "calendar",
+	"description": "Generates add-to-calendar links: Google, Apple, Outlook, and .ics download.",
+	"textdomain": "blockendar",
+	"usesContext": [ "postId", "postType" ],
+	"supports": { "html": false },
+	"attributes": {
+		"showGoogle":  { "type": "boolean", "default": true },
+		"showApple":   { "type": "boolean", "default": true },
+		"showOutlook": { "type": "boolean", "default": true },
+		"showIcs":     { "type": "boolean", "default": true }
+	},
+	"render": "file:./render.php",
+	"editorScript": "file:./index.js"
+}

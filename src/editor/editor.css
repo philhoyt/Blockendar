@@ -1,0 +1,20 @@
+/**
+ * Blockendar editor sidebar styles.
+ */
+
+/* Let the calendar outer wrapper fill the panel column */
+.blockendar-panel-datetime .components-datetime__date {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+/*
+ * The grid uses fluid `fr` columns but the day buttons have
+ * `min-width: 40px` (from .is-next-40px-default-size) which forces
+ * the grid wider than the sidebar. Removing min-width lets the fr
+ * columns compress naturally to whatever space is available.
+ */
+.blockendar-panel-datetime .components-datetime__date .components-datetime__date__day {
+	min-width: 0 !important;
+	padding-inline: 2px !important;
+}

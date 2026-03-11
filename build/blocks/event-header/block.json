@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "blockendar/event-header",
+  "version": "0.2.0",
+  "title": "Event Header",
+  "category": "blockendar",
+  "icon": "heading",
+  "description": "Displays the event title, date summary, and status badge. For use in single event templates.",
+  "textdomain": "blockendar",
+  "usesContext": [
+    "postId",
+    "postType"
+  ],
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "attributes": {
+    "showStatus": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "render": "file:./render.php",
+  "editorScript": "file:./index.js"
+}

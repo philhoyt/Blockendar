@@ -1,0 +1,18 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockendar/event-cost",
+	"version": "0.2.0",
+	"title": "Event Cost",
+	"category": "blockendar",
+	"icon": "tickets-alt",
+	"description": "Displays the event cost and a registration/ticket link button.",
+	"textdomain": "blockendar",
+	"usesContext": [ "postId", "postType" ],
+	"supports": { "html": false },
+	"attributes": {
+		"buttonLabel": { "type": "string", "default": "" }
+	},
+	"render": "file:./render.php",
+	"editorScript": "file:./index.js"
+}

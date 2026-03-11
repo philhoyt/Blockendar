@@ -1,0 +1,20 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockendar/venue-info",
+	"version": "0.2.0",
+	"title": "Venue Info",
+	"category": "blockendar",
+	"icon": "building",
+	"description": "Full venue detail block — address, phone, website, and optional map.",
+	"textdomain": "blockendar",
+	"usesContext": [ "postId", "postType" ],
+	"supports": { "html": false },
+	"attributes": {
+		"showMap":     { "type": "boolean", "default": false },
+		"showPhone":   { "type": "boolean", "default": true },
+		"showWebsite": { "type": "boolean", "default": true }
+	},
+	"render": "file:./render.php",
+	"editorScript": "file:./index.js"
+}
