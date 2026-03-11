@@ -101,7 +101,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 					<time className="blockendar-event-datetime__start">
 						{ showStartDate && fmtDate( activeStartDate ) }
 						{ showStartTime && ! activeAllDay && activeStartTime && (
-							<>{ ' ' }{ fmtTime( activeStartTime, activeStartDate ) }</>
+							<>{ ' @ ' }{ fmtTime( activeStartTime, activeStartDate ) }</>
 						) }
 					</time>
 				) }
@@ -113,7 +113,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 						<time className="blockendar-event-datetime__end">
 							{ fmtDate( activeEndDate ) }
 							{ showEndTime && ! activeAllDay && activeEndTime && (
-								<>{ ' ' }{ fmtTime( activeEndTime, activeEndDate ) }</>
+								<>{ ' @ ' }{ fmtTime( activeEndTime, activeEndDate ) }</>
 							) }
 						</time>
 					</>

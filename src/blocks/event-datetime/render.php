@@ -31,12 +31,10 @@ $fmt_time = fn( string $time, string $date ) => date_i18n( $time_format, strtoti
 $same_day = $start_date === $end_date;
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-datetime' ] ); ?>>
-	<span class="dashicons dashicons-clock" aria-hidden="true"></span>
-
 	<?php if ( $show_start_date || ( $show_start_time && ! $all_day ) ) : ?>
 		<time class="blockendar-event-datetime__start" datetime="<?php echo esc_attr( $start_date . ( $start_time ? "T$start_time" : '' ) ); ?>">
 			<?php if ( $show_start_date ) echo esc_html( $fmt_date( $start_date ) ); ?>
-			<?php if ( $show_start_time && ! $all_day && $start_time ) echo ' ' . esc_html( $fmt_time( $start_time, $start_date ) ); ?>
+			<?php if ( $show_start_time && ! $all_day && $start_time ) echo ' @ ' . esc_html( $fmt_time( $start_time, $start_date ) ); ?>
 		</time>
 	<?php endif; ?>
 
@@ -44,7 +42,7 @@ $same_day = $start_date === $end_date;
 		<span class="blockendar-event-datetime__sep" aria-hidden="true"> – </span>
 		<time class="blockendar-event-datetime__end" datetime="<?php echo esc_attr( $end_date . ( $end_time ? "T$end_time" : '' ) ); ?>">
 			<?php echo esc_html( $fmt_date( $end_date ) ); ?>
-			<?php if ( $show_end_time && ! $all_day && $end_time ) echo ' ' . esc_html( $fmt_time( $end_time, $end_date ) ); ?>
+			<?php if ( $show_end_time && ! $all_day && $end_time ) echo ' @ ' . esc_html( $fmt_time( $end_time, $end_date ) ); ?>
 		</time>
 	<?php elseif ( $show_end_time && ! $all_day && $same_day && $end_time && $end_time !== $start_time ) : ?>
 		<span class="blockendar-event-datetime__sep" aria-hidden="true"> – </span>
