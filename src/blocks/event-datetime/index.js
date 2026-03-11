@@ -1,16 +1,5 @@
 import { registerBlockType } from '@wordpress/blocks';
 import metadata              from './block.json';
-import { __, sprintf }       from '@wordpress/i18n';
-import { useBlockProps }     from '@wordpress/block-editor';
-
-function Edit() {
-	return (
-		<div { ...useBlockProps() }>
-			<p style={ { textAlign: 'center', padding: '1em', opacity: 0.6 } }>
-				{ metadata.title }
-			</p>
-		</div>
-	);
-}
+import { Edit }              from './edit';
 
 registerBlockType( metadata.name, { edit: Edit } );

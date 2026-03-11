@@ -13,16 +13,57 @@
     "postType"
   ],
   "supports": {
-    "html": false
+    "html": false,
+    "color": {
+      "text": true,
+      "background": true,
+      "gradients": true
+    },
+    "typography": {
+      "fontSize": true,
+      "lineHeight": true,
+      "fontFamily": true,
+      "fontWeight": true,
+      "fontStyle": true,
+      "textTransform": true,
+      "textDecoration": true,
+      "letterSpacing": true,
+      "textAlign": true
+    },
+    "spacing": {
+      "padding": true,
+      "margin": true
+    },
+    "border": {
+      "color": true,
+      "radius": true,
+      "style": true,
+      "width": true
+    },
+    "dimensions": {
+      "minHeight": true
+    }
   },
   "attributes": {
-    "showTimezone": {
+    "showStartDate": {
+      "type": "boolean",
+      "default": true
+    },
+    "showStartTime": {
       "type": "boolean",
       "default": true
     },
     "showEndDate": {
       "type": "boolean",
       "default": true
+    },
+    "showEndTime": {
+      "type": "boolean",
+      "default": true
+    },
+    "showTimezone": {
+      "type": "boolean",
+      "default": false
     }
   },
   "render": "file:./render.php",

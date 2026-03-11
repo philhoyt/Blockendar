@@ -9,10 +9,44 @@
 	"description": "Displays formatted start and end date/time with timezone.",
 	"textdomain": "blockendar",
 	"usesContext": [ "postId", "postType" ],
-	"supports": { "html": false },
+	"supports": {
+		"html": false,
+		"color": {
+			"text": true,
+			"background": true,
+			"gradients": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"fontFamily": true,
+			"fontWeight": true,
+			"fontStyle": true,
+			"textTransform": true,
+			"textDecoration": true,
+			"letterSpacing": true,
+			"textAlign": true
+		},
+		"spacing": {
+			"padding": true,
+			"margin": true
+		},
+		"border": {
+			"color": true,
+			"radius": true,
+			"style": true,
+			"width": true
+		},
+		"dimensions": {
+			"minHeight": true
+		}
+	},
 	"attributes": {
-		"showTimezone": { "type": "boolean", "default": true },
-		"showEndDate":  { "type": "boolean", "default": true }
+		"showStartDate": { "type": "boolean", "default": true },
+		"showStartTime": { "type": "boolean", "default": true },
+		"showEndDate":   { "type": "boolean", "default": true },
+		"showEndTime":   { "type": "boolean", "default": true },
+		"showTimezone":  { "type": "boolean", "default": false }
 	},
 	"render": "file:./render.php",
 	"editorScript": "file:./index.js"
