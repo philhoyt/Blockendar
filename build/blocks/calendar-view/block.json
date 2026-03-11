@@ -22,11 +22,19 @@
     "interactivity": true
   },
   "attributes": {
-    "venueId": {
-      "type": "integer"
+    "venueIds": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "integer"
+      }
     },
-    "typeId": {
-      "type": "integer"
+    "typeIds": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "integer"
+      }
     },
     "featuredOnly": {
       "type": "boolean",

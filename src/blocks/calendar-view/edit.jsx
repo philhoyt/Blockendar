@@ -1,36 +1,70 @@
 /**
  * calendar-view block — editor component.
- *
- * Shows a static preview placeholder in the editor with inspector controls.
- * The live FullCalendar renders via view.jsx on the frontend.
  */
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
 	PanelBody,
+	CheckboxControl,
 	ToggleControl,
 	SelectControl,
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
-import { useSelect }  from '@wordpress/data';
+import { useSelect }          from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
-import { __ }         from '@wordpress/i18n';
+import { __ }                 from '@wordpress/i18n';
 
 const VIEW_OPTIONS = [
-	{ label: __( 'Month',     'blockendar' ), value: 'dayGridMonth' },
-	{ label: __( 'Week',      'blockendar' ), value: 'timeGridWeek' },
-	{ label: __( 'Day',       'blockendar' ), value: 'timeGridDay' },
-	{ label: __( 'List',      'blockendar' ), value: 'listNextMonth' },
+	{ label: __( 'Month', 'blockendar' ), value: 'dayGridMonth' },
+	{ label: __( 'Week',  'blockendar' ), value: 'timeGridWeek' },
+	{ label: __( 'Day',   'blockendar' ), value: 'timeGridDay' },
+	{ label: __( 'List',  'blockendar' ), value: 'listNextMonth' },
 ];
 
 const FIRST_DAY_OPTIONS = [
-	{ label: __( 'Sunday',    'blockendar' ), value: 0 },
-	{ label: __( 'Monday',    'blockendar' ), value: 1 },
-	{ label: __( 'Saturday',  'blockendar' ), value: 6 },
+	{ label: __( 'Sunday',   'blockendar' ), value: 0 },
+	{ label: __( 'Monday',   'blockendar' ), value: 1 },
+	{ label: __( 'Saturday', 'blockendar' ), value: 6 },
 ];
+
+function TermCheckboxList( { terms, selected, onChange, emptyLabel } ) {
+	if ( ! terms.length ) {
+		return <p style={ { margin: 0, color: '#757575', fontSize: '12px' } }>{ emptyLabel }</p>;
+	}
+
+	// Empty array means "all selected" — no filter applied.
+	const isChecked = ( id ) => selected.length === 0 || selected.includes( id );
+
+	const toggle = ( id, checked ) => {
+		if ( checked ) {
+			const next = [ ...selected, id ];
+			// If every term is now checked, reset to empty (= all, no filter).
+			onChange( next.length === terms.length ? [] : next );
+		} else {
+			// If we were showing all, uncheck one → select all others.
+			const base = selected.length === 0 ? terms.map( ( t ) => t.id ) : selected;
+			onChange( base.filter( ( v ) => v !== id ) );
+		}
+	};
+
+	return (
+		<VStack spacing={ 0 }>
+			{ terms.map( ( term ) => (
+				<div key={ term.id } style={ { marginBottom: 4 } }>
+					<CheckboxControl
+						label={ term.name }
+						checked={ isChecked( term.id ) }
+						onChange={ ( checked ) => toggle( term.id, checked ) }
+						__nextHasNoMarginBottom
+					/>
+				</div>
+			) ) }
+		</VStack>
+	);
+}
 
 export function Edit( { attributes, setAttributes } ) {
 	const {
-		venueId, typeId, featuredOnly,
+		venueIds, typeIds, featuredOnly,
 		enabledViews, defaultView, firstDay,
 	} = attributes;
 
@@ -52,16 +86,6 @@ export function Edit( { attributes, setAttributes } ) {
 		[]
 	);
 
-	const venueOptions = [
-		{ label: __( 'All venues', 'blockendar' ), value: 0 },
-		...venues.map( ( v ) => ( { label: v.name, value: v.id } ) ),
-	];
-
-	const typeOptions = [
-		{ label: __( 'All types', 'blockendar' ), value: 0 },
-		...types.map( ( t ) => ( { label: t.name, value: t.id } ) ),
-	];
-
 	const toggleView = ( view ) => {
 		const next = enabledViews.includes( view )
 			? enabledViews.filter( ( v ) => v !== view )
@@ -73,26 +97,38 @@ export function Edit( { attributes, setAttributes } ) {
 		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Filter', 'blockendar' ) }>
-					<VStack spacing={ 3 }>
-						<SelectControl
-							label={ __( 'Venue', 'blockendar' ) }
-							value={ venueId ?? 0 }
-							options={ venueOptions }
-							onChange={ ( val ) => setAttributes( { venueId: parseInt( val, 10 ) || undefined } ) }
-							__nextHasNoMarginBottom
-						/>
-						<SelectControl
-							label={ __( 'Event type', 'blockendar' ) }
-							value={ typeId ?? 0 }
-							options={ typeOptions }
-							onChange={ ( val ) => setAttributes( { typeId: parseInt( val, 10 ) || undefined } ) }
-							__nextHasNoMarginBottom
-						/>
+					<VStack spacing={ 4 }>
+
+						<fieldset style={ { margin: 0, padding: 0, border: 'none' } }>
+							<legend style={ { marginBottom: 6, fontWeight: 600 } }>
+								{ __( 'Event type', 'blockendar' ) }
+							</legend>
+							<TermCheckboxList
+								terms={ types }
+								selected={ typeIds }
+								onChange={ ( next ) => setAttributes( { typeIds: next } ) }
+								emptyLabel={ __( 'No event types found.', 'blockendar' ) }
+							/>
+						</fieldset>
+
+						<fieldset style={ { margin: 0, padding: 0, border: 'none' } }>
+							<legend style={ { marginBottom: 6, fontWeight: 600 } }>
+								{ __( 'Venue', 'blockendar' ) }
+							</legend>
+							<TermCheckboxList
+								terms={ venues }
+								selected={ venueIds }
+								onChange={ ( next ) => setAttributes( { venueIds: next } ) }
+								emptyLabel={ __( 'No venues found.', 'blockendar' ) }
+							/>
+						</fieldset>
+
 						<ToggleControl
 							label={ __( 'Featured events only', 'blockendar' ) }
 							checked={ featuredOnly }
 							onChange={ ( val ) => setAttributes( { featuredOnly: val } ) }
 						/>
+
 					</VStack>
 				</PanelBody>
 

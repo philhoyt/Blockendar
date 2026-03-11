@@ -40,8 +40,8 @@ class CalendarController extends AbstractController {
 			'args'                => [
 				'start'    => [ 'type' => 'string', 'default' => '' ],
 				'end'      => [ 'type' => 'string', 'default' => '' ],
-				'venue'    => [ 'type' => 'integer', 'minimum' => 1 ],
-				'type'     => [ 'type' => 'integer', 'minimum' => 1 ],
+				'venue'    => [ 'type' => 'string', 'default' => '' ],
+				'type'     => [ 'type' => 'string', 'default' => '' ],
 				'featured' => [ 'type' => 'boolean' ],
 				'format'   => [
 					'type'    => 'string',
@@ -76,8 +76,8 @@ class CalendarController extends AbstractController {
 		}
 
 		$filters = [
-			'venue_term_id' => $request->get_param( 'venue' )    ? (int) $request->get_param( 'venue' )    : null,
-			'type_term_id'  => $request->get_param( 'type' )     ? (int) $request->get_param( 'type' )     : null,
+			'venue_term_id' => $this->parse_id_list( $request->get_param( 'venue' ) ),
+			'type_term_id'  => $this->parse_id_list( $request->get_param( 'type' ) ),
 			'featured'      => $request->get_param( 'featured' ) ? rest_sanitize_boolean( $request->get_param( 'featured' ) ) : null,
 			'per_page'      => 500,
 			'page'          => 1,
@@ -92,6 +92,30 @@ class CalendarController extends AbstractController {
 		$events = array_map( [ $this, 'format_for_fullcalendar' ], $rows );
 
 		return $this->respond( $events );
+	}
+
+	// -------------------------------------------------------------------------
+	// Helpers
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Parse a comma-separated ID string into an array of positive integers.
+	 * Returns null when the string is empty so the filter is skipped entirely.
+	 *
+	 * @param string|null $value Raw param value e.g. "1,2,3".
+	 * @return int[]|null
+	 */
+	private function parse_id_list( ?string $value ): ?array {
+		if ( null === $value || '' === $value ) {
+			return null;
+		}
+
+		$ids = array_filter(
+			array_map( 'intval', explode( ',', $value ) ),
+			fn( $id ) => $id > 0
+		);
+
+		return ! empty( $ids ) ? array_values( $ids ) : null;
 	}
 
 	// -------------------------------------------------------------------------

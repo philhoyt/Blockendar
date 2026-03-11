@@ -11,22 +11,22 @@ declare( strict_types=1 );
 
 $enabled_views = $attributes['enabledViews'] ?? [ 'dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listNextMonth' ];
 $default_view  = $attributes['defaultView']  ?? 'dayGridMonth';
-$first_day     = (int) ( $attributes['firstDay']    ?? 0 );
-$venue_id      = ! empty( $attributes['venueId'] )     ? (int) $attributes['venueId']     : null;
-$type_id       = ! empty( $attributes['typeId'] )      ? (int) $attributes['typeId']      : null;
+$first_day     = (int) ( $attributes['firstDay'] ?? 0 );
+$venue_ids     = array_map( 'intval', (array) ( $attributes['venueIds'] ?? [] ) );
+$type_ids      = array_map( 'intval', (array) ( $attributes['typeIds']  ?? [] ) );
 $featured_only = ! empty( $attributes['featuredOnly'] ) ? 'true' : 'false';
 
 $rest_url = esc_url_raw( rest_url( 'blockendar/v1' ) );
 
-$data_attrs = array_filter( [
+$data_attrs = [
 	'data-rest-url'      => $rest_url,
 	'data-default-view'  => $default_view,
 	'data-first-day'     => (string) $first_day,
 	'data-enabled-views' => wp_json_encode( $enabled_views ),
 	'data-featured-only' => $featured_only,
-	'data-venue-id'      => $venue_id !== null ? (string) $venue_id : null,
-	'data-type-id'       => $type_id  !== null ? (string) $type_id  : null,
-] );
+	'data-venue-ids'     => wp_json_encode( array_values( $venue_ids ) ),
+	'data-type-ids'      => wp_json_encode( array_values( $type_ids ) ),
+];
 
 $data_attr_str = '';
 foreach ( $data_attrs as $key => $value ) {

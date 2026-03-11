@@ -14,8 +14,8 @@ import interactionPlugin from '@fullcalendar/interaction';
 
 function BlockendarCalendar( { dataset } ) {
 	const restUrl      = dataset.restUrl      ?? '/wp-json/blockendar/v1';
-	const venueId      = dataset.venueId      ? parseInt( dataset.venueId, 10 )    : undefined;
-	const typeId       = dataset.typeId       ? parseInt( dataset.typeId, 10 )     : undefined;
+	const venueIds     = dataset.venueIds     ? JSON.parse( dataset.venueIds )     : [];
+	const typeIds      = dataset.typeIds      ? JSON.parse( dataset.typeIds )      : [];
 	const featuredOnly = dataset.featuredOnly === 'true';
 	const defaultView  = dataset.defaultView  ?? 'dayGridMonth';
 	const firstDay     = dataset.firstDay     ? parseInt( dataset.firstDay, 10 )   : 0;
@@ -41,9 +41,9 @@ function BlockendarCalendar( { dataset } ) {
 			per_page: 500,
 		} );
 
-		if ( venueId )      params.set( 'venue',    venueId );
-		if ( typeId )       params.set( 'type',     typeId );
-		if ( featuredOnly ) params.set( 'featured', '1' );
+		if ( venueIds.length ) params.set( 'venue', venueIds.join( ',' ) );
+		if ( typeIds.length )  params.set( 'type',  typeIds.join( ',' ) );
+		if ( featuredOnly )    params.set( 'featured', '1' );
 
 		fetch( `${ restUrl }/calendar?${ params.toString() }` )
 			.then( ( r ) => r.json() )
