@@ -28,8 +28,6 @@ $address_parts = array_filter( [ $address, $city, $state, $country ] );
 $address_str   = implode( ', ', $address_parts );
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-venue' ] ); ?>>
-	<span class="dashicons dashicons-location" aria-hidden="true"></span>
-
 	<div class="blockendar-event-venue__body">
 		<a class="blockendar-event-venue__name" href="<?php echo esc_url( get_term_link( $term ) ); ?>">
 			<?php echo esc_html( $term->name ); ?>

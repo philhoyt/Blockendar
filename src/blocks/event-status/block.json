@@ -8,8 +8,39 @@
 	"icon": "flag",
 	"description": "Shows a styled status badge (Cancelled, Postponed, Sold Out). Hidden for scheduled events.",
 	"textdomain": "blockendar",
-	"usesContext": [ "postId", "postType" ],
-	"supports": { "html": false },
+	"usesContext": [
+		"postId",
+		"postType"
+	],
+	"supports": {
+		"html": false,
+		"color": {
+			"text": true,
+			"background": true,
+			"gradients": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"fontFamily": true,
+			"fontWeight": true,
+			"fontStyle": true,
+			"textTransform": true,
+			"textDecoration": true,
+			"letterSpacing": true,
+			"textAlign": true
+		},
+		"spacing": {
+			"padding": true,
+			"margin": true
+		},
+		"border": {
+			"color": true,
+			"radius": true,
+			"style": true,
+			"width": true
+		}
+	},
 	"attributes": {},
 	"render": "file:./render.php",
 	"editorScript": "file:./index.js"

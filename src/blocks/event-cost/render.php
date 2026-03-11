@@ -18,7 +18,6 @@ if ( ! $cost && ! $reg_url ) return;
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-cost' ] ); ?>>
 	<?php if ( $cost ) : ?>
 		<span class="blockendar-event-cost__amount">
-			<span class="dashicons dashicons-tickets-alt" aria-hidden="true"></span>
 			<?php echo esc_html( $cost ); ?>
 		</span>
 	<?php endif; ?>
