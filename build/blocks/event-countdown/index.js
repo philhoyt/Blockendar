@@ -1,1 +1,0 @@
-(()=>{"use strict";const n=window.wp.blocks,e=JSON.parse('{"UU":"blockendar/event-countdown","DD":"Event Countdown"}'),t=(window.wp.i18n,window.wp.blockEditor),o=window.ReactJSXRuntime;(0,n.registerBlockType)(e.UU,{edit:function(){return(0,o.jsx)("div",{...(0,t.useBlockProps)(),children:(0,o.jsx)("p",{style:{textAlign:"center",padding:"1em",opacity:.6},children:e.DD})})}})})();

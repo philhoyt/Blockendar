@@ -1,9 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output — committed so the plugin works without a build step
-# Uncomment the next line if you prefer to exclude built assets
-# build/
+# Build output
+build/
 
 # OS
 .DS_Store

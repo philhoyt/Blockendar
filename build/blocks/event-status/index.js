@@ -1,1 +1,0 @@
-(()=>{"use strict";const e=window.wp.blocks,t=JSON.parse('{"UU":"blockendar/event-status","DD":"Event Status Badge"}'),n=(window.wp.i18n,window.wp.blockEditor),i=window.ReactJSXRuntime;(0,e.registerBlockType)(t.UU,{edit:function(){return(0,i.jsx)("div",{...(0,n.useBlockProps)(),children:(0,i.jsx)("p",{style:{textAlign:"center",padding:"1em",opacity:.6},children:t.DD})})}})})();
