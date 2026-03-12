@@ -11,7 +11,8 @@
     "lint:css": "wp-scripts lint-style",
     "packages-update": "wp-scripts packages-update",
     "lint:php": "vendor/bin/phpcs",
-    "lint:php:fix": "vendor/bin/phpcbf"
+    "lint:php:fix": "vendor/bin/phpcbf",
+    "plugin-zip": "wp-scripts plugin-zip"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",
