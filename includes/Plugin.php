@@ -21,7 +21,6 @@ use Blockendar\Recurrence\Generator;
 use Blockendar\Recurrence\Cron;
 use Blockendar\REST\EventsController;
 use Blockendar\REST\CalendarController;
-use Blockendar\REST\VenuesController;
 use Blockendar\REST\IcsEndpoint;
 use Blockendar\Blocks\BlockRegistrar;
 use Blockendar\Blocks\TemplateRegistrar;
@@ -59,7 +58,6 @@ class Plugin {
 		// REST API.
 		( new EventsController() )->register();
 		( new CalendarController() )->register();
-		( new VenuesController() )->register();
 		( new IcsEndpoint() )->register();
 
 		// Block registration + editor sidebar enqueue.

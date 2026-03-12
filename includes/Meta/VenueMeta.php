@@ -45,13 +45,10 @@ class VenueMeta {
 		$taxonomy = Venue::TAXONOMY;
 
 		$string_fields = [
-			'blockendar_venue_address'  => 'Street address line 1.',
-			'blockendar_venue_address2' => 'Suite, floor, etc.',
-			'blockendar_venue_city'     => 'City.',
-			'blockendar_venue_state'    => 'State / Province.',
-			'blockendar_venue_postcode' => 'Postal / ZIP code.',
-			'blockendar_venue_country'  => 'ISO 3166-1 alpha-2 country code.',
-			'blockendar_venue_phone'    => 'Contact phone number.',
+			'blockendar_venue_address' => 'Street address line 1.',
+			'blockendar_venue_city'    => 'City.',
+			'blockendar_venue_state'   => 'State / Province.',
+			'blockendar_venue_country' => 'ISO 3166-1 alpha-2 country code.',
 		];
 
 		foreach ( $string_fields as $key => $description ) {
@@ -68,25 +65,6 @@ class VenueMeta {
 				]
 			);
 		}
-
-		// URL fields.
-		register_term_meta(
-			$taxonomy,
-			'blockendar_venue_url',
-			[
-				'type'              => 'string',
-				'description'       => 'Venue website URL.',
-				'single'            => true,
-				'default'           => '',
-				'sanitize_callback' => 'esc_url_raw',
-				'show_in_rest'      => [
-					'schema' => [
-						'type'   => 'string',
-						'format' => 'uri',
-					],
-				],
-			]
-		);
 
 		register_term_meta(
 			$taxonomy,
@@ -129,20 +107,6 @@ class VenueMeta {
 				'single'            => true,
 				'default'           => 0.0,
 				'sanitize_callback' => [ $this, 'sanitize_longitude' ],
-				'show_in_rest'      => true,
-			]
-		);
-
-		// Integer fields.
-		register_term_meta(
-			$taxonomy,
-			'blockendar_venue_capacity',
-			[
-				'type'              => 'integer',
-				'description'       => 'Venue maximum capacity.',
-				'single'            => true,
-				'default'           => 0,
-				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,
 			]
 		);
