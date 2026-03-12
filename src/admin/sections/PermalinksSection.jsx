@@ -5,7 +5,7 @@ import {
 import { __ } from '@wordpress/i18n';
 
 export function PermalinksSection( { settings, update } ) {
-	const slug    = settings.events_slug ?? 'events';
+	const slug = settings.events_slug ?? 'events';
 	const preview = `/${ slug }/your-event-name/`;
 
 	return (
@@ -16,10 +16,16 @@ export function PermalinksSection( { settings, update } ) {
 				label={ __( 'Events base slug', 'blockendar' ) }
 				help={
 					<>
-						{ __( 'The URL prefix for events. Preview: ', 'blockendar' ) }
+						{ __(
+							'The URL prefix for events. Preview:',
+							'blockendar'
+						) }
 						<code>{ preview }</code>
 						<br />
-						{ __( 'Save and visit Settings > Permalinks to flush rewrite rules after changing this.', 'blockendar' ) }
+						{ __(
+							'Save and visit Settings > Permalinks to flush rewrite rules after changing this.',
+							'blockendar'
+						) }
 					</>
 				}
 				value={ slug }

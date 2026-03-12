@@ -12,15 +12,22 @@ import {
 	RangeControl,
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
-import { useSelect }          from '@wordpress/data';
+import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
-import { __ }                 from '@wordpress/i18n';
-import ServerSideRender       from '@wordpress/server-side-render';
+import { __ } from '@wordpress/i18n';
+import ServerSideRender from '@wordpress/server-side-render';
 
 export function Edit( { attributes, setAttributes } ) {
 	const {
-		venueId, typeId, featuredOnly, showPast,
-		perPage, layout, groupBy, pagination, order,
+		venueId,
+		typeId,
+		featuredOnly,
+		showPast,
+		perPage,
+		layout,
+		groupBy,
+		pagination,
+		order,
 	} = attributes;
 
 	const blockProps = useBlockProps();
@@ -28,7 +35,8 @@ export function Edit( { attributes, setAttributes } ) {
 	const venues = useSelect(
 		( select ) =>
 			select( coreStore ).getEntityRecords( 'taxonomy', 'event_venue', {
-				per_page: 100, hide_empty: false,
+				per_page: 100,
+				hide_empty: false,
 			} ) ?? [],
 		[]
 	);
@@ -36,7 +44,8 @@ export function Edit( { attributes, setAttributes } ) {
 	const types = useSelect(
 		( select ) =>
 			select( coreStore ).getEntityRecords( 'taxonomy', 'event_type', {
-				per_page: 100, hide_empty: false,
+				per_page: 100,
+				hide_empty: false,
 			} ) ?? [],
 		[]
 	);
@@ -61,7 +70,9 @@ export function Edit( { attributes, setAttributes } ) {
 							value={ venueId ?? 0 }
 							options={ venueOptions }
 							onChange={ ( val ) =>
-								setAttributes( { venueId: parseInt( val, 10 ) || undefined } )
+								setAttributes( {
+									venueId: parseInt( val, 10 ) || undefined,
+								} )
 							}
 							__nextHasNoMarginBottom
 						/>
@@ -70,19 +81,25 @@ export function Edit( { attributes, setAttributes } ) {
 							value={ typeId ?? 0 }
 							options={ typeOptions }
 							onChange={ ( val ) =>
-								setAttributes( { typeId: parseInt( val, 10 ) || undefined } )
+								setAttributes( {
+									typeId: parseInt( val, 10 ) || undefined,
+								} )
 							}
 							__nextHasNoMarginBottom
 						/>
 						<ToggleControl
 							label={ __( 'Featured events only', 'blockendar' ) }
 							checked={ featuredOnly }
-							onChange={ ( val ) => setAttributes( { featuredOnly: val } ) }
+							onChange={ ( val ) =>
+								setAttributes( { featuredOnly: val } )
+							}
 						/>
 						<ToggleControl
 							label={ __( 'Show past events', 'blockendar' ) }
 							checked={ showPast }
-							onChange={ ( val ) => setAttributes( { showPast: val } ) }
+							onChange={ ( val ) =>
+								setAttributes( { showPast: val } )
+							}
 						/>
 					</VStack>
 				</PanelBody>
@@ -94,49 +111,89 @@ export function Edit( { attributes, setAttributes } ) {
 							value={ perPage }
 							min={ 1 }
 							max={ 100 }
-							onChange={ ( val ) => setAttributes( { perPage: val } ) }
+							onChange={ ( val ) =>
+								setAttributes( { perPage: val } )
+							}
 							__nextHasNoMarginBottom
 						/>
 						<SelectControl
 							label={ __( 'Layout', 'blockendar' ) }
 							value={ layout }
 							options={ [
-								{ label: __( 'List', 'blockendar' ), value: 'list' },
-								{ label: __( 'Grid', 'blockendar' ), value: 'grid' },
+								{
+									label: __( 'List', 'blockendar' ),
+									value: 'list',
+								},
+								{
+									label: __( 'Grid', 'blockendar' ),
+									value: 'grid',
+								},
 							] }
-							onChange={ ( val ) => setAttributes( { layout: val } ) }
+							onChange={ ( val ) =>
+								setAttributes( { layout: val } )
+							}
 							__nextHasNoMarginBottom
 						/>
 						<SelectControl
 							label={ __( 'Group by', 'blockendar' ) }
 							value={ groupBy }
 							options={ [
-								{ label: __( 'None',       'blockendar' ), value: 'none' },
-								{ label: __( 'Date',       'blockendar' ), value: 'date' },
-								{ label: __( 'Month',      'blockendar' ), value: 'month' },
-								{ label: __( 'Event type', 'blockendar' ), value: 'type' },
+								{
+									label: __( 'None', 'blockendar' ),
+									value: 'none',
+								},
+								{
+									label: __( 'Date', 'blockendar' ),
+									value: 'date',
+								},
+								{
+									label: __( 'Month', 'blockendar' ),
+									value: 'month',
+								},
+								{
+									label: __( 'Event type', 'blockendar' ),
+									value: 'type',
+								},
 							] }
-							onChange={ ( val ) => setAttributes( { groupBy: val } ) }
+							onChange={ ( val ) =>
+								setAttributes( { groupBy: val } )
+							}
 							__nextHasNoMarginBottom
 						/>
 						<SelectControl
 							label={ __( 'Pagination', 'blockendar' ) }
 							value={ pagination }
 							options={ [
-								{ label: __( 'Paged',     'blockendar' ), value: 'paged' },
-								{ label: __( 'Load more', 'blockendar' ), value: 'load_more' },
+								{
+									label: __( 'Paged', 'blockendar' ),
+									value: 'paged',
+								},
+								{
+									label: __( 'Load more', 'blockendar' ),
+									value: 'load_more',
+								},
 							] }
-							onChange={ ( val ) => setAttributes( { pagination: val } ) }
+							onChange={ ( val ) =>
+								setAttributes( { pagination: val } )
+							}
 							__nextHasNoMarginBottom
 						/>
 						<SelectControl
 							label={ __( 'Order', 'blockendar' ) }
 							value={ order }
 							options={ [
-								{ label: __( 'Soonest first', 'blockendar' ), value: 'ASC' },
-								{ label: __( 'Latest first',  'blockendar' ), value: 'DESC' },
+								{
+									label: __( 'Soonest first', 'blockendar' ),
+									value: 'ASC',
+								},
+								{
+									label: __( 'Latest first', 'blockendar' ),
+									value: 'DESC',
+								},
 							] }
-							onChange={ ( val ) => setAttributes( { order: val } ) }
+							onChange={ ( val ) =>
+								setAttributes( { order: val } )
+							}
 							__nextHasNoMarginBottom
 						/>
 					</VStack>

@@ -4,11 +4,13 @@
  * Mirrors Google Calendar / Outlook recurrence conventions.
  * Saves to the blockendar/v1/recurrence endpoint on change.
  */
-import { PluginDocumentSettingPanel } from '@wordpress/editor';
-import { useSelect }                  from '@wordpress/data';
-import { store as editorStore }       from '@wordpress/editor';
-import { useState, useEffect }        from '@wordpress/element';
-import apiFetch                       from '@wordpress/api-fetch';
+import {
+	PluginDocumentSettingPanel,
+	store as editorStore,
+} from '@wordpress/editor';
+import { useSelect } from '@wordpress/data';
+import { useState, useEffect } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import {
 	SelectControl,
 	TextControl,
@@ -16,16 +18,16 @@ import {
 	DatePicker,
 	RadioControl,
 	Button,
-	__experimentalVStack  as VStack,
-	__experimentalHStack  as HStack,
+	__experimentalVStack as VStack,
+	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
-const FREQ_NONE    = 'none';
-const FREQ_DAILY   = 'daily';
-const FREQ_WEEKLY  = 'weekly';
+const FREQ_NONE = 'none';
+const FREQ_DAILY = 'daily';
+const FREQ_WEEKLY = 'weekly';
 const FREQ_MONTHLY = 'monthly';
-const FREQ_YEARLY  = 'yearly';
+const FREQ_YEARLY = 'yearly';
 
 const WEEKDAYS = [
 	{ code: 'MO', label: __( 'Mon', 'blockendar' ) },
@@ -39,48 +41,57 @@ const WEEKDAYS = [
 
 const FREQ_OPTIONS = [
 	{ label: __( 'Does not repeat', 'blockendar' ), value: FREQ_NONE },
-	{ label: __( 'Daily',           'blockendar' ), value: FREQ_DAILY },
-	{ label: __( 'Weekly',          'blockendar' ), value: FREQ_WEEKLY },
-	{ label: __( 'Monthly',         'blockendar' ), value: FREQ_MONTHLY },
-	{ label: __( 'Yearly',          'blockendar' ), value: FREQ_YEARLY },
+	{ label: __( 'Daily', 'blockendar' ), value: FREQ_DAILY },
+	{ label: __( 'Weekly', 'blockendar' ), value: FREQ_WEEKLY },
+	{ label: __( 'Monthly', 'blockendar' ), value: FREQ_MONTHLY },
+	{ label: __( 'Yearly', 'blockendar' ), value: FREQ_YEARLY },
 ];
 
 const defaultRule = {
-	frequency:   FREQ_NONE,
-	interval:    1,
-	byday:       [],
-	bymonthday:  '',
-	bysetpos:    '',
-	endType:     'never',    // never | date | count
-	until_date:  '',
-	count:       '',
-	exceptions:  [],
+	frequency: FREQ_NONE,
+	interval: 1,
+	byday: [],
+	bymonthday: '',
+	bysetpos: '',
+	endType: 'never', // never | date | count
+	until_date: '',
+	count: '',
+	exceptions: [],
 };
 
 export function RecurrencePanel() {
-	const postId   = useSelect( ( select ) => select( editorStore ).getCurrentPostId() );
-	const [ rule, setRule ]   = useState( defaultRule );
+	const postId = useSelect( ( select ) =>
+		select( editorStore ).getCurrentPostId()
+	);
+	const [ rule, setRule ] = useState( defaultRule );
 	const [ saved, setSaved ] = useState( false );
 	const [ error, setError ] = useState( '' );
 
 	// Load existing rule on mount.
 	useEffect( () => {
-		if ( ! postId ) return;
+		if ( ! postId ) {
+			return;
+		}
 
 		apiFetch( { path: `/blockendar/v1/events/${ postId }` } )
 			.then( ( data ) => {
 				if ( data?.recurrence ) {
 					const r = data.recurrence;
 					setRule( {
-						frequency:   r.frequency,
-						interval:    r.interval ?? 1,
-						byday:       r.byday ?? [],
-						bymonthday:  r.bymonthday?.[ 0 ]?.toString() ?? '',
-						bysetpos:    r.bysetpos?.[ 0 ]?.toString() ?? '',
-						endType:     r.until_date ? 'date' : r.count ? 'count' : 'never',
-						until_date:  r.until_date ?? '',
-						count:       r.count?.toString() ?? '',
-						exceptions:  r.exceptions ?? [],
+						frequency: r.frequency,
+						interval: r.interval ?? 1,
+						byday: r.byday ?? [],
+						bymonthday: r.bymonthday?.[ 0 ]?.toString() ?? '',
+						bysetpos: r.bysetpos?.[ 0 ]?.toString() ?? '',
+						// eslint-disable-next-line no-nested-ternary
+						endType: r.until_date
+							? 'date'
+							: r.count
+							? 'count'
+							: 'never',
+						until_date: r.until_date ?? '',
+						count: r.count?.toString() ?? '',
+						exceptions: r.exceptions ?? [],
 					} );
 				}
 			} )
@@ -106,7 +117,7 @@ export function RecurrencePanel() {
 			// Delete rule if set to none.
 			try {
 				await apiFetch( {
-					path:   `/blockendar/v1/events/${ postId }/recurrence`,
+					path: `/blockendar/v1/events/${ postId }/recurrence`,
 					method: 'DELETE',
 				} );
 				setSaved( true );
@@ -117,28 +128,29 @@ export function RecurrencePanel() {
 		}
 
 		const payload = {
-			frequency:   rule.frequency,
+			frequency: rule.frequency,
 			interval_val: parseInt( rule.interval, 10 ) || 1,
-			byday:       rule.byday.join( ',' ) || null,
-			bymonthday:  rule.bymonthday || null,
-			bysetpos:    rule.bysetpos || null,
-			until_date:  rule.endType === 'date'  ? rule.until_date : null,
-			count:       rule.endType === 'count' ? parseInt( rule.count, 10 ) || null : null,
+			byday: rule.byday.join( ',' ) || null,
+			bymonthday: rule.bymonthday || null,
+			bysetpos: rule.bysetpos || null,
+			until_date: rule.endType === 'date' ? rule.until_date : null,
+			count:
+				rule.endType === 'count'
+					? parseInt( rule.count, 10 ) || null
+					: null,
 		};
 
 		try {
 			await apiFetch( {
-				path:   `/blockendar/v1/events/${ postId }/recurrence`,
+				path: `/blockendar/v1/events/${ postId }/recurrence`,
 				method: 'POST',
-				data:   payload,
+				data: payload,
 			} );
 			setSaved( true );
 		} catch ( e ) {
 			setError( e?.message ?? __( 'Save failed.', 'blockendar' ) );
 		}
 	};
-
-	const freqLabel = FREQ_OPTIONS.find( ( o ) => o.value !== FREQ_NONE )?.label ?? '';
 
 	return (
 		<PluginDocumentSettingPanel
@@ -168,7 +180,13 @@ export function RecurrencePanel() {
 						/>
 
 						{ rule.frequency === FREQ_WEEKLY && (
-							<fieldset style={ { margin: 0, padding: 0, border: 'none' } }>
+							<fieldset
+								style={ {
+									margin: 0,
+									padding: 0,
+									border: 'none',
+								} }
+							>
 								<legend style={ { marginBottom: 4 } }>
 									{ __( 'Repeat on', 'blockendar' ) }
 								</legend>
@@ -177,7 +195,9 @@ export function RecurrencePanel() {
 										<CheckboxControl
 											key={ code }
 											label={ label }
-											checked={ rule.byday.includes( code ) }
+											checked={ rule.byday.includes(
+												code
+											) }
 											onChange={ () => toggleDay( code ) }
 											__nextHasNoMarginBottom
 										/>
@@ -194,16 +214,35 @@ export function RecurrencePanel() {
 									min={ 1 }
 									max={ 31 }
 									value={ rule.bymonthday }
-									onChange={ ( val ) => update( { bymonthday: val, bysetpos: '' } ) }
-									help={ __( 'Leave blank to use the event start date day.', 'blockendar' ) }
+									onChange={ ( val ) =>
+										update( {
+											bymonthday: val,
+											bysetpos: '',
+										} )
+									}
+									help={ __(
+										'Leave blank to use the event start date day.',
+										'blockendar'
+									) }
 									__nextHasNoMarginBottom
 								/>
 								<TextControl
-									label={ __( 'Nth weekday position (BYSETPOS)', 'blockendar' ) }
+									label={ __(
+										'Nth weekday position (BYSETPOS)',
+										'blockendar'
+									) }
 									type="number"
 									value={ rule.bysetpos }
-									onChange={ ( val ) => update( { bysetpos: val, bymonthday: '' } ) }
-									help={ __( '1 = first, 2 = second, -1 = last', 'blockendar' ) }
+									onChange={ ( val ) =>
+										update( {
+											bysetpos: val,
+											bymonthday: '',
+										} )
+									}
+									help={ __(
+										'1 = first, 2 = second, -1 = last',
+										'blockendar'
+									) }
 									__nextHasNoMarginBottom
 								/>
 							</VStack>
@@ -213,9 +252,18 @@ export function RecurrencePanel() {
 							label={ __( 'Ends', 'blockendar' ) }
 							selected={ rule.endType }
 							options={ [
-								{ label: __( 'Never',           'blockendar' ), value: 'never' },
-								{ label: __( 'On date',         'blockendar' ), value: 'date' },
-								{ label: __( 'After N times',   'blockendar' ), value: 'count' },
+								{
+									label: __( 'Never', 'blockendar' ),
+									value: 'never',
+								},
+								{
+									label: __( 'On date', 'blockendar' ),
+									value: 'date',
+								},
+								{
+									label: __( 'After N times', 'blockendar' ),
+									value: 'count',
+								},
 							] }
 							onChange={ ( val ) => update( { endType: val } ) }
 						/>
@@ -223,14 +271,22 @@ export function RecurrencePanel() {
 						{ rule.endType === 'date' && (
 							<DatePicker
 								currentDate={ rule.until_date || undefined }
-								onChange={ ( val ) => update( { until_date: val?.split( 'T' )[ 0 ] ?? '' } ) }
+								onChange={ ( val ) =>
+									update( {
+										until_date:
+											val?.split( 'T' )[ 0 ] ?? '',
+									} )
+								}
 								__nextRemoveHelpButton
 							/>
 						) }
 
 						{ rule.endType === 'count' && (
 							<TextControl
-								label={ __( 'Number of occurrences', 'blockendar' ) }
+								label={ __(
+									'Number of occurrences',
+									'blockendar'
+								) }
 								type="number"
 								min={ 1 }
 								value={ rule.count }
@@ -250,7 +306,9 @@ export function RecurrencePanel() {
 						) }
 
 						{ error && (
-							<p style={ { color: 'red', margin: 0 } }>{ error }</p>
+							<p style={ { color: 'red', margin: 0 } }>
+								{ error }
+							</p>
 						) }
 					</>
 				) }

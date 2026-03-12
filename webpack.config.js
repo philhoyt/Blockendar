@@ -11,7 +11,7 @@ module.exports = {
 		return {
 			...discovered,
 			'editor/index': './src/editor/index.js',
-			'admin/index':  './src/admin/index.js',
+			'admin/index': './src/admin/index.js',
 		};
 	},
 };

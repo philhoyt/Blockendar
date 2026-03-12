@@ -5,20 +5,20 @@
  * Mounted into every .wp-block-blockendar-calendar-view element on the page.
  * Configuration is read from data-* attributes set by render.php.
  */
-import { createRoot }    from '@wordpress/element';
-import FullCalendar      from '@fullcalendar/react';
-import dayGridPlugin     from '@fullcalendar/daygrid';
-import timeGridPlugin    from '@fullcalendar/timegrid';
-import listPlugin        from '@fullcalendar/list';
+import { createRoot } from '@wordpress/element';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 
 function BlockendarCalendar( { dataset } ) {
-	const restUrl      = dataset.restUrl      ?? '/wp-json/blockendar/v1';
-	const venueIds     = dataset.venueIds     ? JSON.parse( dataset.venueIds )     : [];
-	const typeIds      = dataset.typeIds      ? JSON.parse( dataset.typeIds )      : [];
+	const restUrl = dataset.restUrl ?? '/wp-json/blockendar/v1';
+	const venueIds = dataset.venueIds ? JSON.parse( dataset.venueIds ) : [];
+	const typeIds = dataset.typeIds ? JSON.parse( dataset.typeIds ) : [];
 	const featuredOnly = dataset.featuredOnly === 'true';
-	const defaultView  = dataset.defaultView  ?? 'dayGridMonth';
-	const firstDay     = dataset.firstDay     ? parseInt( dataset.firstDay, 10 )   : 0;
+	const defaultView = dataset.defaultView ?? 'dayGridMonth';
+	const firstDay = dataset.firstDay ? parseInt( dataset.firstDay, 10 ) : 0;
 	const enabledViews = dataset.enabledViews
 		? JSON.parse( dataset.enabledViews )
 		: [ 'dayGridMonth', 'timeGridWeek', 'listNextMonth' ];
@@ -28,22 +28,28 @@ function BlockendarCalendar( { dataset } ) {
 	// Custom view: rolling 31-day list starting from today.
 	const customViews = {
 		listNextMonth: {
-			type:       'list',
-			duration:   { days: 31 },
+			type: 'list',
+			duration: { days: 31 },
 			buttonText: 'list',
 		},
 	};
 
 	const fetchEvents = ( fetchInfo, successCallback, failureCallback ) => {
 		const params = new URLSearchParams( {
-			start:    fetchInfo.startStr,
-			end:      fetchInfo.endStr,
+			start: fetchInfo.startStr,
+			end: fetchInfo.endStr,
 			per_page: 500,
 		} );
 
-		if ( venueIds.length ) params.set( 'venue', venueIds.join( ',' ) );
-		if ( typeIds.length )  params.set( 'type',  typeIds.join( ',' ) );
-		if ( featuredOnly )    params.set( 'featured', '1' );
+		if ( venueIds.length ) {
+			params.set( 'venue', venueIds.join( ',' ) );
+		}
+		if ( typeIds.length ) {
+			params.set( 'type', typeIds.join( ',' ) );
+		}
+		if ( featuredOnly ) {
+			params.set( 'featured', '1' );
+		}
 
 		fetch( `${ restUrl }/calendar?${ params.toString() }` )
 			.then( ( r ) => r.json() )
@@ -53,14 +59,19 @@ function BlockendarCalendar( { dataset } ) {
 
 	return (
 		<FullCalendar
-			plugins={ [ dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin ] }
+			plugins={ [
+				dayGridPlugin,
+				timeGridPlugin,
+				listPlugin,
+				interactionPlugin,
+			] }
 			initialView={ defaultView }
 			firstDay={ firstDay }
 			views={ customViews }
 			headerToolbar={ {
-				left:   'prev,next today',
+				left: 'prev,next today',
 				center: 'title',
-				right:  viewButtons,
+				right: viewButtons,
 			} }
 			events={ fetchEvents }
 			dayMaxEvents={ 3 }
@@ -75,6 +86,10 @@ function BlockendarCalendar( { dataset } ) {
 	);
 }
 
-document.querySelectorAll( '.wp-block-blockendar-calendar-view' ).forEach( ( el ) => {
-	createRoot( el ).render( <BlockendarCalendar dataset={ el.dataset } /> );
-} );
+document
+	.querySelectorAll( '.wp-block-blockendar-calendar-view' )
+	.forEach( ( el ) => {
+		createRoot( el ).render(
+			<BlockendarCalendar dataset={ el.dataset } />
+		);
+	} );

@@ -8,10 +8,10 @@ import { store as coreStore } from '@wordpress/core-data';
 import { __ } from '@wordpress/i18n';
 
 const PLACEHOLDER = {
-	name:    'The Grand Ballroom',
+	name: 'The Grand Ballroom',
 	address: '123 Main St, New York, NY',
 	virtual: false,
-	stream:  '',
+	stream: '',
 };
 
 export function Edit( { attributes, setAttributes, context } ) {
@@ -41,26 +41,34 @@ export function Edit( { attributes, setAttributes, context } ) {
 			if ( ! id ) {
 				return null;
 			}
-			return select( coreStore ).getEntityRecord( 'taxonomy', 'event_venue', id );
+			return select( coreStore ).getEntityRecord(
+				'taxonomy',
+				'event_venue',
+				id
+			);
 		},
 		[ termIds ]
 	);
 
 	const isPlaceholder = ! term;
 
-	const name    = term?.name    ?? PLACEHOLDER.name;
-	const meta    = term?.meta    ?? {};
-	const virtual = isPlaceholder ? PLACEHOLDER.virtual : !! meta.blockendar_venue_virtual;
-	const stream  = isPlaceholder ? PLACEHOLDER.stream  : ( meta.blockendar_venue_stream_url ?? '' );
+	const name = term?.name ?? PLACEHOLDER.name;
+	const meta = term?.meta ?? {};
+	const virtual = isPlaceholder
+		? PLACEHOLDER.virtual
+		: !! meta.blockendar_venue_virtual;
+	const stream = isPlaceholder
+		? PLACEHOLDER.stream
+		: meta.blockendar_venue_stream_url ?? '';
 
 	const addressParts = isPlaceholder
 		? [ PLACEHOLDER.address ]
 		: [
-			meta.blockendar_venue_address ?? '',
-			meta.blockendar_venue_city    ?? '',
-			meta.blockendar_venue_state   ?? '',
-			meta.blockendar_venue_country ?? '',
-		].filter( Boolean );
+				meta.blockendar_venue_address ?? '',
+				meta.blockendar_venue_city ?? '',
+				meta.blockendar_venue_state ?? '',
+				meta.blockendar_venue_country ?? '',
+		  ].filter( Boolean );
 
 	const addressStr = addressParts.join( ', ' );
 
@@ -73,21 +81,30 @@ export function Edit( { attributes, setAttributes, context } ) {
 					<ToggleControl
 						label={ __( 'Show address', 'blockendar' ) }
 						checked={ showAddress }
-						onChange={ ( val ) => setAttributes( { showAddress: val } ) }
+						onChange={ ( val ) =>
+							setAttributes( { showAddress: val } )
+						}
 						__nextHasNoMarginBottom
 					/>
 					<ToggleControl
 						label={ __( 'Show map', 'blockendar' ) }
 						checked={ showMap }
-						onChange={ ( val ) => setAttributes( { showMap: val } ) }
+						onChange={ ( val ) =>
+							setAttributes( { showMap: val } )
+						}
 						__nextHasNoMarginBottom
 					/>
 				</PanelBody>
 			</InspectorControls>
 
-			<div { ...blockProps } style={ isPlaceholder ? { opacity: 0.5 } : undefined }>
+			<div
+				{ ...blockProps }
+				style={ isPlaceholder ? { opacity: 0.5 } : undefined }
+			>
 				<div className="blockendar-event-venue__body">
-					<span className="blockendar-event-venue__name">{ name }</span>
+					<span className="blockendar-event-venue__name">
+						{ name }
+					</span>
 
 					{ virtual ? (
 						<>
@@ -95,13 +112,17 @@ export function Edit( { attributes, setAttributes, context } ) {
 								{ __( 'Online', 'blockendar' ) }
 							</span>
 							{ stream && (
-								<a className="blockendar-event-venue__stream" href={ stream }>
+								<a
+									className="blockendar-event-venue__stream"
+									href={ stream }
+								>
 									{ __( 'Join stream', 'blockendar' ) }
 								</a>
 							) }
 						</>
 					) : (
-						showAddress && addressStr && (
+						showAddress &&
+						addressStr && (
 							<address className="blockendar-event-venue__address">
 								{ addressStr }
 							</address>

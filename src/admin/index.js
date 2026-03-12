@@ -1,4 +1,4 @@
-import { createRoot }  from '@wordpress/element';
+import { createRoot } from '@wordpress/element';
 import { SettingsApp } from './SettingsApp';
 import './style.css';
 

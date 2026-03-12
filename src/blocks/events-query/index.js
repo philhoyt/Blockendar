@@ -3,10 +3,10 @@
  * each result using the editable inner block template.
  */
 import { registerBlockType } from '@wordpress/blocks';
-import { InnerBlocks }      from '@wordpress/block-editor';
-import { Edit }             from './edit';
+import { InnerBlocks } from '@wordpress/block-editor';
+import { Edit } from './edit';
 import './style.css';
-import metadata             from './block.json';
+import metadata from './block.json';
 
 registerBlockType( metadata.name, {
 	edit: Edit,

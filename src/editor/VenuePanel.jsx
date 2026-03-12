@@ -4,12 +4,14 @@
  * Uses the event_venue taxonomy — shows a searchable term selector
  * with inline new-venue creation (name + address fields).
  */
-import { PluginDocumentSettingPanel } from '@wordpress/editor';
-import { useSelect, useDispatch }     from '@wordpress/data';
-import { store as editorStore }       from '@wordpress/editor';
-import { store as coreStore }         from '@wordpress/core-data';
-import { useState }                   from '@wordpress/element';
-import apiFetch                       from '@wordpress/api-fetch';
+import {
+	PluginDocumentSettingPanel,
+	store as editorStore,
+} from '@wordpress/editor';
+import { useSelect, useDispatch } from '@wordpress/data';
+import { store as coreStore } from '@wordpress/core-data';
+import { useState } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import {
 	ComboboxControl,
 	TextControl,
@@ -21,16 +23,22 @@ import { __ } from '@wordpress/i18n';
 const TAXONOMY = 'event_venue';
 
 export function VenuePanel() {
-	const { editPost }   = useDispatch( editorStore );
+	const { editPost } = useDispatch( editorStore );
 	const { saveEntityRecord } = useDispatch( coreStore );
 
 	const [ showCreate, setShowCreate ] = useState( false );
-	const [ newVenue, setNewVenue ]     = useState( { name: '', address: '', city: '', state: '' } );
-	const [ saving, setSaving ]         = useState( false );
+	const [ newVenue, setNewVenue ] = useState( {
+		name: '',
+		address: '',
+		city: '',
+		state: '',
+	} );
+	const [ saving, setSaving ] = useState( false );
 
 	// Current post's venue term IDs.
 	const venueTermIds = useSelect(
-		( select ) => select( editorStore ).getEditedPostAttribute( TAXONOMY ) ?? [],
+		( select ) =>
+			select( editorStore ).getEditedPostAttribute( TAXONOMY ) ?? [],
 		[]
 	);
 
@@ -56,7 +64,9 @@ export function VenuePanel() {
 	};
 
 	const handleCreate = async () => {
-		if ( ! newVenue.name.trim() ) return;
+		if ( ! newVenue.name.trim() ) {
+			return;
+		}
 		setSaving( true );
 
 		try {
@@ -67,13 +77,13 @@ export function VenuePanel() {
 			// Save venue meta via REST.
 			if ( term?.id ) {
 				await apiFetch( {
-					path:   `/wp/v2/${ TAXONOMY }/${ term.id }`,
+					path: `/wp/v2/${ TAXONOMY }/${ term.id }`,
 					method: 'POST',
-					data:   {
+					data: {
 						meta: {
 							blockendar_venue_address: newVenue.address,
-							blockendar_venue_city:    newVenue.city,
-							blockendar_venue_state:   newVenue.state,
+							blockendar_venue_city: newVenue.city,
+							blockendar_venue_state: newVenue.state,
 						},
 					},
 				} );
@@ -120,25 +130,36 @@ export function VenuePanel() {
 						<TextControl
 							label={ __( 'Venue name', 'blockendar' ) }
 							value={ newVenue.name }
-							onChange={ ( val ) => setNewVenue( ( p ) => ( { ...p, name: val } ) ) }
+							onChange={ ( val ) =>
+								setNewVenue( ( p ) => ( { ...p, name: val } ) )
+							}
 							__nextHasNoMarginBottom
 						/>
 						<TextControl
 							label={ __( 'Address', 'blockendar' ) }
 							value={ newVenue.address }
-							onChange={ ( val ) => setNewVenue( ( p ) => ( { ...p, address: val } ) ) }
+							onChange={ ( val ) =>
+								setNewVenue( ( p ) => ( {
+									...p,
+									address: val,
+								} ) )
+							}
 							__nextHasNoMarginBottom
 						/>
 						<TextControl
 							label={ __( 'City', 'blockendar' ) }
 							value={ newVenue.city }
-							onChange={ ( val ) => setNewVenue( ( p ) => ( { ...p, city: val } ) ) }
+							onChange={ ( val ) =>
+								setNewVenue( ( p ) => ( { ...p, city: val } ) )
+							}
 							__nextHasNoMarginBottom
 						/>
 						<TextControl
 							label={ __( 'State / Province', 'blockendar' ) }
 							value={ newVenue.state }
-							onChange={ ( val ) => setNewVenue( ( p ) => ( { ...p, state: val } ) ) }
+							onChange={ ( val ) =>
+								setNewVenue( ( p ) => ( { ...p, state: val } ) )
+							}
 							__nextHasNoMarginBottom
 						/>
 

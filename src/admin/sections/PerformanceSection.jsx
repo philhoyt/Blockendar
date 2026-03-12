@@ -1,5 +1,5 @@
 import { useState, useEffect } from '@wordpress/element';
-import apiFetch                from '@wordpress/api-fetch';
+import apiFetch from '@wordpress/api-fetch';
 import {
 	Button,
 	Notice,
@@ -10,9 +10,9 @@ import { __ } from '@wordpress/i18n';
 const { statsUrl, rebuildUrl } = window.blockendarSettings ?? {};
 
 export function PerformanceSection() {
-	const [ stats,     setStats ]     = useState( null );
+	const [ stats, setStats ] = useState( null );
 	const [ rebuilding, setRebuilding ] = useState( false );
-	const [ notice,    setNotice ]    = useState( null );
+	const [ notice, setNotice ] = useState( null );
 
 	const loadStats = () => {
 		apiFetch( { url: statsUrl } )
@@ -27,18 +27,25 @@ export function PerformanceSection() {
 		setNotice( null );
 
 		try {
-			const result = await apiFetch( { url: rebuildUrl, method: 'POST' } );
+			const result = await apiFetch( {
+				url: rebuildUrl,
+				method: 'POST',
+			} );
 			setNotice( {
 				type: 'success',
-				message: __(
-					`Index rebuilt. ${ result.rebuilt } events indexed, ${ result.skipped } skipped.`,
-					'blockendar'
-				),
+				message:
+					result.rebuilt +
+					' ' +
+					__( 'events indexed,', 'blockendar' ) +
+					' ' +
+					result.skipped +
+					' ' +
+					__( 'skipped.', 'blockendar' ),
 			} );
 			loadStats();
 		} catch ( e ) {
 			setNotice( {
-				type:    'error',
+				type: 'error',
 				message: e?.message ?? __( 'Rebuild failed.', 'blockendar' ),
 			} );
 		} finally {
@@ -69,7 +76,10 @@ export function PerformanceSection() {
 						</tr>
 						<tr>
 							<th>{ __( 'Last full rebuild', 'blockendar' ) }</th>
-							<td>{ stats.last_rebuild ?? __( 'Never', 'blockendar' ) }</td>
+							<td>
+								{ stats.last_rebuild ??
+									__( 'Never', 'blockendar' ) }
+							</td>
 						</tr>
 						<tr>
 							<th>{ __( 'Database version', 'blockendar' ) }</th>
@@ -95,7 +105,10 @@ export function PerformanceSection() {
 						: __( 'Rebuild Event Index', 'blockendar' ) }
 				</Button>
 				<p className="description">
-					{ __( 'Clears and regenerates the event occurrence index from all published events. Use after bulk imports or plugin upgrades.', 'blockendar' ) }
+					{ __(
+						'Clears and regenerates the event occurrence index from all published events. Use after bulk imports or plugin upgrades.',
+						'blockendar'
+					) }
 				</p>
 			</div>
 		</VStack>

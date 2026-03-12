@@ -6,12 +6,12 @@
  */
 import { registerPlugin } from '@wordpress/plugins';
 import './editor.css';
-import { DateTimePanel }     from './DateTimePanel';
-import { RecurrencePanel }   from './RecurrencePanel';
+import { DateTimePanel } from './DateTimePanel';
+import { RecurrencePanel } from './RecurrencePanel';
 import { EventDetailsPanel } from './EventDetailsPanel';
-import { VenuePanel }        from './VenuePanel';
+import { VenuePanel } from './VenuePanel';
 
-registerPlugin( 'blockendar-datetime',     { render: DateTimePanel } );
-registerPlugin( 'blockendar-recurrence',   { render: RecurrencePanel } );
-registerPlugin( 'blockendar-event-details',{ render: EventDetailsPanel } );
-registerPlugin( 'blockendar-venue',        { render: VenuePanel } );
+registerPlugin( 'blockendar-datetime', { render: DateTimePanel } );
+registerPlugin( 'blockendar-recurrence', { render: RecurrencePanel } );
+registerPlugin( 'blockendar-event-details', { render: EventDetailsPanel } );
+registerPlugin( 'blockendar-venue', { render: VenuePanel } );
