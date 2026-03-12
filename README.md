@@ -58,6 +58,16 @@ npm run plugin-zip   # Build distributable zip
 
 ## Changelog
 
+### 0.9.1
+- Recurrence fields merged into the Date & Time editor panel
+- Removed custom Venue editor panel — uses native taxonomy panel; venue details managed via term editor
+- Added ABSPATH guard to all PHP files
+- Simplified plugin URL constants — replaced symlink-aware IIFE with direct `plugins_url()` calls
+- Fixed stale `editorStyle` and `interactivity` flags in `calendar-view` and `event-list` block.json
+- Plugin zip now correctly includes the `templates/` directory
+- Added Git Updater headers for automatic update notifications via tagged GitHub releases
+- Added `languages/` directory; bumped Tested up to: 6.9
+
 ### 0.9.0
 - Initial public release candidate
 

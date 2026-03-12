@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 0.9.0
+Stable tag: 0.9.1
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -66,6 +66,18 @@ Each site in a multisite network gets its own database tables. The plugin has no
 
 == Changelog ==
 
+= 0.9.1 =
+* Recurrence fields merged into the Date & Time editor panel.
+* Removed custom Venue editor panel — venue selection uses the native taxonomy panel; venue details are managed via the term editor.
+* Added ABSPATH guard to all PHP files.
+* Simplified plugin URL constants — replaced symlink-aware IIFE with direct `plugins_url()` calls.
+* Fixed stale `editorStyle` and `interactivity` flags in `calendar-view` and `event-list` block.json files.
+* Plugin zip now correctly includes the `templates/` directory.
+* Added Git Updater headers for automatic update notifications via tagged GitHub releases.
+* Added `languages/` directory to satisfy `Domain Path` plugin header.
+* Updated block count in readme to reflect current 11 blocks.
+* Bumped Tested up to: 6.9.
+
 = 0.9.0 =
 * Initial public release candidate.
 * Block-native event editor with date/time, recurrence, venue, cost, and status panels.
@@ -79,6 +91,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 0.9.1 =
+No upgrade steps required.
 
 = 0.9.0 =
 Initial public release candidate. No upgrade steps required.
