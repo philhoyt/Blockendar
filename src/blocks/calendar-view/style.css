@@ -4,12 +4,37 @@
 	========================================================================== */
 
 /* --------------------------------------------------------------------------
-	Base — typography and subtle border inherit from the theme
+	CSS custom properties — override these to customise the calendar
 	-------------------------------------------------------------------------- */
 
 .wp-block-blockendar-calendar-view {
+	--blockendar-cal-event-title-size: 0.8em;
+	--blockendar-cal-event-time-size:  0.6em;
+	--blockendar-cal-header-size:      0.8rem;
+	--blockendar-cal-toolbar-size:     0.875rem;
+	--blockendar-cal-event-radius:     1em;
+	--blockendar-cal-event-indent:     0.5em;
+
+	/* Toolbar button palette — neutral grays that suit any theme */
+	--blockendar-cal-btn-bg:           transparent;
+	--blockendar-cal-btn-border:       #949494;
+	--blockendar-cal-btn-color:        #1d2327;
+	--blockendar-cal-btn-hover-bg:     #f0f0f0;
+	--blockendar-cal-btn-hover-border: #646970;
+	--blockendar-cal-btn-active-bg:    #e2e4e7;
+	--blockendar-cal-btn-radius:       3px;
+
+	/* FullCalendar internals */
+	--fc-button-bg-color:           var(--blockendar-cal-btn-bg);
+	--fc-button-border-color:       var(--blockendar-cal-btn-border);
+	--fc-button-text-color:         var(--blockendar-cal-btn-color);
+	--fc-button-hover-bg-color:     var(--blockendar-cal-btn-hover-bg);
+	--fc-button-hover-border-color: var(--blockendar-cal-btn-hover-border);
+	--fc-button-active-bg-color:    var(--blockendar-cal-btn-active-bg);
+	--fc-button-active-border-color: var(--blockendar-cal-btn-hover-border);
 	--fc-border-color:              color-mix(in srgb, currentColor 12%, transparent);
 	--fc-list-event-hover-bg-color: color-mix(in srgb, currentColor 5%, transparent);
+
 	font-family: inherit;
 }
 
@@ -18,9 +43,15 @@
 	-------------------------------------------------------------------------- */
 
 .wp-block-blockendar-calendar-view .fc-button-primary {
-	font-family: inherit;
-	font-size:   0.875rem;
-	box-shadow:  none;
+	font-family:   inherit;
+	font-size:     var(--blockendar-cal-toolbar-size);
+	border-radius: var(--blockendar-cal-btn-radius);
+	box-shadow:    none;
+	text-shadow:   none;
+}
+
+.wp-block-blockendar-calendar-view .fc-button-primary:focus {
+	box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--blockendar-cal-btn-border);
 }
 
 .wp-block-blockendar-calendar-view .fc-button-group > .fc-button {
@@ -32,7 +63,7 @@
 /* Column headers (Mon, Tue …) */
 .wp-block-blockendar-calendar-view .fc-col-header-cell-cushion {
 	text-decoration: none;
-	font-size:       0.8rem;
+	font-size:       var(--blockendar-cal-header-size);
 	text-transform:  uppercase;
 	letter-spacing:  0.05em;
 }
@@ -42,6 +73,7 @@
 	-------------------------------------------------------------------------- */
 
 .wp-block-blockendar-calendar-view .fc-daygrid-day-top {
+	flex-direction: row;
 	padding: 6px 8px 2px;
 }
 
@@ -51,6 +83,7 @@
 
 .wp-block-blockendar-calendar-view .fc-daygrid-day-number {
 	text-decoration: none;
+	font-weight:     bold;
 }
 
 /* --------------------------------------------------------------------------
@@ -71,16 +104,38 @@
 }
 
 .wp-block-blockendar-calendar-view .fc-direction-ltr .fc-daygrid-event .fc-event-time {
-	font-size:   0.8rem;
+	font-size:   var(--blockendar-cal-event-time-size);
 	line-height: 1.2;
 }
 
 .wp-block-blockendar-calendar-view .fc-event-title {
-	font-size:       1rem;
+	font-size:       var(--blockendar-cal-event-title-size);
 	line-height:     1.2;
 	font-weight:     normal;
 	text-wrap:       auto;
 	text-wrap-style: balance;
+}
+
+/* Multi-day / block event border-radius — respect segment position */
+.wp-block-blockendar-calendar-view .fc-daygrid-block-event {
+	border-radius: var(--blockendar-cal-event-radius);
+}
+
+.wp-block-blockendar-calendar-view .fc-daygrid-block-event.fc-event-start:not(.fc-event-end) {
+	border-radius: var(--blockendar-cal-event-radius) 0 0 var(--blockendar-cal-event-radius);
+}
+
+.wp-block-blockendar-calendar-view .fc-daygrid-block-event.fc-event-end:not(.fc-event-start) {
+	border-radius: 0 var(--blockendar-cal-event-radius) var(--blockendar-cal-event-radius) 0;
+}
+
+.wp-block-blockendar-calendar-view .fc-daygrid-block-event:not(.fc-event-start):not(.fc-event-end) {
+	border-radius: 0;
+}
+
+/* Indent event text */
+.wp-block-blockendar-calendar-view .fc-daygrid-block-event .fc-event-main {
+	padding-left: var(--blockendar-cal-event-indent);
 }
 
 /* Hide the all-day indicator dot on desktop */
