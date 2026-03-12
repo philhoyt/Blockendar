@@ -25,6 +25,7 @@ use Blockendar\REST\IcsEndpoint;
 use Blockendar\REST\ImportController;
 use Blockendar\Blocks\BlockRegistrar;
 use Blockendar\Blocks\TemplateRegistrar;
+use Blockendar\Admin\EventColumns;
 use Blockendar\Admin\SettingsPage;
 
 /**
@@ -70,6 +71,11 @@ class Plugin {
 
 		// Admin settings page.
 		( new SettingsPage() )->register();
+
+		// Admin list table columns for events.
+		if ( is_admin() ) {
+			( new EventColumns() )->register();
+		}
 
 		// Register block category.
 		add_filter( 'block_categories_all', [ $this, 'register_block_category' ] );
