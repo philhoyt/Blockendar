@@ -22,12 +22,27 @@
 	color: color-mix(in srgb, currentColor 50%, transparent);
 }
 
-/* Editor label */
-.blockendar-events-query__template-label {
-	font-size:    11px;
-	font-weight:  600;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	color:        #757575;
-	margin-bottom: 8px;
+/* Editor-only ghost placeholders for grid preview */
+.block-editor-block-list__layout .blockendar-events-query__ghost {
+	display:        flex;
+	flex-direction: column;
+	gap:            0.5em;
+	padding:        0.25em 0;
+	pointer-events: none;
+	opacity:        0.35;
+}
+
+.blockendar-events-query__ghost-line {
+	background: currentColor;
+	border-radius: 3px;
+}
+
+.blockendar-events-query__ghost-line--title {
+	height: 1em;
+	width:  75%;
+}
+
+.blockendar-events-query__ghost-line--meta {
+	height: 0.75em;
+	width:  55%;
 }

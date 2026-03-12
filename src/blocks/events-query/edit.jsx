@@ -1,7 +1,7 @@
 /**
  * Events Query block — editor component.
  */
-import { InnerBlocks, InspectorControls, useBlockProps, BlockControls } from '@wordpress/block-editor';
+import { InnerBlocks, InspectorControls, useBlockProps, BlockControls, BlockContextProvider } from '@wordpress/block-editor';
 import {
 	PanelBody,
 	RangeControl,
@@ -43,6 +43,15 @@ export function Edit( { attributes, setAttributes } ) {
 			'event_type',
 			{ per_page: -1, _fields: [ 'id', 'name' ] }
 		),
+		[]
+	);
+
+	const firstPostId = useSelect(
+		( select ) => select( coreStore ).getEntityRecords(
+			'postType',
+			'blockendar_event',
+			{ per_page: 1, _fields: [ 'id' ] }
+		)?.[ 0 ]?.id ?? 0,
 		[]
 	);
 
@@ -134,13 +143,23 @@ export function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className="blockendar-events-query__template-label">
-					{ __( 'Event template — repeats for each result', 'blockendar' ) }
-				</div>
-				<InnerBlocks
-					template={ TEMPLATE }
-					templateInsertUpdatesSelection={ false }
-				/>
+				<BlockContextProvider value={ { postId: firstPostId, postType: 'blockendar_event' } }>
+					<InnerBlocks
+						template={ TEMPLATE }
+						templateInsertUpdatesSelection={ false }
+					/>
+				</BlockContextProvider>
+				{ Array.from( { length: perPage - 1 } ).map( ( _, i ) => (
+					<div
+						key={ i }
+						className="blockendar-events-query__ghost"
+						aria-hidden="true"
+					>
+						<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--title" />
+						<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--meta" />
+						<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--meta" />
+					</div>
+				) ) }
 			</div>
 		</>
 	);
