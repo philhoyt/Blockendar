@@ -1,10 +1,11 @@
 # Blockendar — Claude Instructions
 
-## Before committing
+## Commits
 
-Always run the relevant checks before asking to commit:
+When creating git commits:
 
-- **PHP lint:** `npm run lint:php`
-- **JS build:** `npm run build`
-
-Fix any errors before proposing a commit.
+- **Do NOT add `Co-Authored-By: Claude` or any Claude co-author line** to commit messages
+- Always run the relevant checks before committing:
+  - **PHP lint:** `npm run lint:php`
+  - **JS build:** `npm run build`
+- Fix any errors before proposing a commit.
