@@ -107,10 +107,12 @@ class TribeImporter {
 
 		$start_raw = $meta['_EventStartDate'] ?? '';
 		$end_raw   = $meta['_EventEndDate'] ?? '';
-		$all_day   = isset( $meta['_EventAllDay'] ) && '1' === $meta['_EventAllDay'];
-		$timezone  = $meta['_EventTimezone'] ?? '';
-		$cost      = $meta['_EventCost'] ?? '';
-		$url       = $meta['_EventURL'] ?? '';
+		// TEC v5+ stores 'yes'; older versions stored '1'.
+		$all_day_raw = strtolower( trim( $meta['_EventAllDay'] ?? '' ) );
+		$all_day     = in_array( $all_day_raw, [ '1', 'yes', 'true' ], true );
+		$timezone    = $meta['_EventTimezone'] ?? '';
+		$cost        = $meta['_EventCost'] ?? '';
+		$url         = $meta['_EventURL'] ?? '';
 
 		if ( ! $start_raw ) {
 			return [
@@ -120,25 +122,38 @@ class TribeImporter {
 			];
 		}
 
-		$start_date = substr( $start_raw, 0, 10 );
-		$end_date   = $end_raw ? substr( $end_raw, 0, 10 ) : $start_date;
+		// Parse via DateTime so the format (space or T separator) doesn't matter.
+		$start_dt = date_create( $start_raw );
+		$end_dt   = $end_raw ? date_create( $end_raw ) : null;
 
-		// TEC stores 23:59:59 as an all-day sentinel — treat as no time.
-		$raw_start_time = $start_raw ? substr( $start_raw, 11, 8 ) : '';
-		$raw_end_time   = $end_raw ? substr( $end_raw, 11, 8 ) : '';
+		if ( ! $start_dt ) {
+			return [
+				'title'   => $title,
+				'status'  => 'error',
+				'message' => "Could not parse start date \"{$start_raw}\": {$title}",
+			];
+		}
 
-		$start_time = ( $all_day || '00:00:00' === $raw_start_time ) ? '' : $raw_start_time;
-		$end_time   = ( $all_day || '23:59:59' === $raw_end_time ) ? '' : $raw_end_time;
+		$start_date = $start_dt->format( 'Y-m-d' );
+		$end_date   = $end_dt ? $end_dt->format( 'Y-m-d' ) : $start_date;
 
-		// Duplicate check by slug.
+		// For all-day events don't store a time. For timed events keep whatever TEC stored,
+		// except strip the 23:59:59 TEC all-day sentinel on the end time.
+		if ( $all_day ) {
+			$start_time = '';
+			$end_time   = '';
+		} else {
+			$start_time   = $start_dt->format( 'H:i' );
+			$raw_end_time = $end_dt ? $end_dt->format( 'H:i' ) : '';
+			$end_time     = ( '23:59' === $raw_end_time ) ? '' : $raw_end_time;
+		}
+
+		// Check for existing post by slug — update it rather than skip.
+		$existing_id = null;
 		if ( $slug ) {
 			$existing = get_page_by_path( $slug, OBJECT, EventPostType::POST_TYPE );
 			if ( $existing ) {
-				return [
-					'title'   => $title,
-					'status'  => 'skipped',
-					'message' => 'Already exists.',
-				];
+				$existing_id = (int) $existing->ID;
 			}
 		}
 
@@ -146,22 +161,33 @@ class TribeImporter {
 			return [
 				'title'   => $title,
 				'status'  => 'imported',
-				'message' => '(dry run)',
+				'message' => $existing_id ? '(dry run — would update)' : '(dry run)',
 			];
 		}
 
-		// Create the post.
-		$post_id = wp_insert_post(
-			[
-				'post_title'    => wp_strip_all_tags( $title ),
-				'post_name'     => $slug,
-				'post_content'  => $content,
-				'post_status'   => $post_status,
-				'post_type'     => EventPostType::POST_TYPE,
-				'post_date_gmt' => $pub_gmt ?: current_time( 'mysql', true ),
-			],
-			true
-		);
+		if ( $existing_id ) {
+			$post_id = wp_update_post(
+				[
+					'ID'           => $existing_id,
+					'post_title'   => wp_strip_all_tags( $title ),
+					'post_content' => $content,
+					'post_status'  => $post_status,
+				],
+				true
+			);
+		} else {
+			$post_id = wp_insert_post(
+				[
+					'post_title'    => wp_strip_all_tags( $title ),
+					'post_name'     => $slug,
+					'post_content'  => $content,
+					'post_status'   => $post_status,
+					'post_type'     => EventPostType::POST_TYPE,
+					'post_date_gmt' => $pub_gmt ?: current_time( 'mysql', true ),
+				],
+				true
+			);
+		}
 
 		if ( is_wp_error( $post_id ) ) {
 			return [
