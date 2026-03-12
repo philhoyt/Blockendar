@@ -61,7 +61,7 @@ export function PerformanceSection() {
 			) }
 
 			{ stats && (
-				<table className="blockendar-stats-table widefat striped">
+				<table className="blockendar-stats-table">
 					<tbody>
 						<tr>
 							<th>{ __( 'Index row count', 'blockendar' ) }</th>

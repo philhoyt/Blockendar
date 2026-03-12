@@ -106,7 +106,7 @@ class SettingsPage {
 
 		wp_enqueue_style(
 			'blockendar-settings',
-			BLOCKENDAR_URL . 'build/admin/index.css',
+			BLOCKENDAR_URL . 'build/admin/style-index.css',
 			[ 'wp-components' ],
 			$asset['version']
 		);

@@ -1,0 +1,105 @@
+/* ==========================================================================
+   Blockendar Admin Settings
+   ========================================================================== */
+
+/* Container
+   ========================================================================== */
+.blockendar-settings {
+	max-width: 800px;
+	width: 100%;
+	margin: 20px 0;
+	padding: 0 20px 0 10px;
+	box-sizing: border-box;
+}
+
+/* Heading
+   ========================================================================== */
+.blockendar-settings__heading {
+	margin-bottom: 16px;
+}
+
+/* Tabs
+   ========================================================================== */
+.blockendar-settings__tabs .components-tab-panel__tabs {
+	margin-bottom: 0;
+	border-bottom: 1px solid #e2e4e7;
+}
+
+/* Panel (card)
+   ========================================================================== */
+.blockendar-settings__panel {
+	background: #fff;
+	border: 1px solid #e2e4e7;
+	border-top: none;
+	padding: 24px;
+}
+
+.blockendar-settings__panel h2 {
+	margin: 0 0 20px;
+	padding-bottom: 16px;
+	font-size: 1.1em;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+/* Reset bottom margin on WP component wrappers inside the panel */
+.blockendar-settings__panel .components-base-control {
+	margin-bottom: 0;
+}
+
+.blockendar-settings__panel .components-base-control__help {
+	margin-top: 4px;
+	color: #757575;
+}
+
+/* Footer
+   ========================================================================== */
+.blockendar-settings__footer {
+	margin-top: 0;
+	padding: 16px 24px;
+	background: #fff;
+	border: 1px solid #e2e4e7;
+	border-top: 1px solid #f0f0f0;
+}
+
+/* Stats table
+   ========================================================================== */
+.blockendar-stats-table {
+	border-collapse: collapse;
+	font-size: 13px;
+	width: 100%;
+	margin-bottom: 0;
+}
+
+.blockendar-stats-table th,
+.blockendar-stats-table td {
+	padding: 8px 12px;
+	text-align: left;
+	border-bottom: 1px solid #f0f0f0;
+	vertical-align: top;
+}
+
+.blockendar-stats-table th {
+	font-weight: 600;
+	color: #3c434a;
+	width: 40%;
+}
+
+.blockendar-stats-table tbody tr:last-child th,
+.blockendar-stats-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.blockendar-stats-table tbody tr:hover th,
+.blockendar-stats-table tbody tr:hover td {
+	background: #f9f9f9;
+}
+
+/* Code snippets
+   ========================================================================== */
+.blockendar-settings code {
+	font-family: Consolas, Monaco, monospace;
+	font-size: 12px;
+	background: #f0f0f0;
+	padding: 1px 5px;
+	border-radius: 3px;
+}
