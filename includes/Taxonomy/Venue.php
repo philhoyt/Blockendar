@@ -47,15 +47,15 @@ class Venue {
 		];
 
 		$args = [
-			'labels'              => $labels,
-			'hierarchical'        => true,
-			'public'              => true,
-			'publicly_queryable'  => true,
-			'show_ui'             => true,
-			'show_admin_column'   => true,
-			'show_in_rest'        => true,
-			'rest_base'           => 'event-venues',
-			'rewrite'             => [
+			'labels'             => $labels,
+			'hierarchical'       => true,
+			'public'             => true,
+			'publicly_queryable' => true,
+			'show_ui'            => true,
+			'show_admin_column'  => true,
+			'show_in_rest'       => true,
+			'rest_base'          => 'event-venues',
+			'rewrite'            => [
 				'slug'       => 'events/venue',
 				'with_front' => false,
 			],

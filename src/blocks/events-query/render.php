@@ -13,14 +13,14 @@ declare( strict_types=1 );
 
 use Blockendar\DB\EventIndex;
 
-$type_ids      = array_filter( array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) ) );
-$per_page      = max( 1, min( 50, (int) ( $attributes['perPage'] ?? 10 ) ) );
-$show_past     = ! empty( $attributes['showPast'] );
-$order         = 'DESC' === ( $attributes['order'] ?? 'ASC' ) ? 'DESC' : 'ASC';
-$layout        = $attributes['displayLayout'] ?? [ 'type' => 'list' ];
-$is_grid       = 'grid' === ( $layout['type'] ?? 'list' );
-$column_count  = max( 2, min( 6, (int) ( $layout['columnCount'] ?? 3 ) ) );
-$now           = gmdate( 'Y-m-d H:i:s' );
+$type_ids     = array_filter( array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) ) );
+$per_page     = max( 1, min( 50, (int) ( $attributes['perPage'] ?? 10 ) ) );
+$show_past    = ! empty( $attributes['showPast'] );
+$order        = 'DESC' === ( $attributes['order'] ?? 'ASC' ) ? 'DESC' : 'ASC';
+$layout       = $attributes['displayLayout'] ?? [ 'type' => 'list' ];
+$is_grid      = 'grid' === ( $layout['type'] ?? 'list' );
+$column_count = max( 2, min( 6, (int) ( $layout['columnCount'] ?? 3 ) ) );
+$now          = gmdate( 'Y-m-d H:i:s' );
 
 if ( $show_past ) {
 	$start = '2000-01-01 00:00:00';

@@ -98,7 +98,7 @@ class SettingsPage {
 
 		wp_enqueue_script(
 			'blockendar-settings',
-			BLOCKENDAR_URL . 'build/admin/index.js',
+			plugins_url( 'build/admin/index.js', BLOCKENDAR_FILE ),
 			$asset['dependencies'],
 			$asset['version'],
 			true
@@ -106,7 +106,7 @@ class SettingsPage {
 
 		wp_enqueue_style(
 			'blockendar-settings',
-			BLOCKENDAR_URL . 'build/admin/style-index.css',
+			plugins_url( 'build/admin/style-index.css', BLOCKENDAR_FILE ),
 			[ 'wp-components' ],
 			$asset['version']
 		);

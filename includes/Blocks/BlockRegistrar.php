@@ -60,7 +60,7 @@ class BlockRegistrar {
 
 		wp_enqueue_script(
 			'blockendar-editor-panels',
-			BLOCKENDAR_URL . 'build/editor/index.js',
+			plugins_url( 'build/editor/index.js', BLOCKENDAR_FILE ),
 			$asset['dependencies'],
 			$asset['version'],
 			true
@@ -83,7 +83,7 @@ class BlockRegistrar {
 
 		wp_enqueue_style(
 			'blockendar-editor-panels',
-			BLOCKENDAR_URL . 'build/editor/index.css',
+			plugins_url( 'build/editor/index.css', BLOCKENDAR_FILE ),
 			[],
 			$asset['version']
 		);

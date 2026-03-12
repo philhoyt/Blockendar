@@ -4,6 +4,15 @@
   "description": "Block-native WordPress events plugin",
   "license": "GPL-2.0-or-later",
   "private": true,
+  "files": [
+    "build",
+    "includes",
+    "templates",
+    "blockendar.php",
+    "uninstall.php",
+    "readme.txt",
+    "README.md"
+  ],
   "scripts": {
     "build": "wp-scripts build",
     "start": "wp-scripts start",

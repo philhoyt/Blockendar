@@ -11,8 +11,7 @@
 	"textdomain": "blockendar",
 	"supports": {
 		"html": false,
-		"align": [ "wide", "full" ],
-		"interactivity": true
+		"align": [ "wide", "full" ]
 	},
 	"attributes": {
 		"venueIds":      { "type": "array", "default": [], "items": { "type": "integer" } },
@@ -29,6 +28,5 @@
 	"render":       "file:./render.php",
 	"editorScript": "file:./index.js",
 	"viewScript":   "file:./view.js",
-	"style":        "file:./style-index.css",
-	"editorStyle":  "file:./index.css"
+	"style":        "file:./style-index.css"
 }

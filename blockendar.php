@@ -26,8 +26,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'BLOCKENDAR_VERSION', '0.9.0' );
 define( 'BLOCKENDAR_FILE', __FILE__ );
 define( 'BLOCKENDAR_DIR', plugin_dir_path( __FILE__ ) );
-define( 'BLOCKENDAR_URL', plugin_dir_url( __FILE__ ) );
-define( 'BLOCKENDAR_BASENAME', plugin_basename( __FILE__ ) );
 
 // Autoloader.
 spl_autoload_register(

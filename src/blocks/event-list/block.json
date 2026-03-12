@@ -28,6 +28,5 @@
 	},
 	"render": "file:./render.php",
 	"editorScript": "file:./index.js",
-	"style":        "file:./style-index.css",
-	"editorStyle":  "file:./index.css"
+	"style":        "file:./style-index.css"
 }
