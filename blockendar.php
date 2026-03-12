@@ -48,8 +48,25 @@ spl_autoload_register(
 );
 
 // Activation / deactivation hooks — registered before the plugin loads.
-register_activation_hook( __FILE__, [ 'Blockendar\\DB\\Schema', 'create_tables' ] );
-register_deactivation_hook( __FILE__, [ 'Blockendar\\Recurrence\\Cron', 'unschedule' ] );
+register_activation_hook(
+	__FILE__,
+	function (): void {
+		Blockendar\DB\Schema::create_tables();
+		// Register CPT and taxonomies so their rewrite rules exist before flush.
+		( new Blockendar\CPT\EventPostType() )->register_post_type();
+		( new Blockendar\Taxonomy\EventType() )->register_taxonomy();
+		( new Blockendar\Taxonomy\EventTag() )->register_taxonomy();
+		( new Blockendar\Taxonomy\Venue() )->register_taxonomy();
+		flush_rewrite_rules();
+	}
+);
+register_deactivation_hook(
+	__FILE__,
+	function (): void {
+		Blockendar\Recurrence\Cron::unschedule();
+		flush_rewrite_rules();
+	}
+);
 
 // Boot the plugin.
 add_action(

@@ -25,6 +25,7 @@ class Venue {
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_taxonomy' ] );
+		add_action( 'init', [ $this, 'add_rewrite_rules' ], 20 );
 	}
 
 	/**
@@ -61,5 +62,21 @@ class Venue {
 		];
 
 		register_taxonomy( self::TAXONOMY, EventPostType::POST_TYPE, $args );
+	}
+
+	/**
+	 * Explicitly register top-priority rewrite rules for the events/venue/* path.
+	 */
+	public function add_rewrite_rules(): void {
+		add_rewrite_rule(
+			'^events/venue/([^/]+)/page/([0-9]{1,})/?$',
+			'index.php?event_venue=$matches[1]&paged=$matches[2]',
+			'top'
+		);
+		add_rewrite_rule(
+			'^events/venue/([^/]+)/?$',
+			'index.php?event_venue=$matches[1]',
+			'top'
+		);
 	}
 }

@@ -24,6 +24,7 @@ class EventType {
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_taxonomy' ] );
+		add_action( 'init', [ $this, 'add_rewrite_rules' ], 20 );
 	}
 
 	/**
@@ -59,5 +60,25 @@ class EventType {
 		];
 
 		register_taxonomy( self::TAXONOMY, EventPostType::POST_TYPE, $args );
+	}
+
+	/**
+	 * Explicitly register top-priority rewrite rules for the events/type/* path.
+	 *
+	 * The taxonomy slug contains a slash which can lose the race against the
+	 * CPT's own rewrite rules. Adding with 'top' priority guarantees they match
+	 * first, before WordPress evaluates the CPT single-post rules.
+	 */
+	public function add_rewrite_rules(): void {
+		add_rewrite_rule(
+			'^events/type/([^/]+)/page/([0-9]{1,})/?$',
+			'index.php?event_type=$matches[1]&paged=$matches[2]',
+			'top'
+		);
+		add_rewrite_rule(
+			'^events/type/([^/]+)/?$',
+			'index.php?event_type=$matches[1]',
+			'top'
+		);
 	}
 }
