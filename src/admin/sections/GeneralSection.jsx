@@ -2,8 +2,12 @@ import {
 	TextControl,
 	RadioControl,
 	SelectControl,
+	Button,
+	ExternalLink,
 	__experimentalVStack as VStack,
+	__experimentalHStack as HStack,
 } from '@wordpress/components';
+import { dateI18n } from '@wordpress/date';
 import { __ } from '@wordpress/i18n';
 
 const TIMEZONE_OPTIONS = [
@@ -22,7 +26,7 @@ const TIME_FORMAT_OPTIONS = [
 	},
 ];
 
-export function GeneralSection( { settings, update } ) {
+export function GeneralSection( { settings, update, defaults } ) {
 	// Detect current mode from whatever format string is stored.
 	const stored      = settings.time_format ?? 'g:i a';
 	const timeFormatValue = ( stored.includes( 'g' ) || stored.includes( 'h' ) )
@@ -33,18 +37,32 @@ export function GeneralSection( { settings, update } ) {
 		<VStack spacing={ 5 }>
 			<h2>{ __( 'General', 'blockendar' ) }</h2>
 
-			<TextControl
-				label={ __( 'Date format', 'blockendar' ) }
-				help={
-					<>
-						{ __( 'PHP date format string. Preview: ', 'blockendar' ) }
-						<code>{ new Date().toLocaleDateString() }</code>
-					</>
-				}
-				value={ settings.date_format ?? '' }
-				onChange={ ( val ) => update( { date_format: val } ) }
-				__nextHasNoMarginBottom
-			/>
+			<div>
+				<HStack alignment="flex-end" spacing={ 2 }>
+					<div style={ { flex: 1 } }><TextControl
+						label={ __( 'Date format', 'blockendar' ) }
+						help={
+							<>
+								{ __( 'Preview: ', 'blockendar' ) }
+								<code>{ dateI18n( settings.date_format || 'F j, Y', new Date() ) }</code>
+								{ ' · ' }
+								<ExternalLink href="https://www.php.net/manual/en/datetime.format.php">
+									{ __( 'PHP date format reference', 'blockendar' ) }
+								</ExternalLink>
+							</>
+						}
+						value={ settings.date_format ?? '' }
+						onChange={ ( val ) => update( { date_format: val } ) }
+						__nextHasNoMarginBottom
+					/></div>
+					<Button
+						variant="tertiary"
+						onClick={ () => update( { date_format: defaults.date_format ?? 'F j, Y' } ) }
+					>
+						{ __( 'Reset', 'blockendar' ) }
+					</Button>
+				</HStack>
+			</div>
 
 			<RadioControl
 				label={ __( 'Time format', 'blockendar' ) }
@@ -57,7 +75,7 @@ export function GeneralSection( { settings, update } ) {
 			<SelectControl
 				label={ __( 'Timezone display', 'blockendar' ) }
 				help={ __( 'Controls how event times are displayed to visitors.', 'blockendar' ) }
-				value={ settings.timezone_mode ?? 'event' }
+				value={ settings.timezone_mode ?? 'site' }
 				options={ TIMEZONE_OPTIONS }
 				onChange={ ( val ) => update( { timezone_mode: val } ) }
 				__nextHasNoMarginBottom

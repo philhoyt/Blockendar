@@ -72,6 +72,8 @@ foreach ( $events as $event ) {
 if ( empty( $output ) ) {
 	return;
 }
+$blockendar_settings = (array) get_option( 'blockendar_settings', [] );
+$date_format         = $blockendar_settings['date_format'] ?? get_option( 'date_format', 'F j, Y' );
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-related-events' ] ); ?>>
 	<h3 class="blockendar-related-events__heading"><?php esc_html_e( 'Related Events', 'blockendar' ); ?></h3>
@@ -79,7 +81,7 @@ if ( empty( $output ) ) {
 		<?php
 		foreach ( $output as $event ) :
 			$pid  = (int) $event->post_id;
-			$date = date_i18n( get_option( 'date_format' ), strtotime( $event->start_date ) );
+			$date = date_i18n( $date_format, strtotime( $event->start_date ) );
 			?>
 			<li class="blockendar-related-events__item">
 				<a href="<?php echo esc_url( get_permalink( $pid ) ); ?>">

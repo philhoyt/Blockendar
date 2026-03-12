@@ -80,7 +80,7 @@ export function SettingsApp() {
 		}
 	};
 
-	const sectionProps = { settings, update };
+	const sectionProps = { settings, update, defaults: defaults ?? {} };
 
 	return (
 		<div className="blockendar-settings wrap">

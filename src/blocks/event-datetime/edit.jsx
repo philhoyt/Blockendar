@@ -137,6 +137,9 @@ export function Edit( { attributes, setAttributes, context } ) {
 				) }
 
 				{ /* All day */ }
+				{ activeAllDay && showStartDate && (
+					<span className="blockendar-event-datetime__sep" aria-hidden="true"> – </span>
+				) }
 				{ activeAllDay && (
 					<span className="blockendar-event-datetime__allday">
 						{ __( 'All day', 'blockendar' ) }

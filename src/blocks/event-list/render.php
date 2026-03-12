@@ -61,8 +61,12 @@ if ( empty( $events ) ) {
 $grouped = [];
 
 foreach ( $events as $event ) {
+	$blockendar_settings = (array) get_option( 'blockendar_settings', [] );
+	$date_format         = $blockendar_settings['date_format'] ?? get_option( 'date_format', 'F j, Y' );
+	$time_format         = $blockendar_settings['time_format'] ?? get_option( 'time_format', 'g:i a' );
+
 	$key = match ( $group_by ) {
-		'date'  => date_i18n( get_option( 'date_format' ), strtotime( $event->start_date ) ),
+		'date'  => date_i18n( $date_format, strtotime( $event->start_date ) ),
 		'month' => date_i18n( 'F Y', strtotime( $event->start_date ) ),
 		'type'  => ! empty( $event->type_term_ids )
 			? ( get_term( (int) json_decode( $event->type_term_ids, true )[0], 'event_type' )?->name ?? __( 'Uncategorized', 'blockendar' ) )
@@ -111,8 +115,8 @@ $block_classes = implode(
 				}
 
 				$start_formatted = $event->all_day
-					? date_i18n( get_option( 'date_format' ), strtotime( $event->start_date ) )
-					: date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $event->start_datetime ) );
+					? date_i18n( $date_format, strtotime( $event->start_date ) )
+					: date_i18n( $date_format . ' ' . $time_format, strtotime( $event->start_datetime ) );
 				?>
 			<li class="blockendar-event-list__item blockendar-event-list__item--<?php echo esc_attr( $status ); ?>">
 				<a href="<?php echo esc_url( $permalink ); ?>" class="blockendar-event-list__link">

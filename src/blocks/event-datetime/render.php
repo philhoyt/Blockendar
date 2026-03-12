@@ -24,8 +24,9 @@ if ( ! $start_date ) {
 	return;
 }
 
-$date_format = get_option( 'date_format' );
-$time_format = get_option( 'time_format' );
+$blockendar_settings = (array) get_option( 'blockendar_settings', [] );
+$date_format         = $blockendar_settings['date_format'] ?? get_option( 'date_format', 'F j, Y' );
+$time_format         = $blockendar_settings['time_format'] ?? get_option( 'time_format', 'g:i a' );
 
 $fmt_date = fn( string $date ) => date_i18n( $date_format, strtotime( $date ) );
 $fmt_time = fn( string $time, string $date ) => date_i18n( $time_format, strtotime( "$date $time" ) );
@@ -64,6 +65,10 @@ $same_day = $start_date === $end_date;
 
 	<?php if ( $show_tz && ! $all_day ) : ?>
 		<span class="blockendar-event-datetime__tz">(<?php echo esc_html( $tz_str ); ?>)</span>
+	<?php endif; ?>
+
+	<?php if ( $all_day && $show_start_date ) : ?>
+		<span class="blockendar-event-datetime__sep" aria-hidden="true"> – </span>
 	<?php endif; ?>
 
 	<?php if ( $all_day ) : ?>

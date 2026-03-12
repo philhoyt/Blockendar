@@ -221,7 +221,7 @@ class SettingsPage {
 		return [
 			'date_format'            => get_option( 'date_format', 'F j, Y' ),
 			'time_format'            => get_option( 'time_format', 'g:i a' ),
-			'timezone_mode'          => 'event',
+			'timezone_mode'          => 'site',
 			'calendar_default_view'  => 'dayGridMonth',
 			'calendar_first_day'     => 0,
 			'calendar_slot_duration' => '00:30:00',

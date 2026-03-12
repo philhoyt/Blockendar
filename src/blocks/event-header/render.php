@@ -13,12 +13,16 @@ $all_day     = (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
 $start_time  = get_post_meta( $post_id, 'blockendar_start_time', true );
 $status      = get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled';
 
+$blockendar_settings = (array) get_option( 'blockendar_settings', [] );
+$date_format         = $blockendar_settings['date_format'] ?? get_option( 'date_format', 'F j, Y' );
+$time_format         = $blockendar_settings['time_format'] ?? get_option( 'time_format', 'g:i a' );
+
 $date_formatted = $start_date
-	? date_i18n( get_option( 'date_format' ), strtotime( $start_date ) )
+	? date_i18n( $date_format, strtotime( $start_date ) )
 	: '';
 
 $time_formatted = ( ! $all_day && $start_time )
-	? date_i18n( get_option( 'time_format' ), strtotime( "2000-01-01 $start_time" ) )
+	? date_i18n( $time_format, strtotime( "2000-01-01 $start_time" ) )
 	: '';
 ?>
 <header <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-header' ] ); ?>>
