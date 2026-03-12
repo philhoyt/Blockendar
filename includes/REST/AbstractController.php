@@ -88,14 +88,14 @@ abstract class AbstractController {
 	/**
 	 * Check if the current user can edit posts (for write endpoints).
 	 */
-	protected function can_edit(): bool {
+	public function can_edit(): bool {
 		return current_user_can( 'edit_posts' );
 	}
 
 	/**
 	 * Check if the current user can manage options (for admin endpoints).
 	 */
-	protected function can_manage(): bool {
+	public function can_manage(): bool {
 		return current_user_can( 'manage_options' );
 	}
 

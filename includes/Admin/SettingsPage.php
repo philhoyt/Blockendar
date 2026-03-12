@@ -121,6 +121,7 @@ class SettingsPage {
 				'defaults'   => self::defaults(),
 				'statsUrl'   => esc_url_raw( rest_url( 'blockendar/v1/settings/stats' ) ),
 				'rebuildUrl' => esc_url_raw( rest_url( 'blockendar/v1/index/rebuild' ) ),
+				'importUrl'  => esc_url_raw( rest_url( 'blockendar/v1/import/tribe' ) ),
 				'version'    => BLOCKENDAR_VERSION,
 			]
 		);
