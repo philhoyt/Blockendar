@@ -8,7 +8,8 @@ A block-native WordPress events plugin.
 - **Recurring events** — Full recurrence rule support (daily, weekly, monthly, yearly) with exceptions, custom additions, and a rolling horizon cron job
 - **Calendar View block** — Interactive FullCalendar-powered calendar with day, week, and month views; exposes a valid iCal feed
 - **Event List block** — Grouped, paginated event listing with server-side rendering
-- **13 single-event blocks** — Header, date/time, venue, cost, description, categories, tags, status, countdown, map, related events, add-to-calendar, venue info
+- **Events Query block** — Flexible query block for custom event displays
+- **8 single-event blocks** — Date/time, venue, cost, status, countdown, map, related events, add-to-calendar
 - **Custom database layer** — All date range queries run against a dedicated indexed table (`{prefix}blockendar_events`)
 - **REST API** — Full read/write API under `blockendar/v1`, including iCal feed and index rebuild endpoints
 - **Venues** — Taxonomy with rich meta (address, coordinates, capacity, website) and inline venue creation in the editor

@@ -20,7 +20,8 @@ Blockendar is a fully block-native events plugin for WordPress. Every part of th
 * **Recurring events** — Full recurrence rule support (daily, weekly, monthly, yearly) with exceptions, custom additions, and a rolling horizon cron job.
 * **Calendar view block** — Interactive FullCalendar-powered calendar with day, week, and month views. Outputs valid iCal feeds.
 * **Event list block** — Grouped, paginated event listing with server-side rendering.
-* **13 single-event blocks** — Modular display blocks for every piece of event data: header, date/time, venue, cost, description, categories, tags, status, countdown, map, related events, add-to-calendar, and venue info.
+* **Events query block** — Flexible query block for custom event displays.
+* **8 single-event blocks** — Modular display blocks for event data: date/time, venue, cost, status, countdown, map, related events, and add-to-calendar.
 * **Custom database layer** — All date range queries run against a dedicated indexed table, keeping calendar queries fast regardless of post count.
 * **REST API** — Full read/write REST API under the `blockendar/v1` namespace, including iCal feed and index rebuild endpoints.
 * **Venues** — Venue taxonomy with rich meta (address, coordinates, capacity, website) and an inline venue creator in the editor.
@@ -70,7 +71,7 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * Block-native event editor with date/time, recurrence, venue, cost, and status panels.
 * Calendar View block with FullCalendar integration and iCal feed.
 * Event List block with grouped, paginated output.
-* 13 single-event display blocks.
+* 11 blocks: calendar view, event list, events query, and 8 single-event display blocks.
 * Custom database layer with indexed occurrence table.
 * Full recurrence engine with daily cron horizon rolling.
 * REST API under `blockendar/v1`.
