@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name:       Blockendar
- * Plugin URI:        https://github.com/blockendar/blockendar
+ * Plugin URI:        https://github.com/philhoyt/Blockendar
  * Description:       A block-native WordPress events plugin. No shortcodes. No legacy widgets. The block editor is the UI.
- * Version:           0.2.0
+ * Version:           0.9.0
  * Requires at least: 6.8
  * Requires PHP:      8.1
  * Author:            Blockendar
@@ -20,11 +20,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'BLOCKENDAR_VERSION', '0.2.0' );
+define( 'BLOCKENDAR_VERSION', '0.9.0' );
 define( 'BLOCKENDAR_FILE', __FILE__ );
 define( 'BLOCKENDAR_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BLOCKENDAR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BLOCKENDAR_BASENAME', plugin_basename( __FILE__ ) );
+
+// Composer autoloader (production dependencies, e.g. Plugin Update Checker).
+require_once BLOCKENDAR_DIR . 'vendor/autoload.php';
 
 // Autoloader.
 spl_autoload_register(

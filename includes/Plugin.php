@@ -27,6 +27,7 @@ use Blockendar\Blocks\BlockRegistrar;
 use Blockendar\Blocks\TemplateRegistrar;
 use Blockendar\Admin\EventColumns;
 use Blockendar\Admin\SettingsPage;
+use Blockendar\Admin\UpdateChecker;
 
 /**
  * Bootstraps all plugin components.
@@ -75,6 +76,7 @@ class Plugin {
 		// Admin list table columns for events.
 		if ( is_admin() ) {
 			( new EventColumns() )->register();
+			( new UpdateChecker() )->register();
 		}
 
 		// Register block category.

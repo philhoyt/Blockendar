@@ -1,6 +1,6 @@
 {
   "name": "blockendar",
-  "version": "0.2.0",
+  "version": "0.9.0",
   "description": "Block-native WordPress events plugin",
   "license": "GPL-2.0-or-later",
   "private": true,
@@ -12,7 +12,7 @@
     "packages-update": "wp-scripts packages-update",
     "lint:php": "vendor/bin/phpcs",
     "lint:php:fix": "vendor/bin/phpcbf",
-    "plugin-zip": "wp-scripts plugin-zip"
+    "plugin-zip": "composer install --no-dev --quiet && wp-scripts plugin-zip; composer install --quiet"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",
