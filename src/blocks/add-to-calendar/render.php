@@ -2,9 +2,6 @@
 /**
  * blockendar/add-to-calendar render callback.
  *
- * Generates add-to-calendar links client-side from data attributes.
- * No server round-trip for link generation.
- *
  * @package Blockendar
  */
 declare( strict_types=1 );
@@ -18,73 +15,92 @@ $all_day    = (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
 $tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 $title      = get_the_title( $post_id );
 $detail_url = get_permalink( $post_id );
-$ics_url    = home_url( "/events/" . get_post_field( 'post_name', $post_id ) . "/ical/" );
+$ics_url    = rest_url( 'blockendar/v1/events/' . $post_id . '/ical' );
+$label      = ! empty( $attributes['label'] ) ? $attributes['label'] : __( 'Add to Calendar', 'blockendar' );
 
 if ( ! $start_date ) return;
 
-// Build UTC timestamps for Google Calendar format (Ymd\THis\Z).
-$fmt_ical_ts = function( string $date, string $time ) use ( $tz_str, $all_day ): string {
+$fmt_ts = function( string $date, string $time ) use ( $tz_str, $all_day ): string {
 	if ( $all_day ) {
 		return str_replace( '-', '', $date );
 	}
 	try {
-		$tz = new DateTimeZone( $tz_str );
-		$dt = new DateTimeImmutable( "$date $time:00", $tz );
+		$dt = new DateTimeImmutable( "$date $time:00", new DateTimeZone( $tz_str ) );
 		return $dt->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'Ymd\THis\Z' );
 	} catch ( Exception ) {
 		return str_replace( '-', '', $date );
 	}
 };
 
-$start_ts  = $fmt_ical_ts( $start_date, $start_time ?: '00:00' );
-$end_ts    = $fmt_ical_ts( $end_date ?: $start_date, $end_time ?: $start_time ?: '23:59' );
+$start_ts  = $fmt_ts( $start_date, $start_time ?: '00:00' );
+$end_ts    = $fmt_ts( $end_date ?: $start_date, $end_time ?: $start_time ?: '23:59' );
 $enc_title = rawurlencode( $title );
 $enc_url   = rawurlencode( $detail_url ?? '' );
+$start_dt  = $start_date . ( $start_time ? "T$start_time" : '' );
+$end_dt    = ( $end_date ?: $start_date ) . ( $end_time ? "T$end_time" : '' );
 
-$google_url = "https://calendar.google.com/calendar/render?action=TEMPLATE"
-	. "&text=$enc_title"
-	. "&dates=$start_ts/$end_ts"
-	. "&details=$enc_url";
+$google_url = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+	. '&text=' . $enc_title
+	. '&dates=' . $start_ts . '/' . $end_ts
+	. '&details=' . $enc_url;
 
-$show_google  = (bool) ( $attributes['showGoogle']  ?? true );
-$show_apple   = (bool) ( $attributes['showApple']   ?? true );
-$show_outlook = (bool) ( $attributes['showOutlook'] ?? true );
-$show_ics     = (bool) ( $attributes['showIcs']     ?? true );
+$outlook_params = '?subject=' . $enc_title
+	. '&startdt=' . rawurlencode( $start_dt )
+	. '&enddt='   . rawurlencode( $end_dt )
+	. '&body='    . $enc_url;
+
+$outlook_365_url  = 'https://outlook.office.com/calendar/0/deeplink/compose' . $outlook_params;
+$outlook_live_url = 'https://outlook.live.com/calendar/0/deeplink/compose'   . $outlook_params;
+
+$show_google       = (bool) ( $attributes['showGoogle']      ?? true );
+$show_ical         = (bool) ( $attributes['showIcal']        ?? true );
+$show_outlook_365  = (bool) ( $attributes['showOutlook365']  ?? true );
+$show_outlook_live = (bool) ( $attributes['showOutlookLive'] ?? true );
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-add-to-calendar' ] ); ?>>
-	<span class="blockendar-add-to-calendar__label"><?php esc_html_e( 'Add to calendar:', 'blockendar' ); ?></span>
-	<ul class="blockendar-add-to-calendar__links">
-		<?php if ( $show_google ) : ?>
-			<li>
-				<a class="blockendar-add-to-calendar__link" href="<?php echo esc_url( $google_url ); ?>"
-					target="_blank" rel="noopener noreferrer">
-					<?php esc_html_e( 'Google', 'blockendar' ); ?>
-				</a>
-			</li>
-		<?php endif; ?>
+	<details class="blockendar-add-to-calendar__dropdown">
+		<summary class="blockendar-add-to-calendar__toggle wp-element-button">
+			<?php echo esc_html( $label ); ?>
+		</summary>
+		<ul class="blockendar-add-to-calendar__menu">
+			<?php if ( $show_google ) : ?>
+				<li>
+					<a class="blockendar-add-to-calendar__item"
+						href="<?php echo esc_url( $google_url ); ?>"
+						target="_blank" rel="noopener noreferrer">
+						<?php esc_html_e( 'Google Calendar', 'blockendar' ); ?>
+					</a>
+				</li>
+			<?php endif; ?>
 
-		<?php if ( $show_apple || $show_ics ) : ?>
-			<li>
-				<a class="blockendar-add-to-calendar__link" href="<?php echo esc_url( $ics_url ); ?>">
-					<?php if ( $show_apple && $show_ics ) : ?>
-						<?php esc_html_e( 'Apple / .ics', 'blockendar' ); ?>
-					<?php elseif ( $show_apple ) : ?>
-						<?php esc_html_e( 'Apple Calendar', 'blockendar' ); ?>
-					<?php else : ?>
-						<?php esc_html_e( 'Download .ics', 'blockendar' ); ?>
-					<?php endif; ?>
-				</a>
-			</li>
-		<?php endif; ?>
+			<?php if ( $show_ical ) : ?>
+				<li>
+					<a class="blockendar-add-to-calendar__item"
+						href="<?php echo esc_url( $ics_url ); ?>">
+						<?php esc_html_e( 'iCalendar', 'blockendar' ); ?>
+					</a>
+				</li>
+			<?php endif; ?>
 
-		<?php if ( $show_outlook ) : ?>
-			<li>
-				<a class="blockendar-add-to-calendar__link"
-					href="https://outlook.live.com/calendar/0/deeplink/compose?subject=<?php echo esc_attr( $enc_title ); ?>&startdt=<?php echo esc_attr( $start_date . ( $start_time ? "T$start_time" : '' ) ); ?>&enddt=<?php echo esc_attr( ( $end_date ?: $start_date ) . ( $end_time ? "T$end_time" : '' ) ); ?>&body=<?php echo esc_attr( $enc_url ); ?>"
-					target="_blank" rel="noopener noreferrer">
-					<?php esc_html_e( 'Outlook', 'blockendar' ); ?>
-				</a>
-			</li>
-		<?php endif; ?>
-	</ul>
+			<?php if ( $show_outlook_365 ) : ?>
+				<li>
+					<a class="blockendar-add-to-calendar__item"
+						href="<?php echo esc_url( $outlook_365_url ); ?>"
+						target="_blank" rel="noopener noreferrer">
+						<?php esc_html_e( 'Outlook 365', 'blockendar' ); ?>
+					</a>
+				</li>
+			<?php endif; ?>
+
+			<?php if ( $show_outlook_live ) : ?>
+				<li>
+					<a class="blockendar-add-to-calendar__item"
+						href="<?php echo esc_url( $outlook_live_url ); ?>"
+						target="_blank" rel="noopener noreferrer">
+						<?php esc_html_e( 'Outlook Live', 'blockendar' ); ?>
+					</a>
+				</li>
+			<?php endif; ?>
+		</ul>
+	</details>
 </div>

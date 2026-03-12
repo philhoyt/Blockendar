@@ -8,14 +8,61 @@
 	"icon": "calendar",
 	"description": "Generates add-to-calendar links: Google, Apple, Outlook, and .ics download.",
 	"textdomain": "blockendar",
-	"usesContext": [ "postId", "postType" ],
-	"supports": { "html": false },
+	"usesContext": [
+		"postId",
+		"postType"
+	],
+	"supports": {
+		"html": false,
+		"color": {
+			"text": true,
+			"background": true,
+			"gradients": true
+		},
+		"typography": {
+			"fontSize": true,
+			"lineHeight": true,
+			"fontFamily": true,
+			"fontWeight": true,
+			"fontStyle": true,
+			"textTransform": true,
+			"textDecoration": true,
+			"letterSpacing": true
+		},
+		"spacing": {
+			"padding": true,
+			"margin": true
+		},
+		"border": {
+			"color": true,
+			"radius": true,
+			"style": true,
+			"width": true
+		}
+	},
 	"attributes": {
-		"showGoogle":  { "type": "boolean", "default": true },
-		"showApple":   { "type": "boolean", "default": true },
-		"showOutlook": { "type": "boolean", "default": true },
-		"showIcs":     { "type": "boolean", "default": true }
+		"label": {
+			"type": "string",
+			"default": ""
+		},
+		"showGoogle": {
+			"type": "boolean",
+			"default": true
+		},
+		"showIcal": {
+			"type": "boolean",
+			"default": true
+		},
+		"showOutlook365": {
+			"type": "boolean",
+			"default": true
+		},
+		"showOutlookLive": {
+			"type": "boolean",
+			"default": true
+		}
 	},
 	"render": "file:./render.php",
-	"editorScript": "file:./index.js"
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css"
 }
