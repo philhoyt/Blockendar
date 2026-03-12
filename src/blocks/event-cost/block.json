@@ -31,6 +31,7 @@
 			"textAlign": true
 		},
 		"spacing": {
+			"blockGap": true,
 			"padding": true,
 			"margin": true
 		},
@@ -39,6 +40,14 @@
 			"radius": true,
 			"style": true,
 			"width": true
+		},
+		"layout": {
+			"allowSwitching": false,
+			"allowInheriting": false,
+			"default": {
+				"type": "flex",
+				"flexWrap": "wrap"
+			}
 		}
 	},
 	"attributes": {
@@ -47,6 +56,7 @@
 			"default": ""
 		}
 	},
+	"style": "file:./style-index.css",
 	"render": "file:./render.php",
 	"editorScript": "file:./index.js"
 }

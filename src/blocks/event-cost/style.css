@@ -1,0 +1,6 @@
+.wp-block-blockendar-event-cost {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var( --wp--style--block-gap, 0.5em );
+}
