@@ -36,8 +36,6 @@ export function Edit( { attributes, setAttributes, context } ) {
 			? dateI18n( formats.time, `${ date }T${ time }` )
 			: '';
 
-	const blockProps = useBlockProps( { className: 'blockendar-event-datetime' } );
-
 	// Use placeholder dates when no event data is set.
 	const PLACEHOLDER_START_DATE = '2025-06-15';
 	const PLACEHOLDER_START_TIME = '09:00:00';
@@ -51,6 +49,11 @@ export function Edit( { attributes, setAttributes, context } ) {
 	const activeEndTime   = isPlaceholder ? PLACEHOLDER_END_TIME   : endTime;
 	const activeAllDay    = isPlaceholder ? false                   : allDay;
 	const activeTimezone  = isPlaceholder ? '' : timezone;
+
+	const blockProps = useBlockProps( {
+		className: 'blockendar-event-datetime',
+		style: isPlaceholder ? { opacity: 0.5 } : undefined,
+	} );
 
 	const sameDay = activeStartDate && activeEndDate && activeStartDate === activeEndDate;
 
@@ -93,15 +96,13 @@ export function Edit( { attributes, setAttributes, context } ) {
 				</PanelBody>
 			</InspectorControls>
 
-			<div { ...blockProps } style={ isPlaceholder ? { opacity: 0.5 } : undefined }>
-				<span className="dashicons dashicons-clock" aria-hidden="true" />
-
+			<div { ...blockProps }>
 				{ /* Start */ }
 				{ ( showStartDate || ( showStartTime && ! activeAllDay ) ) && (
 					<time className="blockendar-event-datetime__start">
 						{ showStartDate && fmtDate( activeStartDate ) }
 						{ showStartTime && ! activeAllDay && activeStartTime && (
-							<>{ ' @ ' }{ fmtTime( activeStartTime, activeStartDate ) }</>
+							<>{ showStartDate ? ' @ ' : '' }{ fmtTime( activeStartTime, activeStartDate ) }</>
 						) }
 					</time>
 				) }
@@ -113,7 +114,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 						<time className="blockendar-event-datetime__end">
 							{ fmtDate( activeEndDate ) }
 							{ showEndTime && ! activeAllDay && activeEndTime && (
-								<>{ ' @ ' }{ fmtTime( activeEndTime, activeEndDate ) }</>
+								<>{ showEndDate ? ' @ ' : '' }{ fmtTime( activeEndTime, activeEndDate ) }</>
 							) }
 						</time>
 					</>

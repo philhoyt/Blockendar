@@ -42,7 +42,7 @@ $same_day = $start_date === $end_date;
 			?>
 			<?php
 			if ( $show_start_time && ! $all_day && $start_time ) {
-				echo ' @ ' . esc_html( $fmt_time( $start_time, $start_date ) );}
+				echo ( $show_start_date ? ' @ ' : '' ) . esc_html( $fmt_time( $start_time, $start_date ) );}
 			?>
 		</time>
 	<?php endif; ?>
@@ -53,7 +53,7 @@ $same_day = $start_date === $end_date;
 			<?php echo esc_html( $fmt_date( $end_date ) ); ?>
 			<?php
 			if ( $show_end_time && ! $all_day && $end_time ) {
-				echo ' @ ' . esc_html( $fmt_time( $end_time, $end_date ) );}
+				echo ( $show_end_date ? ' @ ' : '' ) . esc_html( $fmt_time( $end_time, $end_date ) );}
 			?>
 		</time>
 	<?php elseif ( $show_end_time && ! $all_day && $same_day && $end_time && $end_time !== $start_time ) : ?>
