@@ -11,6 +11,9 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       blockendar
  * Domain Path:       /languages
+ * GitHub Plugin URI: https://github.com/philhoyt/Blockendar
+ * Primary Branch:    main
+ * Release Asset:     true
  */
 
 declare( strict_types=1 );
@@ -25,9 +28,6 @@ define( 'BLOCKENDAR_FILE', __FILE__ );
 define( 'BLOCKENDAR_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BLOCKENDAR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BLOCKENDAR_BASENAME', plugin_basename( __FILE__ ) );
-
-// Composer autoloader (production dependencies, e.g. Plugin Update Checker).
-require_once BLOCKENDAR_DIR . 'vendor/autoload.php';
 
 // Autoloader.
 spl_autoload_register(
