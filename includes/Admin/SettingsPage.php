@@ -35,12 +35,13 @@ class SettingsPage {
 	}
 
 	/**
-	 * Add Settings > Blockendar submenu page.
+	 * Add Settings submenu under the Events post type menu.
 	 */
 	public function add_menu_page(): void {
-		add_options_page(
+		add_submenu_page(
+			'edit.php?post_type=blockendar_event',
 			__( 'Blockendar Settings', 'blockendar' ),
-			__( 'Blockendar', 'blockendar' ),
+			__( 'Settings', 'blockendar' ),
 			self::CAPABILITY,
 			self::MENU_SLUG,
 			[ $this, 'render_page' ]
@@ -83,7 +84,7 @@ class SettingsPage {
 	 * @param string $hook Current admin page hook.
 	 */
 	public function enqueue( string $hook ): void {
-		if ( 'settings_page_' . self::MENU_SLUG !== $hook ) {
+		if ( 'blockendar_event_page_' . self::MENU_SLUG !== $hook ) {
 			return;
 		}
 
