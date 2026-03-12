@@ -31,9 +31,7 @@ $address_str   = implode( ', ', $address_parts );
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-venue' ] ); ?>>
 	<div class="blockendar-event-venue__body">
-		<a class="blockendar-event-venue__name" href="<?php echo esc_url( get_term_link( $term ) ); ?>">
-			<?php echo esc_html( $term->name ); ?>
-		</a>
+		<span class="blockendar-event-venue__name"><?php echo esc_html( $term->name ); ?></span>
 
 		<?php if ( $virtual ) : ?>
 			<span class="blockendar-event-venue__virtual-badge"><?php esc_html_e( 'Online', 'blockendar' ); ?></span>
