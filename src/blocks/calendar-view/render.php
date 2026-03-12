@@ -16,6 +16,22 @@ $venue_ids     = array_map( 'intval', (array) ( $attributes['venueIds'] ?? [] ) 
 $type_ids      = array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) );
 $featured_only = ! empty( $attributes['featuredOnly'] ) ? 'true' : 'false';
 
+// On an event_type taxonomy archive, auto-filter to the queried term.
+if ( is_tax( 'event_type' ) ) {
+	$queried = get_queried_object();
+	if ( $queried instanceof \WP_Term ) {
+		$type_ids = array_values( array_unique( array_merge( $type_ids, [ $queried->term_id ] ) ) );
+	}
+}
+
+// On an event_venue taxonomy archive, auto-filter to the queried venue.
+if ( is_tax( 'event_venue' ) ) {
+	$queried = get_queried_object();
+	if ( $queried instanceof \WP_Term ) {
+		$venue_ids = array_values( array_unique( array_merge( $venue_ids, [ $queried->term_id ] ) ) );
+	}
+}
+
 $rest_url = esc_url_raw( rest_url( 'blockendar/v1' ) );
 
 $data_attrs = [
