@@ -59,7 +59,7 @@ export function Edit( { attributes, setAttributes } ) {
 					<div className="blockendar-add-to-calendar__toggle wp-element-button">
 						{ displayLabel }
 					</div>
-					<ul className="blockendar-add-to-calendar__menu" style={ { opacity: 0.5 } }>
+					<ul className="blockendar-add-to-calendar__menu" style={ { display: 'none' } }>
 						{ showGoogle      && <li><span className="blockendar-add-to-calendar__item">{ __( 'Google Calendar', 'blockendar' ) }</span></li> }
 						{ showIcal        && <li><span className="blockendar-add-to-calendar__item">{ __( 'iCalendar',       'blockendar' ) }</span></li> }
 						{ showOutlook365  && <li><span className="blockendar-add-to-calendar__item">{ __( 'Outlook 365',     'blockendar' ) }</span></li> }

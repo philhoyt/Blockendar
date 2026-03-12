@@ -41,6 +41,15 @@ class TemplateRegistrar {
 		);
 
 		register_block_template(
+			'blockendar//archive-blockendar_event',
+			[
+				'title'       => __( 'Events Archive', 'blockendar' ),
+				'description' => __( 'Displays all events in a calendar view.', 'blockendar' ),
+				'content'     => (string) file_get_contents( BLOCKENDAR_DIR . 'templates/archive-blockendar_event.html' ),
+			]
+		);
+
+		register_block_template(
 			'blockendar//taxonomy-event_type',
 			[
 				'title'       => __( 'Event Type Archive', 'blockendar' ),
