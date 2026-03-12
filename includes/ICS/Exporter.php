@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\ICS;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Generates iCal (.ics) content from event index rows.
  *

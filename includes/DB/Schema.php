@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\DB;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Manages the two custom tables:
  *   - {prefix}blockendar_events      — denormalised occurrence index

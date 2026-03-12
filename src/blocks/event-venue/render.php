@@ -6,6 +6,11 @@
  */
 declare( strict_types=1 );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 $post_id   = $block->context['postId'] ?? get_the_ID();
 $show_addr = (bool) ( $attributes['showAddress'] ?? true );
 $show_map  = (bool) ( $attributes['showMap'] ?? false );
@@ -29,7 +34,7 @@ $stream  = get_term_meta( $term_id, 'blockendar_venue_stream_url', true );
 $address_parts = array_filter( [ $address, $city, $state, $country ] );
 $address_str   = implode( ', ', $address_parts );
 ?>
-<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-venue' ] ); ?>>
+<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-venue' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<div class="blockendar-event-venue__body">
 		<span class="blockendar-event-venue__name"><?php echo esc_html( $term->name ); ?></span>
 

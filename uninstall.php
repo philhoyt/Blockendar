@@ -37,12 +37,12 @@ spl_autoload_register(
 Blockendar\DB\Schema::drop_tables();
 
 // Remove plugin options.
-$options = [
+$options = [ // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 	'blockendar_db_version',
 	'blockendar_last_index_rebuild',
 	'blockendar_settings',
 ];
 
-foreach ( $options as $option ) {
+foreach ( $options as $option ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 	delete_option( $option );
 }

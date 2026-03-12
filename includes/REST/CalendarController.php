@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\REST;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Blockendar\DB\EventIndex;
 use Blockendar\ICS\Exporter;
 use WP_REST_Request;

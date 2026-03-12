@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\Recurrence;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Immutable value object representing a recurrence rule.
  * Hydrated from a database row or a raw array.

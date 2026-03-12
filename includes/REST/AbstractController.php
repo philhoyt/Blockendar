@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\REST;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;

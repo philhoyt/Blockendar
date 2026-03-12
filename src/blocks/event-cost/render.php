@@ -6,6 +6,11 @@
  */
 declare( strict_types=1 );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 /** Map ISO 4217 code → display symbol (mirrors edit.jsx CURRENCY_SYMBOLS). */
 function blockendar_currency_symbol( string $code ): string {
 	static $map = [
@@ -65,7 +70,7 @@ if ( ! $cost && ! $reg_url ) {
 
 $cost_display = blockendar_format_cost( $cost, (int) $post_id );
 ?>
-<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-cost' ] ); ?>>
+<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-cost' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( $cost_display ) : ?>
 		<span class="blockendar-event-cost__amount">
 			<?php echo esc_html( $cost_display ); ?>

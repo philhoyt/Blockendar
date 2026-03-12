@@ -11,6 +11,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\REST;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Blockendar\CPT\EventPostType;
 
 /**

@@ -11,6 +11,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\Blocks;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Registers plugin block templates via register_block_template().
  */

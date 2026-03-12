@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\CPT;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Registers the blockendar_event CPT.
  */

@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\Recurrence;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Schedules and handles the daily horizon-rolling cron event.
  *

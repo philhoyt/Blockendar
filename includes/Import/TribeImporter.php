@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\Import;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Blockendar\CPT\EventPostType;
 use Blockendar\Taxonomy\EventType;
 use Blockendar\DB\IndexBuilder;

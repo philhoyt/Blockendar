@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\Admin;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Blockendar\DB\EventIndex;
 
 /**

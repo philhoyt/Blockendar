@@ -6,6 +6,11 @@
  */
 declare( strict_types=1 );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 $post_id    = $block->context['postId'] ?? get_the_ID();
 $start_date = get_post_meta( $post_id, 'blockendar_start_date', true );
 $end_date   = get_post_meta( $post_id, 'blockendar_end_date', true );
@@ -59,7 +64,7 @@ $show_ical         = (bool) ( $attributes['showIcal'] ?? true );
 $show_outlook_365  = (bool) ( $attributes['showOutlook365'] ?? true );
 $show_outlook_live = (bool) ( $attributes['showOutlookLive'] ?? true );
 ?>
-<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-add-to-calendar' ] ); ?>>
+<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-add-to-calendar' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<details class="blockendar-add-to-calendar__dropdown">
 		<summary class="blockendar-add-to-calendar__toggle wp-element-button">
 			<?php echo esc_html( $label ); ?>

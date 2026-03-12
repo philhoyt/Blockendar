@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\REST;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\IndexBuilder;
 use Blockendar\Recurrence\RuleRepository;

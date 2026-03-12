@@ -11,6 +11,11 @@
 
 declare( strict_types=1 );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 use Blockendar\DB\EventIndex;
 
 $type_ids     = array_filter( array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) ) );
@@ -71,7 +76,7 @@ if ( $is_grid ) {
 	$wrapper_attrs['style'] = '--blockendar-columns:' . $column_count . ';';
 }
 
-?><ul <?php echo get_block_wrapper_attributes( $wrapper_attrs ); ?>>
+?><ul <?php echo get_block_wrapper_attributes( $wrapper_attrs ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 <?php foreach ( $post_ids as $post_id ) : ?>
 	<li class="blockendar-events-query__item">
 		<?php

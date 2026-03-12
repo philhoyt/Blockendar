@@ -12,6 +12,11 @@
 
 declare( strict_types=1 );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 use Blockendar\DB\EventIndex;
 
 $index    = new EventIndex();
@@ -89,7 +94,7 @@ $block_classes = implode(
 );
 
 ?>
-<div <?php echo get_block_wrapper_attributes( [ 'class' => $block_classes ] ); ?>>
+<div <?php echo get_block_wrapper_attributes( [ 'class' => $block_classes ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 
 	<?php foreach ( $grouped as $group_label => $group_events ) : ?>
 

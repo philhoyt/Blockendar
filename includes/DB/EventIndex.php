@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\DB;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Query layer for the {prefix}blockendar_events table.
  * No WP_Query, no wp_postmeta joins — indexed datetime columns only.
@@ -130,7 +134,7 @@ class EventIndex {
 
 		$where_sql = 'WHERE ' . implode( ' AND ', $where );
 
-		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 		$query = $wpdb->prepare(
 			"SELECT e.id, e.post_id, e.start_datetime, e.end_datetime, e.start_date,
 			        e.end_date, e.all_day, e.recurrence_id, e.status,

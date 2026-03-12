@@ -6,6 +6,11 @@
  */
 declare( strict_types=1 );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 $post_id = $block->context['postId'] ?? get_the_ID();
 $status  = get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled';
 
@@ -20,7 +25,7 @@ $labels = [
 ];
 $label  = $labels[ $status ] ?? ucfirst( $status );
 ?>
-<div <?php echo get_block_wrapper_attributes( [ 'class' => "blockendar-event-status blockendar-status blockendar-status--$status" ] ); ?>
+<div <?php echo get_block_wrapper_attributes( [ 'class' => "blockendar-event-status blockendar-status blockendar-status--$status" ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	role="status" aria-label="<?php echo esc_attr( $label ); ?>">
 	<?php echo esc_html( $label ); ?>
 </div>

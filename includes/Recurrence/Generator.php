@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\Recurrence;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\Schema;
 use Blockendar\Taxonomy\EventType;

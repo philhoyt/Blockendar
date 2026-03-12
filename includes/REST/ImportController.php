@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar\REST;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Blockendar\Import\TribeImporter;
 use WP_REST_Request;
 use WP_REST_Response;

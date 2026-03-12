@@ -9,6 +9,11 @@
  */
 declare( strict_types=1 );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 $post_id = $block->context['postId'] ?? get_the_ID();
 $terms   = get_the_terms( $post_id, 'event_venue' );
 
@@ -29,7 +34,7 @@ $height = max( 100, min( 1200, (int) ( $attributes['height'] ?? 400 ) ) );
 $zoom   = max( 1, min( 20, (int) ( $attributes['zoom'] ?? 14 ) ) );
 $name   = $terms[0]->name;
 ?>
-<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-map' ] ); ?>
+<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-map' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-lat="<?php echo esc_attr( (string) $lat ); ?>"
 	data-lng="<?php echo esc_attr( (string) $lng ); ?>"
 	data-zoom="<?php echo esc_attr( (string) $zoom ); ?>"

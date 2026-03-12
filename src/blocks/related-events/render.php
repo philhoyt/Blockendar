@@ -6,6 +6,11 @@
  */
 declare( strict_types=1 );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 use Blockendar\DB\EventIndex;
 
 $post_id  = $block->context['postId'] ?? get_the_ID();
@@ -75,7 +80,7 @@ if ( empty( $output ) ) {
 $blockendar_settings = (array) get_option( 'blockendar_settings', [] );
 $date_format         = $blockendar_settings['date_format'] ?? get_option( 'date_format', 'F j, Y' );
 ?>
-<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-related-events' ] ); ?>>
+<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-related-events' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<h3 class="blockendar-related-events__heading"><?php esc_html_e( 'Related Events', 'blockendar' ); ?></h3>
 	<ul class="blockendar-related-events__list">
 		<?php

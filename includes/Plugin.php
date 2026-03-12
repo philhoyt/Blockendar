@@ -9,6 +9,10 @@ declare( strict_types=1 );
 
 namespace Blockendar;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use Blockendar\CPT\EventPostType;
 use Blockendar\Taxonomy\EventType;
 use Blockendar\Taxonomy\EventTag;

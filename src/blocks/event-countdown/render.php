@@ -8,6 +8,11 @@
  */
 declare( strict_types=1 );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 $post_id       = $block->context['postId'] ?? get_the_ID();
 $start_date    = get_post_meta( $post_id, 'blockendar_start_date', true );
 $start_time    = get_post_meta( $post_id, 'blockendar_start_time', true );
@@ -26,7 +31,7 @@ try {
 	return;
 }
 ?>
-<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-countdown' ] ); ?>
+<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-countdown' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-target="<?php echo esc_attr( $target_utc ); ?>"
 	data-expired-label="<?php echo esc_attr( $expired_label ); ?>"
 >

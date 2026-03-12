@@ -6,6 +6,11 @@
  */
 declare( strict_types=1 );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 $post_id         = $block->context['postId'] ?? get_the_ID();
 $show_start_date = (bool) ( $attributes['showStartDate'] ?? true );
 $show_start_time = (bool) ( $attributes['showStartTime'] ?? true );
@@ -33,7 +38,7 @@ $fmt_time = fn( string $time, string $date ) => date_i18n( $time_format, strtoti
 
 $same_day = $start_date === $end_date;
 ?>
-<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-datetime' ] ); ?>>
+<div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-datetime' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( $show_start_date || ( $show_start_time && ! $all_day ) ) : ?>
 		<time class="blockendar-event-datetime__start" datetime="<?php echo esc_attr( $start_date . ( $start_time ? "T$start_time" : '' ) ); ?>">
 			<?php

@@ -9,6 +9,11 @@
  */
 declare( strict_types=1 );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+
 $enabled_views = $attributes['enabledViews'] ?? [ 'dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listNextMonth' ];
 $default_view  = $attributes['defaultView'] ?? 'dayGridMonth';
 $first_day     = (int) ( $attributes['firstDay'] ?? 0 );
@@ -49,5 +54,5 @@ foreach ( $data_attrs as $key => $value ) {
 	$data_attr_str .= ' ' . $key . '="' . esc_attr( $value ) . '"';
 }
 ?>
-<div <?php echo get_block_wrapper_attributes(); ?><?php echo $data_attr_str; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above ?>>
+<div <?php echo get_block_wrapper_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?><?php echo $data_attr_str; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above ?>>
 </div>
