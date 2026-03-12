@@ -52,7 +52,10 @@ class EventType {
 			'show_admin_column' => true,
 			'show_in_rest'      => true,
 			'rest_base'         => 'event-types',
-			'rewrite'           => [ 'slug' => 'events/type', 'with_front' => false ],
+			'rewrite'           => [
+				'slug'       => 'events/type',
+				'with_front' => false,
+			],
 		];
 
 		register_taxonomy( self::TAXONOMY, EventPostType::POST_TYPE, $args );

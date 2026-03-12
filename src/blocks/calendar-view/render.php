@@ -10,10 +10,10 @@
 declare( strict_types=1 );
 
 $enabled_views = $attributes['enabledViews'] ?? [ 'dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listNextMonth' ];
-$default_view  = $attributes['defaultView']  ?? 'dayGridMonth';
+$default_view  = $attributes['defaultView'] ?? 'dayGridMonth';
 $first_day     = (int) ( $attributes['firstDay'] ?? 0 );
 $venue_ids     = array_map( 'intval', (array) ( $attributes['venueIds'] ?? [] ) );
-$type_ids      = array_map( 'intval', (array) ( $attributes['typeIds']  ?? [] ) );
+$type_ids      = array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) );
 $featured_only = ! empty( $attributes['featuredOnly'] ) ? 'true' : 'false';
 
 $rest_url = esc_url_raw( rest_url( 'blockendar/v1' ) );

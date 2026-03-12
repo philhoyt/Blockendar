@@ -178,20 +178,24 @@ class IndexBuilder {
 				$meta    = $this->get_event_meta( $post_id );
 
 				if ( empty( $meta['start_date'] ) ) {
-					$skipped++;
+					++$skipped;
 					continue;
 				}
 
 				$this->build_for_post( $post_id );
-				$rebuilt++;
+				++$rebuilt;
 			}
 
-			$offset += $batch_size;
-		} while ( count( $post_ids ) === $batch_size );
+			$fetched_count = count( $post_ids );
+			$offset       += $batch_size;
+		} while ( $fetched_count === $batch_size );
 
 		update_option( 'blockendar_last_index_rebuild', gmdate( 'Y-m-d H:i:s' ) );
 
-		return [ 'rebuilt' => $rebuilt, 'skipped' => $skipped ];
+		return [
+			'rebuilt' => $rebuilt,
+			'skipped' => $skipped,
+		];
 	}
 
 	/**

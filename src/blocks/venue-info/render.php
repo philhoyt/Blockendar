@@ -6,28 +6,30 @@
  */
 declare( strict_types=1 );
 
-$post_id     = $block->context['postId'] ?? get_the_ID();
-$show_map    = (bool) ( $attributes['showMap']     ?? false );
-$show_phone  = (bool) ( $attributes['showPhone']   ?? true );
+$post_id      = $block->context['postId'] ?? get_the_ID();
+$show_map     = (bool) ( $attributes['showMap'] ?? false );
+$show_phone   = (bool) ( $attributes['showPhone'] ?? true );
 $show_website = (bool) ( $attributes['showWebsite'] ?? true );
 
 $terms = get_the_terms( $post_id, 'event_venue' );
-if ( is_wp_error( $terms ) || empty( $terms ) ) return;
+if ( is_wp_error( $terms ) || empty( $terms ) ) {
+	return;
+}
 
-$term    = $terms[0];
-$term_id = $term->term_id;
-$virtual = (bool) get_term_meta( $term_id, 'blockendar_venue_virtual', true );
-$address = get_term_meta( $term_id, 'blockendar_venue_address',  true );
-$addr2   = get_term_meta( $term_id, 'blockendar_venue_address2', true );
-$city    = get_term_meta( $term_id, 'blockendar_venue_city',     true );
-$state   = get_term_meta( $term_id, 'blockendar_venue_state',    true );
+$term     = $terms[0];
+$term_id  = $term->term_id;
+$virtual  = (bool) get_term_meta( $term_id, 'blockendar_venue_virtual', true );
+$address  = get_term_meta( $term_id, 'blockendar_venue_address', true );
+$addr2    = get_term_meta( $term_id, 'blockendar_venue_address2', true );
+$city     = get_term_meta( $term_id, 'blockendar_venue_city', true );
+$state    = get_term_meta( $term_id, 'blockendar_venue_state', true );
 $postcode = get_term_meta( $term_id, 'blockendar_venue_postcode', true );
-$country = get_term_meta( $term_id, 'blockendar_venue_country',  true );
-$phone   = get_term_meta( $term_id, 'blockendar_venue_phone',    true );
-$website = get_term_meta( $term_id, 'blockendar_venue_url',      true );
-$lat     = (float) get_term_meta( $term_id, 'blockendar_venue_lat', true );
-$lng     = (float) get_term_meta( $term_id, 'blockendar_venue_lng', true );
-$stream  = get_term_meta( $term_id, 'blockendar_venue_stream_url', true );
+$country  = get_term_meta( $term_id, 'blockendar_venue_country', true );
+$phone    = get_term_meta( $term_id, 'blockendar_venue_phone', true );
+$website  = get_term_meta( $term_id, 'blockendar_venue_url', true );
+$lat      = (float) get_term_meta( $term_id, 'blockendar_venue_lat', true );
+$lng      = (float) get_term_meta( $term_id, 'blockendar_venue_lng', true );
+$stream   = get_term_meta( $term_id, 'blockendar_venue_stream_url', true );
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-venue-info' ] ); ?>>
 	<h3 class="blockendar-venue-info__name">
@@ -43,12 +45,22 @@ $stream  = get_term_meta( $term_id, 'blockendar_venue_stream_url', true );
 		<?php endif; ?>
 	<?php else : ?>
 		<address class="blockendar-venue-info__address">
-			<?php if ( $address )  : ?><span><?php echo esc_html( $address ); ?></span><br><?php endif; ?>
-			<?php if ( $addr2 )    : ?><span><?php echo esc_html( $addr2 ); ?></span><br><?php endif; ?>
+			<?php
+			if ( $address ) :
+				?>
+				<span><?php echo esc_html( $address ); ?></span><br><?php endif; ?>
+			<?php
+			if ( $addr2 ) :
+				?>
+				<span><?php echo esc_html( $addr2 ); ?></span><br><?php endif; ?>
 			<?php
 			$cityline = implode( ', ', array_filter( [ $city, $state, $postcode ] ) );
-			if ( $cityline ) echo esc_html( $cityline ) . '<br>';
-			if ( $country ) echo esc_html( $country );
+			if ( $cityline ) {
+				echo esc_html( $cityline ) . '<br>';
+			}
+			if ( $country ) {
+				echo esc_html( $country );
+			}
 			?>
 		</address>
 

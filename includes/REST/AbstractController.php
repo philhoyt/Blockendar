@@ -54,11 +54,11 @@ abstract class AbstractController {
 	 * Returns a Y-m-d H:i:s string or a WP_Error.
 	 *
 	 * @param string $value    Raw param value.
-	 * @param string $default  Fallback value if empty.
+	 * @param string $fallback Fallback value if empty.
 	 */
-	protected function parse_datetime_param( string $value, string $default = '' ): string|WP_Error {
+	protected function parse_datetime_param( string $value, string $fallback = '' ): string|WP_Error {
 		if ( '' === $value ) {
-			return $default;
+			return $fallback;
 		}
 
 		// Accept Y-m-d (date only — assume start/end of day upstream).
@@ -102,12 +102,13 @@ abstract class AbstractController {
 	/**
 	 * Build pagination headers from total count and request params.
 	 *
-	 * @param int            $total    Total matching items.
-	 * @param int            $per_page Items per page.
-	 * @param int            $page     Current page.
+	 * @param int             $total    Total matching items.
+	 * @param int             $per_page Items per page.
+	 * @param int             $page     Current page.
 	 * @param WP_REST_Request $request  The REST request.
 	 * @return array Header key => value pairs.
 	 */
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- $page and $request reserved for future Link header support.
 	protected function pagination_headers( int $total, int $per_page, int $page, WP_REST_Request $request ): array {
 		$total_pages = $per_page > 0 ? (int) ceil( $total / $per_page ) : 1;
 

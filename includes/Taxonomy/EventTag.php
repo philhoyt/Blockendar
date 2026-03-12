@@ -54,7 +54,10 @@ class EventTag {
 			'show_admin_column' => true,
 			'show_in_rest'      => true,
 			'rest_base'         => 'event-tags',
-			'rewrite'           => [ 'slug' => 'events/tag', 'with_front' => false ],
+			'rewrite'           => [
+				'slug'       => 'events/tag',
+				'with_front' => false,
+			],
 		];
 
 		register_taxonomy( self::TAXONOMY, EventPostType::POST_TYPE, $args );

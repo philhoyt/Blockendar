@@ -14,21 +14,25 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 // Autoloader needed to reference Schema.
-spl_autoload_register( function ( string $class ): void {
-	$prefix   = 'Blockendar\\';
-	$base_dir = __DIR__ . '/includes/';
+spl_autoload_register(
+	// phpcs:disable Universal.NamingConventions.NoReservedKeywordParameterNames
+	function ( string $class ): void {
+		// phpcs:enable Universal.NamingConventions.NoReservedKeywordParameterNames
+		$prefix   = 'Blockendar\\';
+		$base_dir = __DIR__ . '/includes/';
 
-	if ( ! str_starts_with( $class, $prefix ) ) {
-		return;
+		if ( ! str_starts_with( $class, $prefix ) ) {
+				return;
+		}
+
+		$relative = substr( $class, strlen( $prefix ) );
+		$file     = $base_dir . str_replace( '\\', '/', $relative ) . '.php';
+
+		if ( file_exists( $file ) ) {
+			require $file;
+		}
 	}
-
-	$relative = substr( $class, strlen( $prefix ) );
-	$file     = $base_dir . str_replace( '\\', '/', $relative ) . '.php';
-
-	if ( file_exists( $file ) ) {
-		require $file;
-	}
-} );
+);
 
 Blockendar\DB\Schema::drop_tables();
 

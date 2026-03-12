@@ -33,23 +33,39 @@ class CalendarController extends AbstractController {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
-		register_rest_route( self::NAMESPACE, '/calendar', [
-			'methods'             => 'GET',
-			'callback'            => [ $this, 'get_calendar_feed' ],
-			'permission_callback' => '__return_true',
-			'args'                => [
-				'start'    => [ 'type' => 'string', 'default' => '' ],
-				'end'      => [ 'type' => 'string', 'default' => '' ],
-				'venue'    => [ 'type' => 'string', 'default' => '' ],
-				'type'     => [ 'type' => 'string', 'default' => '' ],
-				'featured' => [ 'type' => 'boolean' ],
-				'format'   => [
-					'type'    => 'string',
-					'default' => 'json',
-					'enum'    => [ 'json', 'ics' ],
+		register_rest_route(
+			self::NAMESPACE,
+			'/calendar',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'get_calendar_feed' ],
+				'permission_callback' => '__return_true',
+				'args'                => [
+					'start'    => [
+						'type'    => 'string',
+						'default' => '',
+					],
+					'end'      => [
+						'type'    => 'string',
+						'default' => '',
+					],
+					'venue'    => [
+						'type'    => 'string',
+						'default' => '',
+					],
+					'type'     => [
+						'type'    => 'string',
+						'default' => '',
+					],
+					'featured' => [ 'type' => 'boolean' ],
+					'format'   => [
+						'type'    => 'string',
+						'default' => 'json',
+						'enum'    => [ 'json', 'ics' ],
+					],
 				],
-			],
-		] );
+			]
+		);
 	}
 
 	/**
@@ -128,17 +144,17 @@ class CalendarController extends AbstractController {
 	 * @param object $row Index row joined with wp_posts.
 	 */
 	private function format_for_fullcalendar( object $row ): array {
-		$post_id    = (int) $row->post_id;
-		$type_ids   = $row->type_term_ids ? json_decode( $row->type_term_ids, true ) : [];
-		$color      = $this->resolve_color( $type_ids );
-		$venue      = $this->get_venue_summary( $row->venue_term_id ? (int) $row->venue_term_id : null );
-		$types      = $this->get_type_summaries( $type_ids );
-		$cost       = get_post_meta( $post_id, 'blockendar_cost', true );
-		$featured   = (bool) get_post_meta( $post_id, 'blockendar_featured', true );
+		$post_id  = (int) $row->post_id;
+		$type_ids = $row->type_term_ids ? json_decode( $row->type_term_ids, true ) : [];
+		$color    = $this->resolve_color( $type_ids );
+		$venue    = $this->get_venue_summary( $row->venue_term_id ? (int) $row->venue_term_id : null );
+		$types    = $this->get_type_summaries( $type_ids );
+		$cost     = get_post_meta( $post_id, 'blockendar_cost', true );
+		$featured = (bool) get_post_meta( $post_id, 'blockendar_featured', true );
 
 		// FullCalendar expects ISO 8601. The index stores UTC — append Z.
 		$start = $this->to_iso8601( $row->start_datetime, (bool) $row->all_day, $row->start_date );
-		$end   = $this->to_iso8601( $row->end_datetime,   (bool) $row->all_day, $row->end_date );
+		$end   = $this->to_iso8601( $row->end_datetime, (bool) $row->all_day, $row->end_date );
 
 		return [
 			'id'            => "blockendar_{$post_id}_{$row->start_date}",

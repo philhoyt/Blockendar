@@ -27,27 +27,34 @@ define( 'BLOCKENDAR_URL', plugin_dir_url( __FILE__ ) );
 define( 'BLOCKENDAR_BASENAME', plugin_basename( __FILE__ ) );
 
 // Autoloader.
-spl_autoload_register( function ( string $class ): void {
-	$prefix   = 'Blockendar\\';
-	$base_dir = BLOCKENDAR_DIR . 'includes/';
+spl_autoload_register(
+	// phpcs:disable Universal.NamingConventions.NoReservedKeywordParameterNames
+	function ( string $class ): void {
+		// phpcs:enable Universal.NamingConventions.NoReservedKeywordParameterNames
+		$prefix   = 'Blockendar\\';
+		$base_dir = BLOCKENDAR_DIR . 'includes/';
 
-	if ( ! str_starts_with( $class, $prefix ) ) {
-		return;
+		if ( ! str_starts_with( $class, $prefix ) ) {
+				return;
+		}
+
+		$relative = substr( $class, strlen( $prefix ) );
+		$file     = $base_dir . str_replace( '\\', '/', $relative ) . '.php';
+
+		if ( file_exists( $file ) ) {
+			require $file;
+		}
 	}
-
-	$relative = substr( $class, strlen( $prefix ) );
-	$file     = $base_dir . str_replace( '\\', '/', $relative ) . '.php';
-
-	if ( file_exists( $file ) ) {
-		require $file;
-	}
-} );
+);
 
 // Activation / deactivation hooks — registered before the plugin loads.
 register_activation_hook( __FILE__, [ 'Blockendar\\DB\\Schema', 'create_tables' ] );
 register_deactivation_hook( __FILE__, [ 'Blockendar\\Recurrence\\Cron', 'unschedule' ] );
 
 // Boot the plugin.
-add_action( 'plugins_loaded', function (): void {
-	( new Blockendar\Plugin() )->boot();
-} );
+add_action(
+	'plugins_loaded',
+	function (): void {
+		( new Blockendar\Plugin() )->boot();
+	}
+);

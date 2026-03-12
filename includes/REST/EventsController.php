@@ -30,9 +30,9 @@ use WP_Error;
  */
 class EventsController extends AbstractController {
 
-	private EventIndex      $index;
-	private RuleRepository  $rules;
-	private IndexBuilder    $builder;
+	private EventIndex $index;
+	private RuleRepository $rules;
+	private IndexBuilder $builder;
 
 	public function __construct() {
 		$this->index   = new EventIndex();
@@ -45,62 +45,86 @@ class EventsController extends AbstractController {
 	 */
 	public function register_routes(): void {
 		// Collection.
-		register_rest_route( self::NAMESPACE, '/events', [
-			'methods'             => 'GET',
-			'callback'            => [ $this, 'get_events' ],
-			'permission_callback' => '__return_true',
-			'args'                => $this->collection_args(),
-		] );
+		register_rest_route(
+			self::NAMESPACE,
+			'/events',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'get_events' ],
+				'permission_callback' => '__return_true',
+				'args'                => $this->collection_args(),
+			]
+		);
 
 		// Single event.
-		register_rest_route( self::NAMESPACE, '/events/(?P<id>\d+)', [
-			'methods'             => 'GET',
-			'callback'            => [ $this, 'get_event' ],
-			'permission_callback' => '__return_true',
-			'args'                => [
-				'id' => [
-					'type'     => 'integer',
-					'required' => true,
-					'minimum'  => 1,
+		register_rest_route(
+			self::NAMESPACE,
+			'/events/(?P<id>\d+)',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'get_event' ],
+				'permission_callback' => '__return_true',
+				'args'                => [
+					'id' => [
+						'type'     => 'integer',
+						'required' => true,
+						'minimum'  => 1,
+					],
 				],
-			],
-		] );
+			]
+		);
 
 		// All instances of a recurring event.
-		register_rest_route( self::NAMESPACE, '/events/(?P<id>\d+)/instances', [
-			'methods'             => 'GET',
-			'callback'            => [ $this, 'get_instances' ],
-			'permission_callback' => '__return_true',
-			'args'                => [
-				'id' => [
-					'type'    => 'integer',
-					'minimum' => 1,
+		register_rest_route(
+			self::NAMESPACE,
+			'/events/(?P<id>\d+)/instances',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'get_instances' ],
+				'permission_callback' => '__return_true',
+				'args'                => [
+					'id' => [
+						'type'    => 'integer',
+						'minimum' => 1,
+					],
 				],
-			],
-		] );
+			]
+		);
 
 		// Cancel a single instance.
-		register_rest_route( self::NAMESPACE, '/events/(?P<id>\d+)/instances/(?P<date>\d{4}-\d{2}-\d{2})/cancel', [
-			'methods'             => 'POST',
-			'callback'            => [ $this, 'cancel_instance' ],
-			'permission_callback' => [ $this, 'check_edit_permission' ],
-			'args'                => $this->instance_action_args(),
-		] );
+		register_rest_route(
+			self::NAMESPACE,
+			'/events/(?P<id>\d+)/instances/(?P<date>\d{4}-\d{2}-\d{2})/cancel',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'cancel_instance' ],
+				'permission_callback' => [ $this, 'check_edit_permission' ],
+				'args'                => $this->instance_action_args(),
+			]
+		);
 
 		// Add an exception date (removes the instance without creating a cancellation).
-		register_rest_route( self::NAMESPACE, '/events/(?P<id>\d+)/instances/(?P<date>\d{4}-\d{2}-\d{2})/exception', [
-			'methods'             => 'POST',
-			'callback'            => [ $this, 'add_exception' ],
-			'permission_callback' => [ $this, 'check_edit_permission' ],
-			'args'                => $this->instance_action_args(),
-		] );
+		register_rest_route(
+			self::NAMESPACE,
+			'/events/(?P<id>\d+)/instances/(?P<date>\d{4}-\d{2}-\d{2})/exception',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'add_exception' ],
+				'permission_callback' => [ $this, 'check_edit_permission' ],
+				'args'                => $this->instance_action_args(),
+			]
+		);
 
 		// Admin: trigger full index rebuild.
-		register_rest_route( self::NAMESPACE, '/index/rebuild', [
-			'methods'             => 'POST',
-			'callback'            => [ $this, 'rebuild_index' ],
-			'permission_callback' => [ $this, 'check_manage_permission' ],
-		] );
+		register_rest_route(
+			self::NAMESPACE,
+			'/index/rebuild',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'rebuild_index' ],
+				'permission_callback' => [ $this, 'check_manage_permission' ],
+			]
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -135,9 +159,9 @@ class EventsController extends AbstractController {
 		$page     = max( 1, (int) ( $request->get_param( 'page' ) ?? 1 ) );
 
 		$filters = [
-			'venue_term_id' => $request->get_param( 'venue' )   ? (int) $request->get_param( 'venue' )   : null,
-			'type_term_id'  => $request->get_param( 'type' )    ? (int) $request->get_param( 'type' )    : null,
-			'status'        => $request->get_param( 'status' )  ?: null,
+			'venue_term_id' => $request->get_param( 'venue' ) ? (int) $request->get_param( 'venue' ) : null,
+			'type_term_id'  => $request->get_param( 'type' ) ? (int) $request->get_param( 'type' ) : null,
+			'status'        => $request->get_param( 'status' ) ?: null,
 			'featured'      => $request->get_param( 'featured' ) ? rest_sanitize_boolean( $request->get_param( 'featured' ) ) : null,
 			'per_page'      => $per_page,
 			'page'          => $page,
@@ -177,17 +201,17 @@ class EventsController extends AbstractController {
 		$instances = $this->index->get_upcoming_instances( $post_id, 10 );
 
 		$data = [
-			'id'           => $post_id,
-			'title'        => get_the_title( $post ),
-			'slug'         => $post->post_name,
-			'url'          => get_permalink( $post ),
-			'status'       => $post->post_status,
-			'meta'         => $meta,
-			'recurrence'   => $rule ? $this->format_rule( $rule ) : null,
-			'instances'    => array_map( [ $this, 'format_instance_row' ], $instances ),
-			'venue'        => $this->get_venue_data( $post_id ),
-			'event_types'  => $this->get_type_data( $post_id ),
-			'event_tags'   => $this->get_tag_data( $post_id ),
+			'id'          => $post_id,
+			'title'       => get_the_title( $post ),
+			'slug'        => $post->post_name,
+			'url'         => get_permalink( $post ),
+			'status'      => $post->post_status,
+			'meta'        => $meta,
+			'recurrence'  => $rule ? $this->format_rule( $rule ) : null,
+			'instances'   => array_map( [ $this, 'format_instance_row' ], $instances ),
+			'venue'       => $this->get_venue_data( $post_id ),
+			'event_types' => $this->get_type_data( $post_id ),
+			'event_tags'  => $this->get_tag_data( $post_id ),
 		];
 
 		return $this->respond( $data );
@@ -238,7 +262,13 @@ class EventsController extends AbstractController {
 			return new WP_Error( 'blockendar_db_error', __( 'Failed to cancel instance.', 'blockendar' ), [ 'status' => 500 ] );
 		}
 
-		return $this->respond( [ 'cancelled' => true, 'post_id' => $post_id, 'date' => $date ] );
+		return $this->respond(
+			[
+				'cancelled' => true,
+				'post_id'   => $post_id,
+				'date'      => $date,
+			]
+		);
 	}
 
 	/**
@@ -271,7 +301,13 @@ class EventsController extends AbstractController {
 		);
 		// phpcs:enable
 
-		return $this->respond( [ 'exception_added' => true, 'post_id' => $post_id, 'date' => $date ] );
+		return $this->respond(
+			[
+				'exception_added' => true,
+				'post_id'         => $post_id,
+				'date'            => $date,
+			]
+		);
 	}
 
 	/**
@@ -280,12 +316,14 @@ class EventsController extends AbstractController {
 	public function rebuild_index( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$result = $this->builder->rebuild_all();
 
-		return $this->respond( [
-			'success'    => true,
-			'rebuilt'    => $result['rebuilt'],
-			'skipped'    => $result['skipped'],
-			'rebuilt_at' => get_option( 'blockendar_last_index_rebuild' ),
-		] );
+		return $this->respond(
+			[
+				'success'    => true,
+				'rebuilt'    => $result['rebuilt'],
+				'skipped'    => $result['skipped'],
+				'rebuilt_at' => get_option( 'blockendar_last_index_rebuild' ),
+			]
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -352,16 +390,16 @@ class EventsController extends AbstractController {
 	 */
 	private function format_rule( \Blockendar\Recurrence\Rule $rule ): array {
 		return [
-			'id'          => $rule->id,
-			'frequency'   => $rule->frequency,
-			'interval'    => $rule->interval,
-			'byday'       => $rule->byday,
-			'bymonthday'  => $rule->bymonthday,
-			'bysetpos'    => $rule->bysetpos,
-			'until_date'  => $rule->until_date?->format( 'Y-m-d' ),
-			'count'       => $rule->count,
-			'exceptions'  => $rule->exceptions,
-			'additions'   => $rule->additions,
+			'id'         => $rule->id,
+			'frequency'  => $rule->frequency,
+			'interval'   => $rule->interval,
+			'byday'      => $rule->byday,
+			'bymonthday' => $rule->bymonthday,
+			'bysetpos'   => $rule->bysetpos,
+			'until_date' => $rule->until_date?->format( 'Y-m-d' ),
+			'count'      => $rule->count,
+			'exceptions' => $rule->exceptions,
+			'additions'  => $rule->additions,
 		];
 	}
 
@@ -372,13 +410,21 @@ class EventsController extends AbstractController {
 	 */
 	private function get_full_meta( int $post_id ): array {
 		$keys = [
-			'blockendar_start_date', 'blockendar_end_date',
-			'blockendar_start_time', 'blockendar_end_time',
-			'blockendar_all_day', 'blockendar_timezone',
-			'blockendar_status', 'blockendar_cost',
-			'blockendar_cost_min', 'blockendar_cost_max', 'blockendar_currency',
-			'blockendar_registration_url', 'blockendar_capacity',
-			'blockendar_featured', 'blockendar_hide_from_listings',
+			'blockendar_start_date',
+			'blockendar_end_date',
+			'blockendar_start_time',
+			'blockendar_end_time',
+			'blockendar_all_day',
+			'blockendar_timezone',
+			'blockendar_status',
+			'blockendar_cost',
+			'blockendar_cost_min',
+			'blockendar_cost_max',
+			'blockendar_currency',
+			'blockendar_registration_url',
+			'blockendar_capacity',
+			'blockendar_featured',
+			'blockendar_hide_from_listings',
 		];
 
 		$meta = [];
@@ -431,12 +477,15 @@ class EventsController extends AbstractController {
 			return [];
 		}
 
-		return array_map( fn( $t ) => [
-			'id'    => $t->term_id,
-			'name'  => $t->name,
-			'slug'  => $t->slug,
-			'color' => get_term_meta( $t->term_id, 'blockendar_type_color', true ),
-		], $terms );
+		return array_map(
+			fn( $t ) => [
+				'id'    => $t->term_id,
+				'name'  => $t->name,
+				'slug'  => $t->slug,
+				'color' => get_term_meta( $t->term_id, 'blockendar_type_color', true ),
+			],
+			$terms
+		);
 	}
 
 	/**
@@ -452,11 +501,14 @@ class EventsController extends AbstractController {
 			return [];
 		}
 
-		return array_map( fn( $t ) => [
-			'id'   => $t->term_id,
-			'name' => $t->name,
-			'slug' => $t->slug,
-		], $terms );
+		return array_map(
+			fn( $t ) => [
+				'id'   => $t->term_id,
+				'name' => $t->name,
+				'slug' => $t->slug,
+			],
+			$terms
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -465,17 +517,38 @@ class EventsController extends AbstractController {
 
 	private function collection_args(): array {
 		return [
-			'start'    => [ 'type' => 'string', 'default' => '' ],
-			'end'      => [ 'type' => 'string', 'default' => '' ],
-			'venue'    => [ 'type' => 'integer', 'minimum' => 1 ],
-			'type'     => [ 'type' => 'integer', 'minimum' => 1 ],
+			'start'    => [
+				'type'    => 'string',
+				'default' => '',
+			],
+			'end'      => [
+				'type'    => 'string',
+				'default' => '',
+			],
+			'venue'    => [
+				'type'    => 'integer',
+				'minimum' => 1,
+			],
+			'type'     => [
+				'type'    => 'integer',
+				'minimum' => 1,
+			],
 			'status'   => [
 				'type' => 'string',
 				'enum' => [ 'scheduled', 'cancelled', 'postponed', 'sold_out' ],
 			],
 			'featured' => [ 'type' => 'boolean' ],
-			'per_page' => [ 'type' => 'integer', 'default' => 20, 'minimum' => 1, 'maximum' => 500 ],
-			'page'     => [ 'type' => 'integer', 'default' => 1,  'minimum' => 1 ],
+			'per_page' => [
+				'type'    => 'integer',
+				'default' => 20,
+				'minimum' => 1,
+				'maximum' => 500,
+			],
+			'page'     => [
+				'type'    => 'integer',
+				'default' => 1,
+				'minimum' => 1,
+			],
 			'orderby'  => [
 				'type'    => 'string',
 				'default' => 'start_datetime',
@@ -491,7 +564,10 @@ class EventsController extends AbstractController {
 
 	private function instance_action_args(): array {
 		return [
-			'id'   => [ 'type' => 'integer', 'minimum' => 1 ],
+			'id'   => [
+				'type'    => 'integer',
+				'minimum' => 1,
+			],
 			'date' => [
 				'type'    => 'string',
 				'pattern' => '^\d{4}-\d{2}-\d{2}$',

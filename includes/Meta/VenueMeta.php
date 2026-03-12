@@ -24,10 +24,10 @@ class VenueMeta {
 		add_action( 'init', [ $this, 'register_meta' ] );
 
 		// Color picker on the Event Type term screens.
-		add_action( EventType::TAXONOMY . '_add_form_fields',  [ $this, 'render_color_add_field' ] );
+		add_action( EventType::TAXONOMY . '_add_form_fields', [ $this, 'render_color_add_field' ] );
 		add_action( EventType::TAXONOMY . '_edit_form_fields', [ $this, 'render_color_edit_field' ] );
-		add_action( 'created_' . EventType::TAXONOMY,          [ $this, 'save_color_field' ] );
-		add_action( 'edited_'  . EventType::TAXONOMY,          [ $this, 'save_color_field' ] );
+		add_action( 'created_' . EventType::TAXONOMY, [ $this, 'save_color_field' ] );
+		add_action( 'edited_' . EventType::TAXONOMY, [ $this, 'save_color_field' ] );
 	}
 
 	/**
@@ -55,97 +55,129 @@ class VenueMeta {
 		];
 
 		foreach ( $string_fields as $key => $description ) {
-			register_term_meta( $taxonomy, $key, [
-				'type'              => 'string',
-				'description'       => $description,
-				'single'            => true,
-				'default'           => '',
-				'sanitize_callback' => 'sanitize_text_field',
-				'show_in_rest'      => true,
-			] );
+			register_term_meta(
+				$taxonomy,
+				$key,
+				[
+					'type'              => 'string',
+					'description'       => $description,
+					'single'            => true,
+					'default'           => '',
+					'sanitize_callback' => 'sanitize_text_field',
+					'show_in_rest'      => true,
+				]
+			);
 		}
 
 		// URL fields.
-		register_term_meta( $taxonomy, 'blockendar_venue_url', [
-			'type'              => 'string',
-			'description'       => 'Venue website URL.',
-			'single'            => true,
-			'default'           => '',
-			'sanitize_callback' => 'esc_url_raw',
-			'show_in_rest'      => [
-				'schema' => [
-					'type'   => 'string',
-					'format' => 'uri',
+		register_term_meta(
+			$taxonomy,
+			'blockendar_venue_url',
+			[
+				'type'              => 'string',
+				'description'       => 'Venue website URL.',
+				'single'            => true,
+				'default'           => '',
+				'sanitize_callback' => 'esc_url_raw',
+				'show_in_rest'      => [
+					'schema' => [
+						'type'   => 'string',
+						'format' => 'uri',
+					],
 				],
-			],
-		] );
+			]
+		);
 
-		register_term_meta( $taxonomy, 'blockendar_venue_stream_url', [
-			'type'              => 'string',
-			'description'       => 'Stream link for virtual events.',
-			'single'            => true,
-			'default'           => '',
-			'sanitize_callback' => 'esc_url_raw',
-			'show_in_rest'      => [
-				'schema' => [
-					'type'   => 'string',
-					'format' => 'uri',
+		register_term_meta(
+			$taxonomy,
+			'blockendar_venue_stream_url',
+			[
+				'type'              => 'string',
+				'description'       => 'Stream link for virtual events.',
+				'single'            => true,
+				'default'           => '',
+				'sanitize_callback' => 'esc_url_raw',
+				'show_in_rest'      => [
+					'schema' => [
+						'type'   => 'string',
+						'format' => 'uri',
+					],
 				],
-			],
-		] );
+			]
+		);
 
 		// Coordinate fields.
-		register_term_meta( $taxonomy, 'blockendar_venue_lat', [
-			'type'              => 'number',
-			'description'       => 'Latitude (decimal degrees).',
-			'single'            => true,
-			'default'           => 0.0,
-			'sanitize_callback' => [ $this, 'sanitize_latitude' ],
-			'show_in_rest'      => true,
-		] );
+		register_term_meta(
+			$taxonomy,
+			'blockendar_venue_lat',
+			[
+				'type'              => 'number',
+				'description'       => 'Latitude (decimal degrees).',
+				'single'            => true,
+				'default'           => 0.0,
+				'sanitize_callback' => [ $this, 'sanitize_latitude' ],
+				'show_in_rest'      => true,
+			]
+		);
 
-		register_term_meta( $taxonomy, 'blockendar_venue_lng', [
-			'type'              => 'number',
-			'description'       => 'Longitude (decimal degrees).',
-			'single'            => true,
-			'default'           => 0.0,
-			'sanitize_callback' => [ $this, 'sanitize_longitude' ],
-			'show_in_rest'      => true,
-		] );
+		register_term_meta(
+			$taxonomy,
+			'blockendar_venue_lng',
+			[
+				'type'              => 'number',
+				'description'       => 'Longitude (decimal degrees).',
+				'single'            => true,
+				'default'           => 0.0,
+				'sanitize_callback' => [ $this, 'sanitize_longitude' ],
+				'show_in_rest'      => true,
+			]
+		);
 
 		// Integer fields.
-		register_term_meta( $taxonomy, 'blockendar_venue_capacity', [
-			'type'              => 'integer',
-			'description'       => 'Venue maximum capacity.',
-			'single'            => true,
-			'default'           => 0,
-			'sanitize_callback' => 'absint',
-			'show_in_rest'      => true,
-		] );
+		register_term_meta(
+			$taxonomy,
+			'blockendar_venue_capacity',
+			[
+				'type'              => 'integer',
+				'description'       => 'Venue maximum capacity.',
+				'single'            => true,
+				'default'           => 0,
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+			]
+		);
 
 		// Boolean fields.
-		register_term_meta( $taxonomy, 'blockendar_venue_virtual', [
-			'type'              => 'boolean',
-			'description'       => 'Whether this is an online/virtual venue.',
-			'single'            => true,
-			'default'           => false,
-			'sanitize_callback' => 'rest_sanitize_boolean',
-			'show_in_rest'      => true,
-		] );
+		register_term_meta(
+			$taxonomy,
+			'blockendar_venue_virtual',
+			[
+				'type'              => 'boolean',
+				'description'       => 'Whether this is an online/virtual venue.',
+				'single'            => true,
+				'default'           => false,
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
+			]
+		);
 	}
 
 	/**
 	 * Register event_type term meta (calendar colour).
 	 */
 	private function register_event_type_meta(): void {
-		register_term_meta( EventType::TAXONOMY, 'blockendar_type_color', [
-			'type'              => 'string',
-			'description'       => 'Hex colour for calendar display (e.g. #3B82F6).',
-			'single'            => true,
-			'default'           => '',
-			'sanitize_callback' => [ $this, 'sanitize_hex_color' ],
-			'show_in_rest'      => true,
-		] );
+		register_term_meta(
+			EventType::TAXONOMY,
+			'blockendar_type_color',
+			[
+				'type'              => 'string',
+				'description'       => 'Hex colour for calendar display (e.g. #3B82F6).',
+				'single'            => true,
+				'default'           => '',
+				'sanitize_callback' => [ $this, 'sanitize_hex_color' ],
+				'show_in_rest'      => true,
+			]
+		);
 	}
 
 	/**
@@ -198,6 +230,7 @@ class VenueMeta {
 	 * @param int $term_id Term ID.
 	 */
 	public function save_color_field( int $term_id ): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified by WP core before firing edited/created_term actions.
 		if ( ! isset( $_POST['blockendar_type_color'] ) ) {
 			return;
 		}
@@ -206,6 +239,7 @@ class VenueMeta {
 			return;
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified upstream; value sanitized via sanitize_hex_color().
 		$color = $this->sanitize_hex_color( wp_unslash( $_POST['blockendar_type_color'] ) );
 		update_term_meta( $term_id, 'blockendar_type_color', $color );
 	}

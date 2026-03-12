@@ -82,13 +82,13 @@ class Exporter {
 	 * @return string[]
 	 */
 	private function build_vevent( object $row ): array {
-		$post_id    = (int) $row->post_id;
-		$all_day    = (bool) $row->all_day;
-		$uid        = "blockendar-{$post_id}-{$row->start_date}@" . parse_url( home_url(), PHP_URL_HOST );
-		$url        = get_permalink( $post_id );
-		$summary    = $this->escape_text( $row->post_title );
+		$post_id     = (int) $row->post_id;
+		$all_day     = (bool) $row->all_day;
+		$uid         = "blockendar-{$post_id}-{$row->start_date}@" . wp_parse_url( home_url(), PHP_URL_HOST );
+		$url         = get_permalink( $post_id );
+		$summary     = $this->escape_text( $row->post_title );
 		$description = $this->escape_text( wp_strip_all_tags( get_the_excerpt( $post_id ) ) );
-		$location   = $this->get_location_string( $row->venue_term_id ? (int) $row->venue_term_id : null );
+		$location    = $this->get_location_string( $row->venue_term_id ? (int) $row->venue_term_id : null );
 
 		$lines   = [];
 		$lines[] = 'BEGIN:VEVENT';
@@ -98,11 +98,11 @@ class Exporter {
 		if ( $all_day ) {
 			$lines[] = 'DTSTART;VALUE=DATE:' . str_replace( '-', '', $row->start_date );
 			// iCal all-day end is exclusive, so add one day.
-			$end_exclusive = date( 'Ymd', strtotime( $row->end_date . ' +1 day' ) );
-			$lines[] = 'DTEND;VALUE=DATE:' . $end_exclusive;
+			$end_exclusive = gmdate( 'Ymd', strtotime( $row->end_date . ' +1 day' ) );
+			$lines[]       = 'DTEND;VALUE=DATE:' . $end_exclusive;
 		} else {
 			$lines[] = 'DTSTART:' . $this->utc_to_ical( $row->start_datetime );
-			$lines[] = 'DTEND:'   . $this->utc_to_ical( $row->end_datetime );
+			$lines[] = 'DTEND:' . $this->utc_to_ical( $row->end_datetime );
 		}
 
 		$lines[] = 'SUMMARY:' . $summary;
@@ -120,14 +120,14 @@ class Exporter {
 		}
 
 		// Status mapping.
-		$status_map = [
+		$status_map  = [
 			'scheduled' => 'CONFIRMED',
 			'cancelled' => 'CANCELLED',
 			'postponed' => 'TENTATIVE',
 			'sold_out'  => 'CONFIRMED',
 		];
 		$ical_status = $status_map[ $row->status ] ?? 'CONFIRMED';
-		$lines[] = 'STATUS:' . $ical_status;
+		$lines[]     = 'STATUS:' . $ical_status;
 
 		$lines[] = 'END:VEVENT';
 
@@ -160,13 +160,15 @@ class Exporter {
 			return '';
 		}
 
-		$parts = array_filter( [
-			$term->name,
-			get_term_meta( $venue_term_id, 'blockendar_venue_address',  true ),
-			get_term_meta( $venue_term_id, 'blockendar_venue_city',     true ),
-			get_term_meta( $venue_term_id, 'blockendar_venue_state',    true ),
-			get_term_meta( $venue_term_id, 'blockendar_venue_country',  true ),
-		] );
+		$parts = array_filter(
+			[
+				$term->name,
+				get_term_meta( $venue_term_id, 'blockendar_venue_address', true ),
+				get_term_meta( $venue_term_id, 'blockendar_venue_city', true ),
+				get_term_meta( $venue_term_id, 'blockendar_venue_state', true ),
+				get_term_meta( $venue_term_id, 'blockendar_venue_country', true ),
+			]
+		);
 
 		return implode( ', ', $parts );
 	}
@@ -203,16 +205,16 @@ class Exporter {
 		$status     = get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled';
 
 		try {
-			$tz         = new \DateTimeZone( $tz_str );
-			$utc        = new \DateTimeZone( 'UTC' );
-			$start_dt   = ( new \DateTimeImmutable( "{$start_date} {$start_time}:00", $tz ) )->setTimezone( $utc );
-			$end_dt     = ( new \DateTimeImmutable( "{$end_date} {$end_time}:00", $tz ) )->setTimezone( $utc );
+			$tz       = new \DateTimeZone( $tz_str );
+			$utc      = new \DateTimeZone( 'UTC' );
+			$start_dt = ( new \DateTimeImmutable( "{$start_date} {$start_time}:00", $tz ) )->setTimezone( $utc );
+			$end_dt   = ( new \DateTimeImmutable( "{$end_date} {$end_time}:00", $tz ) )->setTimezone( $utc );
 		} catch ( \Exception ) {
 			return null;
 		}
 
-		$terms          = get_the_terms( $post_id, 'event_venue' );
-		$venue_term_id  = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? $terms[0]->term_id : null;
+		$terms         = get_the_terms( $post_id, 'event_venue' );
+		$venue_term_id = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? $terms[0]->term_id : null;
 
 		return (object) [
 			'post_id'        => $post_id,

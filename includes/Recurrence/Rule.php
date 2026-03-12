@@ -25,10 +25,10 @@ class Rule {
 	// RFC 5545 weekday codes.
 	const WEEKDAYS = [ 'MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU' ];
 
-	public readonly int    $id;
-	public readonly int    $post_id;
+	public readonly int $id;
+	public readonly int $post_id;
 	public readonly string $frequency;
-	public readonly int    $interval;
+	public readonly int $interval;
 
 	/** @var string[] RFC 5545 weekday codes, e.g. ['MO','WE','FR'] */
 	public readonly array $byday;
@@ -40,7 +40,7 @@ class Rule {
 	public readonly array $bysetpos;
 
 	public readonly ?\DateTimeImmutable $until_date;
-	public readonly ?int                $count;
+	public readonly ?int $count;
 
 	/** @var string[] Excluded dates in Y-m-d format */
 	public readonly array $exceptions;

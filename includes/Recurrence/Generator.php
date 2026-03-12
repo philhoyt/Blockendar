@@ -59,17 +59,20 @@ class Generator {
 		// Clear existing recurrence rows for this post.
 		$this->index->delete_by_post_id( $post_id );
 
-		$meta      = $this->get_event_meta( $post_id );
-		$dates     = $this->expand_dates( $rule, $meta );
-		$shared    = $this->get_shared_row_data( $post_id, $rule->id, $meta );
+		$meta   = $this->get_event_meta( $post_id );
+		$dates  = $this->expand_dates( $rule, $meta );
+		$shared = $this->get_shared_row_data( $post_id, $rule->id, $meta );
 
 		foreach ( $dates as $date_pair ) {
-			$row = array_merge( $shared, [
-				'start_datetime' => $date_pair['start_utc'],
-				'end_datetime'   => $date_pair['end_utc'],
-				'start_date'     => $date_pair['start_date'],
-				'end_date'       => $date_pair['end_date'],
-			] );
+			$row = array_merge(
+				$shared,
+				[
+					'start_datetime' => $date_pair['start_utc'],
+					'end_datetime'   => $date_pair['end_utc'],
+					'start_date'     => $date_pair['start_date'],
+					'end_date'       => $date_pair['end_date'],
+				]
+			);
 
 			$this->index->insert( $row );
 		}
@@ -82,12 +85,15 @@ class Generator {
 				continue;
 			}
 
-			$row = array_merge( $shared, [
-				'start_datetime' => $date_pair['start_utc'],
-				'end_datetime'   => $date_pair['end_utc'],
-				'start_date'     => $date_pair['start_date'],
-				'end_date'       => $date_pair['end_date'],
-			] );
+			$row = array_merge(
+				$shared,
+				[
+					'start_datetime' => $date_pair['start_utc'],
+					'end_datetime'   => $date_pair['end_utc'],
+					'start_date'     => $date_pair['start_date'],
+					'end_date'       => $date_pair['end_date'],
+				]
+			);
 
 			$this->index->insert( $row );
 		}
@@ -172,7 +178,7 @@ class Generator {
 
 				if ( null !== $date_pair ) {
 					$occurrences[] = $date_pair;
-					$count++;
+					++$count;
 				}
 			}
 
@@ -225,7 +231,15 @@ class Generator {
 		}
 
 		// Map RFC 5545 codes to PHP day numbers (0=Sun…6=Sat).
-		$day_map = [ 'SU' => 0, 'MO' => 1, 'TU' => 2, 'WE' => 3, 'TH' => 4, 'FR' => 5, 'SA' => 6 ];
+		$day_map = [
+			'SU' => 0,
+			'MO' => 1,
+			'TU' => 2,
+			'WE' => 3,
+			'TH' => 4,
+			'FR' => 5,
+			'SA' => 6,
+		];
 
 		$selected_days = array_map( fn( $d ) => $day_map[ $d ] ?? -1, $rule->byday );
 		$selected_days = array_filter( $selected_days, fn( $d ) => $d >= 0 );
@@ -242,16 +256,16 @@ class Generator {
 		}
 
 		// No more days this week — jump to first selected day next interval-weeks.
-		$first_day = reset( $selected_days );
-		$days_to_monday = ( 7 - $current_dow + 1 ) % 7 ?: 7; // days to next Monday
+		$first_day          = reset( $selected_days );
+		$days_to_monday     = ( 7 - $current_dow + 1 ) % 7 ?: 7; // days to next Monday
 		$days_to_week_start = $days_to_monday + ( ( $rule->interval - 1 ) * 7 );
-		$days_to_first = $days_to_week_start + ( $first_day - 1 ); // Mon=1, so offset
+		$days_to_first      = $days_to_week_start + ( $first_day - 1 ); // Mon=1, so offset
 
 		// Simpler: jump to start of next occurrence week then find first matching day.
 		$next_week_start = $cursor->modify( 'Monday next week' );
 
 		if ( $rule->interval > 1 ) {
-			$extra_weeks = $rule->interval - 1;
+			$extra_weeks     = $rule->interval - 1;
 			$next_week_start = $next_week_start->modify( "+{$extra_weeks} weeks" );
 		}
 
@@ -319,8 +333,15 @@ class Generator {
 		Rule $rule,
 		int $interval
 	): ?\DateTimeImmutable {
-		$day_map     = [ 'SU' => 'Sunday', 'MO' => 'Monday', 'TU' => 'Tuesday', 'WE' => 'Wednesday',
-		                 'TH' => 'Thursday', 'FR' => 'Friday', 'SA' => 'Saturday' ];
+		$day_map     = [
+			'SU' => 'Sunday',
+			'MO' => 'Monday',
+			'TU' => 'Tuesday',
+			'WE' => 'Wednesday',
+			'TH' => 'Thursday',
+			'FR' => 'Friday',
+			'SA' => 'Saturday',
+		];
 		$weekday_str = $day_map[ $rule->byday[0] ] ?? null;
 		$setpos      = $rule->bysetpos[0] ?? 1;
 
@@ -331,7 +352,13 @@ class Generator {
 		$next_month = $cursor->modify( "+{$interval} months" )->modify( 'first day of this month' );
 
 		if ( $setpos > 0 ) {
-			$ordinals = [ 1 => 'first', 2 => 'second', 3 => 'third', 4 => 'fourth', 5 => 'fifth' ];
+			$ordinals = [
+				1 => 'first',
+				2 => 'second',
+				3 => 'third',
+				4 => 'fourth',
+				5 => 'fifth',
+			];
 			$ordinal  = $ordinals[ $setpos ] ?? 'first';
 			try {
 				return new \DateTimeImmutable( "{$ordinal} {$weekday_str} of " . $next_month->format( 'F Y' ) );

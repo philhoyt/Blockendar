@@ -6,20 +6,22 @@
  */
 declare( strict_types=1 );
 
-$post_id     = $block->context['postId'] ?? get_the_ID();
-$show_addr   = (bool) ( $attributes['showAddress'] ?? true );
-$show_map    = (bool) ( $attributes['showMap'] ?? false );
+$post_id   = $block->context['postId'] ?? get_the_ID();
+$show_addr = (bool) ( $attributes['showAddress'] ?? true );
+$show_map  = (bool) ( $attributes['showMap'] ?? false );
 
 $terms = get_the_terms( $post_id, 'event_venue' );
-if ( is_wp_error( $terms ) || empty( $terms ) ) return;
+if ( is_wp_error( $terms ) || empty( $terms ) ) {
+	return;
+}
 
 $term    = $terms[0];
 $term_id = $term->term_id;
 $virtual = (bool) get_term_meta( $term_id, 'blockendar_venue_virtual', true );
-$address = get_term_meta( $term_id, 'blockendar_venue_address',  true );
-$city    = get_term_meta( $term_id, 'blockendar_venue_city',     true );
-$state   = get_term_meta( $term_id, 'blockendar_venue_state',    true );
-$country = get_term_meta( $term_id, 'blockendar_venue_country',  true );
+$address = get_term_meta( $term_id, 'blockendar_venue_address', true );
+$city    = get_term_meta( $term_id, 'blockendar_venue_city', true );
+$state   = get_term_meta( $term_id, 'blockendar_venue_state', true );
+$country = get_term_meta( $term_id, 'blockendar_venue_country', true );
 $lat     = (float) get_term_meta( $term_id, 'blockendar_venue_lat', true );
 $lng     = (float) get_term_meta( $term_id, 'blockendar_venue_lng', true );
 $stream  = get_term_meta( $term_id, 'blockendar_venue_stream_url', true );

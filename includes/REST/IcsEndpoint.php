@@ -64,9 +64,9 @@ class IcsEndpoint {
 			wp_die( esc_html__( 'Event has no date.', 'blockendar' ), 404 );
 		}
 
-		$end_date   = get_post_meta( $post_id, 'blockendar_end_date',   true ) ?: $start_date;
+		$end_date   = get_post_meta( $post_id, 'blockendar_end_date', true ) ?: $start_date;
 		$start_time = get_post_meta( $post_id, 'blockendar_start_time', true ) ?: '00:00:00';
-		$end_time   = get_post_meta( $post_id, 'blockendar_end_time',   true ) ?: $start_time;
+		$end_time   = get_post_meta( $post_id, 'blockendar_end_time', true ) ?: $start_time;
 		$all_day    = (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
 		$tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 		$title      = get_the_title( $post_id );
@@ -86,7 +86,7 @@ class IcsEndpoint {
 		};
 
 		$dtstart = $fmt( $start_date, $start_time );
-		$dtend   = $fmt( $end_date,   $end_time );
+		$dtend   = $fmt( $end_date, $end_time );
 		$now     = ( new \DateTimeImmutable( 'now', new \DateTimeZone( 'UTC' ) ) )->format( 'Ymd\THis\Z' );
 		$slug    = get_post_field( 'post_name', $post_id );
 
@@ -100,9 +100,9 @@ class IcsEndpoint {
 			"UID:$uid",
 			"DTSTAMP:$now",
 			$all_day ? "DTSTART;VALUE=DATE:$dtstart" : "DTSTART:$dtstart",
-			$all_day ? "DTEND;VALUE=DATE:$dtend"     : "DTEND:$dtend",
-			'SUMMARY:'   . $this->escape_ical( $title ),
-			'URL:'       . $this->escape_ical( $url ),
+			$all_day ? "DTEND;VALUE=DATE:$dtend" : "DTEND:$dtend",
+			'SUMMARY:' . $this->escape_ical( $title ),
+			'URL:' . $this->escape_ical( $url ),
 			'END:VEVENT',
 			'END:VCALENDAR',
 		];

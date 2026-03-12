@@ -17,11 +17,12 @@ use Blockendar\DB\EventIndex;
 $index    = new EventIndex();
 $now      = gmdate( 'Y-m-d H:i:s' );
 $per_page = max( 1, min( 100, (int) ( $attributes['perPage'] ?? 10 ) ) );
-$page     = max( 1, (int) ( $_GET['blockendar_page'] ?? 1 ) ); // phpcs:ignore WordPress.Security.NonceVerification
-$layout   = in_array( $attributes['layout'] ?? 'list', [ 'list', 'grid' ], true )
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Pagination param; cast to int is sufficient sanitization.
+$page       = max( 1, isset( $_GET['blockendar_page'] ) ? (int) $_GET['blockendar_page'] : 1 );
+$layout     = in_array( $attributes['layout'] ?? 'list', [ 'list', 'grid' ], true )
 	? $attributes['layout']
 	: 'list';
-$group_by   = $attributes['groupBy']   ?? 'none';
+$group_by   = $attributes['groupBy'] ?? 'none';
 $pagination = $attributes['pagination'] ?? 'paged';
 $show_past  = ! empty( $attributes['showPast'] );
 $order      = 'DESC' === ( $attributes['order'] ?? 'ASC' ) ? 'DESC' : 'ASC';
@@ -38,9 +39,9 @@ if ( $show_past ) {
 }
 
 $filters = [
-	'venue_term_id' => ! empty( $attributes['venueId'] )      ? (int) $attributes['venueId']      : null,
-	'type_term_id'  => ! empty( $attributes['typeId'] )       ? (int) $attributes['typeId']       : null,
-	'featured'      => ! empty( $attributes['featuredOnly'] ) ? true                              : null,
+	'venue_term_id' => ! empty( $attributes['venueId'] ) ? (int) $attributes['venueId'] : null,
+	'type_term_id'  => ! empty( $attributes['typeId'] ) ? (int) $attributes['typeId'] : null,
+	'featured'      => ! empty( $attributes['featuredOnly'] ) ? true : null,
 	'per_page'      => $per_page,
 	'page'          => $page,
 	'orderby'       => 'start_datetime',
@@ -72,11 +73,16 @@ foreach ( $events as $event ) {
 	$grouped[ $key ][] = $event;
 }
 
-$block_classes = implode( ' ', array_filter( [
-	'blockendar-event-list',
-	"blockendar-event-list--$layout",
-	'none' !== $group_by ? 'blockendar-event-list--grouped' : '',
-] ) );
+$block_classes = implode(
+	' ',
+	array_filter(
+		[
+			'blockendar-event-list',
+			"blockendar-event-list--$layout",
+			'none' !== $group_by ? 'blockendar-event-list--grouped' : '',
+		]
+	)
+);
 
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => $block_classes ] ); ?>>
@@ -90,7 +96,8 @@ $block_classes = implode( ' ', array_filter( [
 		<?php endif; ?>
 
 		<ul class="blockendar-event-list__items">
-			<?php foreach ( $group_events as $event ) :
+			<?php
+			foreach ( $group_events as $event ) :
 				$post_id    = (int) $event->post_id;
 				$permalink  = get_permalink( $post_id );
 				$thumb_id   = get_post_thumbnail_id( $post_id );
@@ -106,7 +113,7 @@ $block_classes = implode( ' ', array_filter( [
 				$start_formatted = $event->all_day
 					? date_i18n( get_option( 'date_format' ), strtotime( $event->start_date ) )
 					: date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $event->start_datetime ) );
-			?>
+				?>
 			<li class="blockendar-event-list__item blockendar-event-list__item--<?php echo esc_attr( $status ); ?>">
 				<a href="<?php echo esc_url( $permalink ); ?>" class="blockendar-event-list__link">
 
@@ -154,7 +161,7 @@ $block_classes = implode( ' ', array_filter( [
 
 			for ( $p = 1; $p <= $pages; $p++ ) :
 				$url = add_query_arg( 'blockendar_page', $p, $base_url );
-			?>
+				?>
 			<a
 				href="<?php echo esc_url( $url ); ?>"
 				class="blockendar-event-list__page-link<?php echo $p === $page ? ' is-current' : ''; ?>"

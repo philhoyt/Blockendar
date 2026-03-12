@@ -53,7 +53,10 @@ class Venue {
 			'show_admin_column' => true,
 			'show_in_rest'      => true,
 			'rest_base'         => 'event-venues',
-			'rewrite'           => [ 'slug' => 'events/venue', 'with_front' => false ],
+			'rewrite'           => [
+				'slug'       => 'events/venue',
+				'with_front' => false,
+			],
 		];
 
 		register_taxonomy( self::TAXONOMY, EventPostType::POST_TYPE, $args );

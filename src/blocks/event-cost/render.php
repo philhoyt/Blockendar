@@ -13,7 +13,9 @@ $button_label = ! empty( $attributes['buttonLabel'] )
 	? $attributes['buttonLabel']
 	: __( 'Register / Get Tickets', 'blockendar' );
 
-if ( ! $cost && ! $reg_url ) return;
+if ( ! $cost && ! $reg_url ) {
+	return;
+}
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-cost' ] ); ?>>
 	<?php if ( $cost ) : ?>

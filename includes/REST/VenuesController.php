@@ -32,26 +32,49 @@ class VenuesController extends AbstractController {
 	 * Register routes.
 	 */
 	public function register_routes(): void {
-		register_rest_route( self::NAMESPACE, '/venues', [
-			'methods'             => 'GET',
-			'callback'            => [ $this, 'get_venues' ],
-			'permission_callback' => '__return_true',
-			'args'                => [
-				'per_page' => [ 'type' => 'integer', 'default' => 100, 'minimum' => 1, 'maximum' => 500 ],
-				'page'     => [ 'type' => 'integer', 'default' => 1, 'minimum' => 1 ],
-				'search'   => [ 'type' => 'string',  'default' => '' ],
-				'virtual'  => [ 'type' => 'boolean' ],
-			],
-		] );
+		register_rest_route(
+			self::NAMESPACE,
+			'/venues',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'get_venues' ],
+				'permission_callback' => '__return_true',
+				'args'                => [
+					'per_page' => [
+						'type'    => 'integer',
+						'default' => 100,
+						'minimum' => 1,
+						'maximum' => 500,
+					],
+					'page'     => [
+						'type'    => 'integer',
+						'default' => 1,
+						'minimum' => 1,
+					],
+					'search'   => [
+						'type'    => 'string',
+						'default' => '',
+					],
+					'virtual'  => [ 'type' => 'boolean' ],
+				],
+			]
+		);
 
-		register_rest_route( self::NAMESPACE, '/venues/(?P<id>\d+)', [
-			'methods'             => 'GET',
-			'callback'            => [ $this, 'get_venue' ],
-			'permission_callback' => '__return_true',
-			'args'                => [
-				'id' => [ 'type' => 'integer', 'minimum' => 1 ],
-			],
-		] );
+		register_rest_route(
+			self::NAMESPACE,
+			'/venues/(?P<id>\d+)',
+			[
+				'methods'             => 'GET',
+				'callback'            => [ $this, 'get_venue' ],
+				'permission_callback' => '__return_true',
+				'args'                => [
+					'id' => [
+						'type'    => 'integer',
+						'minimum' => 1,
+					],
+				],
+			]
+		);
 	}
 
 	// -------------------------------------------------------------------------
@@ -97,8 +120,13 @@ class VenuesController extends AbstractController {
 			return $terms;
 		}
 
-		$total      = wp_count_terms( [ 'taxonomy' => Venue::TAXONOMY, 'hide_empty' => false ] );
-		$total_int  = is_wp_error( $total ) ? 0 : (int) $total;
+		$total     = wp_count_terms(
+			[
+				'taxonomy'   => Venue::TAXONOMY,
+				'hide_empty' => false,
+			]
+		);
+		$total_int = is_wp_error( $total ) ? 0 : (int) $total;
 
 		$data = array_map( [ $this, 'format_venue' ], $terms );
 
@@ -127,22 +155,29 @@ class VenuesController extends AbstractController {
 		$venue = $this->format_venue( $term );
 
 		// Attach upcoming events at this venue.
-		$now      = gmdate( 'Y-m-d H:i:s' );
-		$horizon  = gmdate( 'Y-m-d H:i:s', strtotime( '+1 year' ) );
-		$rows     = $this->index->get_events_in_range( $now, $horizon, [
-			'venue_term_id' => $term_id,
-			'per_page'      => 20,
-		] );
+		$now     = gmdate( 'Y-m-d H:i:s' );
+		$horizon = gmdate( 'Y-m-d H:i:s', strtotime( '+1 year' ) );
+		$rows    = $this->index->get_events_in_range(
+			$now,
+			$horizon,
+			[
+				'venue_term_id' => $term_id,
+				'per_page'      => 20,
+			]
+		);
 
-		$venue['upcoming_events'] = array_map( fn( $row ) => [
-			'post_id'        => (int) $row->post_id,
-			'title'          => $row->post_title,
-			'url'            => get_permalink( (int) $row->post_id ),
-			'start_datetime' => $row->start_datetime,
-			'end_datetime'   => $row->end_datetime,
-			'all_day'        => (bool) $row->all_day,
-			'status'         => $row->status,
-		], $rows );
+		$venue['upcoming_events'] = array_map(
+			fn( $row ) => [
+				'post_id'        => (int) $row->post_id,
+				'title'          => $row->post_title,
+				'url'            => get_permalink( (int) $row->post_id ),
+				'start_datetime' => $row->start_datetime,
+				'end_datetime'   => $row->end_datetime,
+				'all_day'        => (bool) $row->all_day,
+				'status'         => $row->status,
+			],
+			$rows
+		);
 
 		return $this->respond( $venue );
 	}
@@ -166,22 +201,22 @@ class VenuesController extends AbstractController {
 			'description' => $term->description,
 			'url'         => get_term_link( $term ),
 			'address'     => [
-				'line1'    => get_term_meta( $id, 'blockendar_venue_address',  true ),
+				'line1'    => get_term_meta( $id, 'blockendar_venue_address', true ),
 				'line2'    => get_term_meta( $id, 'blockendar_venue_address2', true ),
-				'city'     => get_term_meta( $id, 'blockendar_venue_city',     true ),
-				'state'    => get_term_meta( $id, 'blockendar_venue_state',    true ),
+				'city'     => get_term_meta( $id, 'blockendar_venue_city', true ),
+				'state'    => get_term_meta( $id, 'blockendar_venue_state', true ),
 				'postcode' => get_term_meta( $id, 'blockendar_venue_postcode', true ),
-				'country'  => get_term_meta( $id, 'blockendar_venue_country',  true ),
+				'country'  => get_term_meta( $id, 'blockendar_venue_country', true ),
 			],
 			'coordinates' => [
 				'lat' => (float) get_term_meta( $id, 'blockendar_venue_lat', true ),
 				'lng' => (float) get_term_meta( $id, 'blockendar_venue_lng', true ),
 			],
-			'phone'      => get_term_meta( $id, 'blockendar_venue_phone',    true ),
-			'website'    => get_term_meta( $id, 'blockendar_venue_url',      true ),
-			'capacity'   => (int) get_term_meta( $id, 'blockendar_venue_capacity', true ),
-			'virtual'    => (bool) get_term_meta( $id, 'blockendar_venue_virtual', true ),
-			'stream_url' => get_term_meta( $id, 'blockendar_venue_stream_url', true ),
+			'phone'       => get_term_meta( $id, 'blockendar_venue_phone', true ),
+			'website'     => get_term_meta( $id, 'blockendar_venue_url', true ),
+			'capacity'    => (int) get_term_meta( $id, 'blockendar_venue_capacity', true ),
+			'virtual'     => (bool) get_term_meta( $id, 'blockendar_venue_virtual', true ),
+			'stream_url'  => get_term_meta( $id, 'blockendar_venue_stream_url', true ),
 		];
 	}
 }

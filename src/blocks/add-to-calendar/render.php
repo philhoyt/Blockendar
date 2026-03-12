@@ -8,9 +8,9 @@ declare( strict_types=1 );
 
 $post_id    = $block->context['postId'] ?? get_the_ID();
 $start_date = get_post_meta( $post_id, 'blockendar_start_date', true );
-$end_date   = get_post_meta( $post_id, 'blockendar_end_date',   true );
+$end_date   = get_post_meta( $post_id, 'blockendar_end_date', true );
 $start_time = get_post_meta( $post_id, 'blockendar_start_time', true );
-$end_time   = get_post_meta( $post_id, 'blockendar_end_time',   true );
+$end_time   = get_post_meta( $post_id, 'blockendar_end_time', true );
 $all_day    = (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
 $tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 $title      = get_the_title( $post_id );
@@ -18,9 +18,11 @@ $detail_url = get_permalink( $post_id );
 $ics_url    = rest_url( 'blockendar/v1/events/' . $post_id . '/ical' );
 $label      = ! empty( $attributes['label'] ) ? $attributes['label'] : __( 'Add to Calendar', 'blockendar' );
 
-if ( ! $start_date ) return;
+if ( ! $start_date ) {
+	return;
+}
 
-$fmt_ts = function( string $date, string $time ) use ( $tz_str, $all_day ): string {
+$fmt_ts = function ( string $date, string $time ) use ( $tz_str, $all_day ): string {
 	if ( $all_day ) {
 		return str_replace( '-', '', $date );
 	}
@@ -46,15 +48,15 @@ $google_url = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
 
 $outlook_params = '?subject=' . $enc_title
 	. '&startdt=' . rawurlencode( $start_dt )
-	. '&enddt='   . rawurlencode( $end_dt )
-	. '&body='    . $enc_url;
+	. '&enddt=' . rawurlencode( $end_dt )
+	. '&body=' . $enc_url;
 
 $outlook_365_url  = 'https://outlook.office.com/calendar/0/deeplink/compose' . $outlook_params;
-$outlook_live_url = 'https://outlook.live.com/calendar/0/deeplink/compose'   . $outlook_params;
+$outlook_live_url = 'https://outlook.live.com/calendar/0/deeplink/compose' . $outlook_params;
 
-$show_google       = (bool) ( $attributes['showGoogle']      ?? true );
-$show_ical         = (bool) ( $attributes['showIcal']        ?? true );
-$show_outlook_365  = (bool) ( $attributes['showOutlook365']  ?? true );
+$show_google       = (bool) ( $attributes['showGoogle'] ?? true );
+$show_ical         = (bool) ( $attributes['showIcal'] ?? true );
+$show_outlook_365  = (bool) ( $attributes['showOutlook365'] ?? true );
 $show_outlook_live = (bool) ( $attributes['showOutlookLive'] ?? true );
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-add-to-calendar' ] ); ?>>

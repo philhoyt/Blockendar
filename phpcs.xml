@@ -1,0 +1,154 @@
+<?xml version="1.0"?>
+<ruleset name="Blockendar">
+	<description>WordPress Coding Standards for Blockendar.</description>
+
+	<!-- What to scan (PHP only) -->
+	<file>blockendar.php</file>
+	<file>uninstall.php</file>
+	<file>includes/</file>
+	<file>src/blocks/</file>
+
+	<arg name="extensions" value="php"/>
+
+	<!-- Exclude compiled/vendor output -->
+	<exclude-pattern>build/</exclude-pattern>
+	<exclude-pattern>vendor/</exclude-pattern>
+	<exclude-pattern>node_modules/</exclude-pattern>
+
+	<!-- ======================================================
+	     Core ruleset
+	     ====================================================== -->
+	<rule ref="WordPress"/>
+
+	<!-- ======================================================
+	     File/class naming
+	     ====================================================== -->
+	<!-- We use PSR-4 namespacing, not the legacy WP class-{name}.php convention -->
+	<rule ref="WordPress.Files.FileName">
+		<severity>0</severity>
+	</rule>
+
+	<!-- ======================================================
+	     Commenting
+	     ====================================================== -->
+	<!-- Namespace-prefixed code doesn't need a file-level @package tag -->
+	<rule ref="Squiz.Commenting.FileComment.Missing">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Squiz.Commenting.FileComment.MissingPackageTag">
+		<severity>0</severity>
+	</rule>
+	<!-- Docblock completeness — suppress overly pedantic requirements.
+	     Good docblocks are encouraged but not enforced via lint. -->
+	<rule ref="Squiz.Commenting.FunctionComment.MissingParamTag">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Squiz.Commenting.FunctionComment.Missing">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Squiz.Commenting.FunctionComment.WrongStyle">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Squiz.Commenting.VariableComment.Missing">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Squiz.Commenting.FileComment.SpacingAfterComment">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Generic.Commenting.DocComment.ShortNotCapital">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Generic.Commenting.DocComment.LongNotCapital">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Generic.Commenting.DocComment.MissingShort">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Squiz.Commenting.InlineComment.InvalidEndChar">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Squiz.Commenting.FunctionComment.MissingParamComment">
+		<severity>0</severity>
+	</rule>
+	<rule ref="Squiz.Commenting.FunctionComment.ParamCommentFullStop">
+		<severity>0</severity>
+	</rule>
+
+	<!-- ======================================================
+	     Style preferences
+	     ====================================================== -->
+	<!-- Short ternary (?:) is fine in modern PHP -->
+	<rule ref="Universal.Operators.DisallowShortTernary">
+		<severity>0</severity>
+	</rule>
+
+	<!-- Non-yoda conditions are fine in modern PHP -->
+	<rule ref="WordPress.PHP.YodaConditions">
+		<severity>0</severity>
+	</rule>
+
+	<!-- Allow short array syntax [] -->
+	<rule ref="Universal.Arrays.DisallowShortArraySyntax">
+		<severity>0</severity>
+	</rule>
+
+	<!-- ======================================================
+	     WP block render files
+	     ====================================================== -->
+	<!-- Block render.php files receive $attributes, $content, $block from WP core
+	     via extract(); shadowing WP globals like $term, $post is unavoidable. -->
+	<rule ref="WordPress.WP.GlobalVariablesOverride">
+		<exclude-pattern>src/blocks/*/render.php</exclude-pattern>
+	</rule>
+
+	<!-- get_block_wrapper_attributes() already returns safe HTML; no extra escaping needed -->
+	<rule ref="WordPress.Security.EscapeOutput.OutputNotEscaped">
+		<exclude-pattern>src/blocks/*/render.php</exclude-pattern>
+	</rule>
+
+	<!-- ======================================================
+	     Database
+	     ====================================================== -->
+	<!-- Direct DB calls against the plugin's custom index table are intentional
+	     throughout includes/. The DB namespace owns the schema; other namespaces
+	     query it for reads/writes that can't go through WP_Query. -->
+	<rule ref="WordPress.DB.DirectDatabaseQuery">
+		<exclude-pattern>includes/</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.DB.SlowDBQuery">
+		<exclude-pattern>includes/</exclude-pattern>
+	</rule>
+	<!-- Schema DDL and dynamic queries in DB/ use table names and runtime-built
+	     WHERE clauses that PHPCS can't statically analyse for placeholder counts. -->
+	<rule ref="WordPress.DB.PreparedSQL">
+		<exclude-pattern>includes/DB/</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.DB.PreparedSQLPlaceholders">
+		<exclude-pattern>includes/DB/</exclude-pattern>
+	</rule>
+
+	<!-- ======================================================
+	     Alternatives
+	     ====================================================== -->
+	<!-- file_get_contents() is fine for reading local plugin files -->
+	<rule ref="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents">
+		<severity>0</severity>
+	</rule>
+
+	<!-- ======================================================
+	     i18n
+	     ====================================================== -->
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="blockendar"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- ======================================================
+	     Minimum supported versions
+	     ====================================================== -->
+	<config name="minimum_supported_wp_version" value="6.7"/>
+	<config name="testVersion" value="8.1-"/>
+</ruleset>

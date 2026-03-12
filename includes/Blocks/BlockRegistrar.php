@@ -21,7 +21,7 @@ class BlockRegistrar {
 	 * Register hooks.
 	 */
 	public function register(): void {
-		add_action( 'init',           [ $this, 'register_blocks' ] );
+		add_action( 'init', [ $this, 'register_blocks' ] );
 		add_action( 'enqueue_block_editor_assets', [ $this, 'enqueue_editor_panels' ] );
 	}
 
@@ -67,15 +67,19 @@ class BlockRegistrar {
 		);
 
 		// Pass REST namespace and nonce to the editor panels.
-		wp_localize_script( 'blockendar-editor-panels', 'blockendarEditor', [
-			'restUrl'      => esc_url_raw( rest_url( 'blockendar/v1' ) ),
-			'nonce'        => wp_create_nonce( 'wp_rest' ),
-			'postType'     => EventPostType::POST_TYPE,
-			'timezones'    => $this->get_timezone_list(),
-			'currencies'   => $this->get_currency_list(),
-			'siteTimezone' => $this->get_site_iana_timezone(),
-			'is12Hour'     => $this->is_12_hour_format(),
-		] );
+		wp_localize_script(
+			'blockendar-editor-panels',
+			'blockendarEditor',
+			[
+				'restUrl'      => esc_url_raw( rest_url( 'blockendar/v1' ) ),
+				'nonce'        => wp_create_nonce( 'wp_rest' ),
+				'postType'     => EventPostType::POST_TYPE,
+				'timezones'    => $this->get_timezone_list(),
+				'currencies'   => $this->get_currency_list(),
+				'siteTimezone' => $this->get_site_iana_timezone(),
+				'is12Hour'     => $this->is_12_hour_format(),
+			]
+		);
 
 		wp_enqueue_style(
 			'blockendar-editor-panels',
@@ -129,9 +133,30 @@ class BlockRegistrar {
 	 */
 	private function get_currency_list(): array {
 		return [
-			'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF', 'CNY',
-			'INR', 'MXN', 'BRL', 'KRW', 'SEK', 'NOK', 'DKK', 'NZD',
-			'SGD', 'HKD', 'ZAR', 'AED', 'PLN', 'CZK', 'HUF', 'THB',
+			'USD',
+			'EUR',
+			'GBP',
+			'CAD',
+			'AUD',
+			'JPY',
+			'CHF',
+			'CNY',
+			'INR',
+			'MXN',
+			'BRL',
+			'KRW',
+			'SEK',
+			'NOK',
+			'DKK',
+			'NZD',
+			'SGD',
+			'HKD',
+			'ZAR',
+			'AED',
+			'PLN',
+			'CZK',
+			'HUF',
+			'THB',
 		];
 	}
 }

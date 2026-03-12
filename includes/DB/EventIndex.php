@@ -52,9 +52,9 @@ class EventIndex {
 			'order'         => 'ASC',
 		];
 
-		$filters  = wp_parse_args( $filters, $defaults );
-		$where    = [];
-		$params   = [];
+		$filters = wp_parse_args( $filters, $defaults );
+		$where   = [];
+		$params  = [];
 
 		// Date range — events that overlap the requested window.
 		$where[]  = 'e.start_datetime < %s';

@@ -115,9 +115,15 @@ class RuleRepository {
 			$exceptions[] = $date;
 		}
 
-		return $this->upsert( $post_id, array_merge( (array) $rule, [
-			'exceptions' => $exceptions,
-		] ) );
+		return $this->upsert(
+			$post_id,
+			array_merge(
+				(array) $rule,
+				[
+					'exceptions' => $exceptions,
+				]
+			)
+		);
 	}
 
 	/**
@@ -140,9 +146,15 @@ class RuleRepository {
 			$additions[] = $date;
 		}
 
-		return $this->upsert( $post_id, array_merge( (array) $rule, [
-			'additions' => $additions,
-		] ) );
+		return $this->upsert(
+			$post_id,
+			array_merge(
+				(array) $rule,
+				[
+					'additions' => $additions,
+				]
+			)
+		);
 	}
 
 	// -------------------------------------------------------------------------
