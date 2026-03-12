@@ -1,0 +1,33 @@
+.blockendar-events-query {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+	display:    flex;
+	flex-direction: column;
+}
+
+.blockendar-events-query__item {
+	margin:  0;
+	padding: 0;
+}
+
+/* Grid view */
+.blockendar-events-query.is-grid-view {
+	display:               grid;
+	flex-direction:        unset;
+	grid-template-columns: repeat( var( --blockendar-columns, 3 ), minmax( 0, 1fr ) );
+}
+
+.blockendar-events-query__empty {
+	color: color-mix(in srgb, currentColor 50%, transparent);
+}
+
+/* Editor label */
+.blockendar-events-query__template-label {
+	font-size:    11px;
+	font-weight:  600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color:        #757575;
+	margin-bottom: 8px;
+}

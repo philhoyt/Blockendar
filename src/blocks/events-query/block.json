@@ -1,0 +1,35 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockendar/events-query",
+	"version": "0.2.0",
+	"title": "Events Query",
+	"category": "blockendar",
+	"icon": "calendar-alt",
+	"description": "Queries upcoming events and renders each one using the inner block template.",
+	"keywords": [ "events", "query", "list", "loop" ],
+	"textdomain": "blockendar",
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ],
+		"spacing": {
+			"blockGap": true,
+			"__experimentalDefaultControls": {
+				"blockGap": true
+			}
+		}
+	},
+	"attributes": {
+		"typeIds":       { "type": "array",   "default": [], "items": { "type": "integer" } },
+		"perPage":       { "type": "integer", "default": 10 },
+		"showPast":      { "type": "boolean", "default": false },
+		"order":         { "type": "string",  "default": "ASC" },
+		"displayLayout": {
+			"type": "object",
+			"default": { "type": "list" }
+		}
+	},
+	"render":       "file:./render.php",
+	"editorScript": "file:./index.js",
+	"style":        "file:./style-index.css"
+}
