@@ -1,7 +1,7 @@
 import { registerBlockType } from '@wordpress/blocks';
 import metadata              from './block.json';
-import { __, sprintf }       from '@wordpress/i18n';
 import { useBlockProps }     from '@wordpress/block-editor';
+import './style.css';
 
 function Edit() {
 	return (
