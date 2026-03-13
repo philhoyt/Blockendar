@@ -25,6 +25,8 @@
 		"perPage":       { "type": "integer", "default": 10 },
 		"showPast":      { "type": "boolean", "default": false },
 		"order":         { "type": "string",  "default": "ASC" },
+		"inherit":          { "type": "boolean", "default": false },
+		"showPagination":   { "type": "boolean", "default": true },
 		"relatedTo":     { "type": "string",  "default": "none", "enum": [ "none", "type", "venue", "both" ] },
 		"displayLayout": {
 			"type": "object",

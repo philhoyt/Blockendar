@@ -22,6 +22,47 @@
 	color: color-mix(in srgb, currentColor 50%, transparent);
 }
 
+/* Pagination */
+.blockendar-events-query__pagination .page-numbers {
+	list-style:      none;
+	margin:          1em 0 0;
+	padding:         0;
+	display:         flex;
+	flex-wrap:       wrap;
+	align-items:     center;
+	gap:             0.25em;
+}
+
+.blockendar-events-query__pagination .page-numbers li {
+	margin:  0;
+	padding: 0;
+}
+
+.blockendar-events-query__pagination .page-numbers a,
+.blockendar-events-query__pagination .page-numbers span {
+	display:         flex;
+	align-items:     center;
+	justify-content: center;
+	min-width:       2em;
+	padding:         0.25em 0.5em;
+	border-radius:   3px;
+	text-decoration: none;
+	line-height:     1;
+}
+
+.blockendar-events-query__pagination .page-numbers a:hover {
+	background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.blockendar-events-query__pagination .page-numbers .current {
+	background: color-mix(in srgb, currentColor 12%, transparent);
+	font-weight: 600;
+}
+
+.blockendar-events-query__pagination .page-numbers .dots {
+	opacity: 0.5;
+}
+
 /* Editor-only ghost placeholders for grid preview */
 .block-editor-block-list__layout .blockendar-events-query__ghost {
 	display:        flex;

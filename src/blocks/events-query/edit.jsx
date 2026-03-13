@@ -54,7 +54,7 @@ const TEMPLATE = [
 ];
 
 export function Edit( { attributes, setAttributes } ) {
-	const { typeIds, perPage, showPast, order, relatedTo, displayLayout } = attributes;
+	const { typeIds, perPage, showPast, order, inherit, showPagination, relatedTo, displayLayout } = attributes;
 	const isGrid = displayLayout?.type === 'grid';
 	const columnCount = displayLayout?.columnCount ?? 3;
 
@@ -147,6 +147,18 @@ export function Edit( { attributes, setAttributes } ) {
 
 				<PanelBody title={ __( 'Query', 'blockendar' ) }>
 					<VStack spacing={ 3 }>
+						<ToggleControl
+							label={ __( 'Inherit query from template', 'blockendar' ) }
+							checked={ inherit }
+							onChange={ ( val ) =>
+								setAttributes( { inherit: val } )
+							}
+							help={ __(
+								'Automatically filters by the current archive term (event type or venue). Use this when placing the block inside a taxonomy template.',
+								'blockendar'
+							) }
+							__nextHasNoMarginBottom
+						/>
 						<RangeControl
 							label={ __( 'Events per page', 'blockendar' ) }
 							value={ perPage }
@@ -173,7 +185,15 @@ export function Edit( { attributes, setAttributes } ) {
 							}
 							__nextHasNoMarginBottom
 						/>
-						<SelectControl
+						<ToggleControl
+							label={ __( 'Show pagination', 'blockendar' ) }
+							checked={ showPagination }
+							onChange={ ( val ) =>
+								setAttributes( { showPagination: val } )
+							}
+							__nextHasNoMarginBottom
+						/>
+						{ ! inherit && <SelectControl
 							label={ __( 'Related events', 'blockendar' ) }
 							value={ relatedTo ?? 'none' }
 							options={ [
@@ -212,11 +232,11 @@ export function Edit( { attributes, setAttributes } ) {
 									: undefined
 							}
 							__nextHasNoMarginBottom
-						/>
+						/> }
 					</VStack>
 				</PanelBody>
 
-				{ relatedTo === 'none' && terms?.length > 0 && (
+				{ ! inherit && relatedTo === 'none' && terms?.length > 0 && (
 					<PanelBody
 						title={ __( 'Filter by Event Type', 'blockendar' ) }
 						initialOpen={ false }

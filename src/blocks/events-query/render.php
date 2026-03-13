@@ -27,9 +27,15 @@ $type_ids        = array_filter( array_map( 'intval', (array) ( $attributes['typ
 $per_page        = max( 1, min( 50, (int) ( $attributes['perPage'] ?? 10 ) ) );
 $show_past       = ! empty( $attributes['showPast'] );
 $order           = 'DESC' === ( $attributes['order'] ?? 'ASC' ) ? 'DESC' : 'ASC';
+$inherit         = ! empty( $attributes['inherit'] );
+$show_pagination = ! empty( $attributes['showPagination'] );
 $related_to      = in_array( $attributes['relatedTo'] ?? 'none', [ 'none', 'type', 'venue', 'both' ], true )
 	? ( $attributes['relatedTo'] ?? 'none' )
 	: 'none';
+// phpcs:disable WordPress.Security.NonceVerification.Recommended
+$current_page = max( 1, absint( wp_unslash( $_GET['blockendar_page'] ?? 1 ) ) );
+// phpcs:enable
+$total_pages     = 1;
 $layout          = $attributes['displayLayout'] ?? [ 'type' => 'list' ];
 $is_grid         = 'grid' === ( $layout['type'] ?? 'list' );
 $column_count    = max( 2, min( 6, (int) ( $layout['columnCount'] ?? 3 ) ) );
@@ -47,12 +53,41 @@ if ( $show_past ) {
 $index     = new EventIndex();
 $base_args = [
 	'per_page' => $per_page + 1,
-	'page'     => 1,
+	'page'     => $current_page,
 	'orderby'  => 'start_datetime',
 	'order'    => $order,
 ];
 
-if ( 'none' !== $related_to && $current_post_id ) {
+if ( $inherit ) {
+	// Inherit mode — derive filters from the current archive/taxonomy context.
+	$queried       = get_queried_object();
+	$inherit_type  = null;
+	$inherit_venue = null;
+
+	if ( $queried instanceof \WP_Term ) {
+		if ( 'event_type' === $queried->taxonomy ) {
+			$inherit_type = [ $queried->term_id ];
+		} elseif ( 'event_venue' === $queried->taxonomy ) {
+			$inherit_venue = [ $queried->term_id ];
+		}
+		// event_tag and other taxonomies: no additional filter — show all events.
+	}
+	// WP_Post (singular) and post type archives: no additional filter.
+
+	$inherit_filters = [
+		'type_term_id'  => $inherit_type,
+		'venue_term_id' => $inherit_venue,
+		'per_page'      => $per_page,
+		'page'          => $current_page,
+		'orderby'       => 'start_datetime',
+		'order'         => $order,
+	];
+	$events          = $index->get_events_in_range( $start, $end, $inherit_filters );
+
+	if ( $show_pagination ) {
+		$total_pages = max( 1, (int) ceil( $index->count_events_in_range( $start, $end, $inherit_filters ) / $per_page ) );
+	}
+} elseif ( 'none' !== $related_to && $current_post_id ) {
 	// Resolve the current event's taxonomy terms for related-events mode.
 	$type_terms  = get_the_terms( $current_post_id, 'event_type' );
 	$venue_terms = get_the_terms( $current_post_id, 'event_venue' );
@@ -99,17 +134,18 @@ if ( 'none' !== $related_to && $current_post_id ) {
 		}
 	}
 } else {
-	$events = $index->get_events_in_range(
-		$start,
-		$end,
-		array_merge(
-			$base_args,
-			[
-				'type_term_id' => ! empty( $type_ids ) ? $type_ids : null,
-				'per_page'     => $per_page,
-			]
-		)
-	);
+	$standard_filters = [
+		'type_term_id' => ! empty( $type_ids ) ? $type_ids : null,
+		'per_page'     => $per_page,
+		'page'         => $current_page,
+		'orderby'      => 'start_datetime',
+		'order'        => $order,
+	];
+	$events           = $index->get_events_in_range( $start, $end, $standard_filters );
+
+	if ( $show_pagination ) {
+		$total_pages = max( 1, (int) ceil( $index->count_events_in_range( $start, $end, $standard_filters ) / $per_page ) );
+	}
 }
 
 if ( empty( $events ) ) {
@@ -158,4 +194,27 @@ add_filter( 'post_type_link', 'blockendar_occurrence_permalink_filter', 10, 2 );
 remove_filter( 'post_type_link', 'blockendar_occurrence_permalink_filter', 10 );
 unset( $GLOBALS['blockendar_current_occurrence'] );
 wp_reset_postdata();
+
+if ( $show_pagination && $total_pages > 1 ) {
+	$base_url   = esc_url_raw( remove_query_arg( 'blockendar_page' ) );
+	$sep        = str_contains( $base_url, '?' ) ? '&' : '?';
+	$pagination = paginate_links(
+		[
+			'base'      => $base_url . $sep . 'blockendar_page=%#%',
+			'format'    => '',
+			'current'   => $current_page,
+			'total'     => $total_pages,
+			'type'      => 'list',
+			'prev_text' => __( 'Previous', 'blockendar' ),
+			'next_text' => __( 'Next', 'blockendar' ),
+		]
+	);
+
+	if ( $pagination ) {
+		echo '<nav class="blockendar-events-query__pagination" aria-label="' . esc_attr__( 'Events navigation', 'blockendar' ) . '">';
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- paginate_links() output.
+		echo $pagination;
+		echo '</nav>';
+	}
+}
 ?>
