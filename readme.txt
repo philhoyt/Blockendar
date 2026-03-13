@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 0.9.1
+Stable tag: 0.9.2
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -19,8 +19,7 @@ Blockendar is a fully block-native events plugin for WordPress. Every part of th
 * **Block-based event editor** — Date & time, recurrence, venue, cost, registration, and status are all managed through dedicated block editor sidebar panels.
 * **Recurring events** — Full recurrence rule support (daily, weekly, monthly, yearly) with exceptions, custom additions, and a rolling horizon cron job.
 * **Calendar view block** — Interactive FullCalendar-powered calendar with day, week, and month views. Outputs valid iCal feeds.
-* **Event list block** — Grouped, paginated event listing with server-side rendering.
-* **Events query block** — Flexible query block for custom event displays.
+* **Events query block** — Flexible query block for custom event displays; shows individual occurrences of recurring events with correct dates and occurrence-aware links.
 * **8 single-event blocks** — Modular display blocks for event data: date/time, venue, cost, status, countdown, map, related events, and add-to-calendar.
 * **Custom database layer** — All date range queries run against a dedicated indexed table, keeping calendar queries fast regardless of post count.
 * **REST API** — Full read/write REST API under the `blockendar/v1` namespace, including iCal feed and index rebuild endpoints.
@@ -33,7 +32,7 @@ Blockendar is a fully block-native events plugin for WordPress. Every part of th
 1. Upload the `blockendar` directory to `/wp-content/plugins/`.
 2. Activate the plugin through the **Plugins** screen in WordPress.
 3. Navigate to **Events** in the admin menu to create your first event.
-4. Add the **Calendar View** or **Event List** block to any page or post.
+4. Add the **Calendar View** or **Events Query** block to any page or post.
 
 == Frequently Asked Questions ==
 
@@ -66,6 +65,14 @@ Each site in a multisite network gets its own database tables. The plugin has no
 
 == Changelog ==
 
+= 0.9.2 =
+* Occurrence-aware routing — calendar chip links include `?occurrence_date=YYYY-MM-DD`; single-event blocks (`event-datetime`, `event-countdown`, `add-to-calendar`) display the clicked occurrence rather than always defaulting to the next upcoming one.
+* Events Query block now shows each occurrence in the queried range as its own list item with correct dates and permalinks; removed post-ID deduplication.
+* Calendar View block editor placeholder replaced with a live settings summary.
+* Added recurrence save/delete REST endpoints (`POST`/`DELETE /blockendar/v1/events/{id}/recurrence`).
+* Removed the event-list block (superseded by events-query).
+* Removed Published Date column from the Events admin list table.
+
 = 0.9.1 =
 * Recurrence fields merged into the Date & Time editor panel.
 * Removed custom Venue editor panel — venue selection uses the native taxonomy panel; venue details are managed via the term editor.
@@ -91,6 +98,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 0.9.2 =
+No upgrade steps required. The event-list block is removed; replace any instances with the events-query block.
 
 = 0.9.1 =
 No upgrade steps required.

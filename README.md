@@ -7,8 +7,7 @@ A block-native WordPress events plugin.
 - **Block-based event editor** — Date & time, recurrence, venue, cost, registration, and status managed through dedicated block editor sidebar panels
 - **Recurring events** — Full recurrence rule support (daily, weekly, monthly, yearly) with exceptions, custom additions, and a rolling horizon cron job
 - **Calendar View block** — Interactive FullCalendar-powered calendar with day, week, and month views; exposes a valid iCal feed
-- **Event List block** — Grouped, paginated event listing with server-side rendering
-- **Events Query block** — Flexible query block for custom event displays
+- **Events Query block** — Flexible query block for custom event displays; shows individual occurrences of recurring events with correct dates and occurrence-aware links
 - **8 single-event blocks** — Date/time, venue, cost, status, countdown, map, related events, add-to-calendar
 - **Custom database layer** — All date range queries run against a dedicated indexed table (`{prefix}blockendar_events`)
 - **REST API** — Full read/write API under `blockendar/v1`, including iCal feed and index rebuild endpoints
@@ -57,6 +56,14 @@ npm run plugin-zip   # Build distributable zip
 - **DB tables:** `{prefix}blockendar_events` (occurrence index), `{prefix}blockendar_recurrence` (RRULE storage)
 
 ## Changelog
+
+### 0.9.2
+- Occurrence-aware routing — calendar chip links include `?occurrence_date=YYYY-MM-DD`; single-event blocks (`event-datetime`, `event-countdown`, `add-to-calendar`) display the clicked occurrence rather than always defaulting to the next upcoming one
+- Events Query block now shows each occurrence in the queried range as its own list item with correct dates and permalinks; removed post-ID deduplication
+- Calendar View block editor placeholder replaced with a live settings summary
+- Added recurrence save/delete REST endpoints (`POST`/`DELETE /blockendar/v1/events/{id}/recurrence`)
+- Removed the event-list block (superseded by events-query)
+- Removed Published Date column from the Events admin list table
 
 ### 0.9.1
 - Recurrence fields merged into the Date & Time editor panel
