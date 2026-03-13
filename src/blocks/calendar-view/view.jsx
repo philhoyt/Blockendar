@@ -53,7 +53,12 @@ function BlockendarCalendar( { dataset } ) {
 		}
 
 		fetch( `${ restUrl }/calendar?${ params.toString() }` )
-			.then( ( r ) => r.json() )
+			.then( ( r ) => {
+				if ( ! r.ok ) {
+					throw new Error( `Blockendar: calendar fetch failed (${ r.status })` );
+				}
+				return r.json();
+			} )
 			.then( ( events ) => successCallback( events ) )
 			.catch( failureCallback );
 	};
