@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "blockendar/event-map",
-	"version": "0.9.3",
+	"version": "0.9.4",
 	"title": "Event Map",
 	"category": "blockendar",
 	"icon": "location-alt",

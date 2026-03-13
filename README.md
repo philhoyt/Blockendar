@@ -57,6 +57,12 @@ npm run plugin-zip   # Build distributable zip
 
 ## Changelog
 
+### 0.9.4
+- Events Query block now supports a "Related events" mode (same type / same venue / both); replaces the standalone Related Events block
+- Removed the Related Events block
+- Event Countdown block reworked: fixed garbled segment display, full unit labels, format picker, pin-to-any-event selector, improved editor preview
+- Added full color, typography, spacing, border, and dimensions supports to Event Countdown
+
 ### 0.9.3
 - Reworked Date & Time editor panel — new field order (start date → start time → end time → end date), smart defaults, end date/time safeguards, and past-date prevention on the start date field
 - Recurrence preset labels are context-aware and derived from the selected start date ("Weekly on Thursday", "Monthly on the third Thursday", "Annually on March 13")

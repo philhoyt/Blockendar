@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 0.9.3
+Stable tag: 0.9.4
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -65,6 +65,12 @@ Each site in a multisite network gets its own database tables. The plugin has no
 
 == Changelog ==
 
+= 0.9.4 =
+* Events Query block now supports a "Related events" mode — set to same event type, same venue, or both to automatically show events related to the current page's event. Replaces the standalone Related Events block.
+* Removed the Related Events block (superseded by Events Query's built-in related mode).
+* Event Countdown block reworked: fixed garbled segment display, full unit labels (days, hours, minutes, seconds), format picker (days+hours+minutes+seconds / days+hours+minutes / days+hours / days only), pin-to-any-event selector, and improved editor preview.
+* Added full color, typography, spacing, border, and dimensions supports to the Event Countdown block.
+
 = 0.9.3 =
 * Reworked Date & Time editor panel — new field order (start date → start time → end time → end date), smart defaults, end date/time safeguards that prevent end from being set before start, and past-date prevention on the start date field.
 * Recurrence preset labels are now context-aware and derived from the selected start date (e.g. "Weekly on Thursday", "Monthly on the third Thursday", "Annually on March 13").
@@ -106,6 +112,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 0.9.4 =
+The Related Events block has been removed. Replace any existing instances with the Events Query block and enable the "Related events" mode in its settings.
 
 = 0.9.3 =
 No upgrade steps required.
