@@ -5,7 +5,19 @@
     "require-dev": {
         "squizlabs/php_codesniffer": "^3.13",
         "wp-coding-standards/wpcs": "^3.3",
-        "dealerdirect/phpcodesniffer-composer-installer": "^1.2"
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
+        "phpunit/phpunit": "^10.5",
+        "brain/monkey": "^2.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Blockendar\\": "includes/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Blockendar\\Tests\\": "tests/"
+        }
     },
     "config": {
         "allow-plugins": {
