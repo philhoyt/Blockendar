@@ -43,7 +43,7 @@ class CalendarController extends AbstractController {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'get_calendar_feed' ],
-				'permission_callback' => '__return_true',
+				'permission_callback' => [ $this, 'check_feed_read' ],
 				'args'                => [
 					'start'    => [
 						'type'    => 'string',

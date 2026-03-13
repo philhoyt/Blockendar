@@ -39,7 +39,7 @@ class IcsEndpoint {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'serve_ics' ],
-				'permission_callback' => '__return_true',
+				'permission_callback' => [ $this, 'check_permission' ],
 				'args'                => [
 					'id' => [
 						'validate_callback' => fn( $v ) => is_numeric( $v ),
@@ -48,6 +48,30 @@ class IcsEndpoint {
 				],
 			]
 		);
+	}
+
+	/**
+	 * Permission check: public when rest_public is enabled (default), otherwise
+	 * requires a valid feed token or a logged-in user with 'read' capability.
+	 *
+	 * @param \WP_REST_Request $request
+	 */
+	public function check_permission( \WP_REST_Request $request ): bool {
+		$settings = get_option( 'blockendar_settings', [] );
+
+		if ( ! isset( $settings['rest_public'] ) || (bool) $settings['rest_public'] ) {
+			return true;
+		}
+
+		$stored_token = $settings['rest_feed_token'] ?? '';
+		if ( '' !== $stored_token ) {
+			$provided_token = (string) ( $request->get_param( 'token' ) ?? '' );
+			if ( '' !== $provided_token && hash_equals( $stored_token, $provided_token ) ) {
+				return true;
+			}
+		}
+
+		return current_user_can( 'read' );
 	}
 
 	/**

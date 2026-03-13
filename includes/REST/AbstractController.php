@@ -104,6 +104,51 @@ abstract class AbstractController {
 	}
 
 	/**
+	 * Permission callback for public-read endpoints.
+	 *
+	 * Returns true when the REST API is set to public (the default).
+	 * When rest_public is disabled, requires the user to be logged in with
+	 * at least the 'read' capability.
+	 */
+	public function check_public_read(): bool {
+		$settings = get_option( 'blockendar_settings', [] );
+
+		if ( ! isset( $settings['rest_public'] ) || (bool) $settings['rest_public'] ) {
+			return true;
+		}
+
+		return current_user_can( 'read' );
+	}
+
+	/**
+	 * Permission callback for the calendar/ICS feed endpoints.
+	 *
+	 * Same as check_public_read() but also accepts a ?token= query parameter
+	 * matching the rest_feed_token setting, allowing tokenised embed access
+	 * without a WordPress login.
+	 *
+	 * @param WP_REST_Request $request The current REST request.
+	 */
+	public function check_feed_read( WP_REST_Request $request ): bool {
+		$settings = get_option( 'blockendar_settings', [] );
+
+		if ( ! isset( $settings['rest_public'] ) || (bool) $settings['rest_public'] ) {
+			return true;
+		}
+
+		// Allow token-based access even when the API is not public.
+		$stored_token = $settings['rest_feed_token'] ?? '';
+		if ( '' !== $stored_token ) {
+			$provided_token = (string) ( $request->get_param( 'token' ) ?? '' );
+			if ( '' !== $provided_token && hash_equals( $stored_token, $provided_token ) ) {
+				return true;
+			}
+		}
+
+		return current_user_can( 'read' );
+	}
+
+	/**
 	 * Build pagination headers from total count and request params.
 	 *
 	 * @param int             $total    Total matching items.

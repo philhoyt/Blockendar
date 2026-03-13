@@ -57,7 +57,7 @@ class EventsController extends AbstractController {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'get_events' ],
-				'permission_callback' => '__return_true',
+				'permission_callback' => [ $this, 'check_public_read' ],
 				'args'                => $this->collection_args(),
 			]
 		);
@@ -69,7 +69,7 @@ class EventsController extends AbstractController {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'get_event' ],
-				'permission_callback' => '__return_true',
+				'permission_callback' => [ $this, 'check_public_read' ],
 				'args'                => [
 					'id' => [
 						'type'     => 'integer',
@@ -87,7 +87,7 @@ class EventsController extends AbstractController {
 			[
 				'methods'             => 'GET',
 				'callback'            => [ $this, 'get_instances' ],
-				'permission_callback' => '__return_true',
+				'permission_callback' => [ $this, 'check_public_read' ],
 				'args'                => [
 					'id' => [
 						'type'    => 'integer',
