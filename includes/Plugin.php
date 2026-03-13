@@ -31,6 +31,7 @@ use Blockendar\Blocks\BlockRegistrar;
 use Blockendar\Blocks\TemplateRegistrar;
 use Blockendar\Admin\EventColumns;
 use Blockendar\Admin\SettingsPage;
+use Blockendar\CLI\RebuildIndexCommand;
 
 /**
  * Bootstraps all plugin components.
@@ -79,6 +80,11 @@ class Plugin {
 		// Admin list table columns for events.
 		if ( is_admin() ) {
 			( new EventColumns() )->register();
+		}
+
+		// WP-CLI commands.
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			\WP_CLI::add_command( 'blockendar rebuild-index', [ new RebuildIndexCommand(), 'rebuild' ] );
 		}
 
 		// Register block category.
