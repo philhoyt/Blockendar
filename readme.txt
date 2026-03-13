@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 0.9.4
+Stable tag: 0.9.5
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -65,6 +65,15 @@ Each site in a multisite network gets its own database tables. The plugin has no
 
 == Changelog ==
 
+= 0.9.5 =
+* REST API: enforce rest_public / rest_feed_token settings across all public GET endpoints (events, calendar, iCal).
+* Fixed: PHP fatal "Cannot redeclare" when two event-cost blocks appear on the same page (e.g. inside a Query Loop).
+* Fixed: calendar-view fetch now checks HTTP status before parsing JSON, passing errors to FullCalendar's failure handler.
+* Added PHPUnit + Jest test suites covering the recurrence engine and JS utilities.
+* Added WP-CLI wp blockendar rebuild-index command.
+* Added search keywords to 7 blocks for improved block inserter discoverability.
+* Lint: fixed all JS and PHP code style warnings.
+
 = 0.9.4 =
 * Events Query block now supports a "Related events" mode — set to same event type, same venue, or both to automatically show events related to the current page's event. Replaces the standalone Related Events block.
 * Removed the Related Events block (superseded by Events Query's built-in related mode).
@@ -118,6 +127,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 0.9.5 =
+No upgrade steps required.
 
 = 0.9.4 =
 The Related Events block has been removed. Replace any existing instances with the Events Query block and enable the "Related events" mode in its settings. After updating, run Rebuild Index from Settings > Blockendar > Performance to correct all-day event end boundaries.

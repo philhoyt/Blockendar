@@ -3,7 +3,7 @@
  * Plugin Name:       Blockendar - Events and Calendars
  * Plugin URI:        https://github.com/philhoyt/Blockendar
  * Description:       A block-native WordPress events plugin. No shortcodes. No legacy widgets. The block editor is the UI.
- * Version:           0.9.4
+ * Version:           0.9.5
  * Requires at least: 6.8
  * Requires PHP:      8.1
  * Author:            Blockendar
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'BLOCKENDAR_VERSION', '0.9.4' );
+define( 'BLOCKENDAR_VERSION', '0.9.5' );
 define( 'BLOCKENDAR_FILE', __FILE__ );
 define( 'BLOCKENDAR_DIR', plugin_dir_path( __FILE__ ) );
 

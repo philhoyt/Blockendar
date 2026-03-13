@@ -57,6 +57,15 @@ npm run plugin-zip   # Build distributable zip
 
 ## Changelog
 
+### 0.9.5
+- REST API: enforce `rest_public` / `rest_feed_token` settings across all public GET endpoints (events, calendar, iCal)
+- Fixed: PHP fatal "Cannot redeclare" when two event-cost blocks appear on the same page (e.g. inside a Query Loop)
+- Fixed: calendar-view fetch now checks HTTP status before parsing JSON, passing errors to FullCalendar's failure handler
+- Added PHPUnit + Jest test suites covering the recurrence engine and JS utilities
+- Added WP-CLI `wp blockendar rebuild-index` command
+- Added search keywords to 7 blocks for improved block inserter discoverability
+- Lint: fixed all JS and PHP code style warnings
+
 ### 0.9.4
 - Events Query block now supports a "Related events" mode (same type / same venue / both); replaces the standalone Related Events block
 - Removed the Related Events block
