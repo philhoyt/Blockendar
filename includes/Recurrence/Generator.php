@@ -408,7 +408,11 @@ class Generator {
 		$all_day = ! empty( $meta['all_day'] );
 
 		$start_time = $all_day ? '00:00' : ( $meta['start_time'] ?: '00:00' );
-		$end_time   = $all_day ? '23:59' : ( $meta['end_time'] ?: $start_time );
+		$end_time   = $all_day ? '00:00' : ( $meta['end_time'] ?: $start_time );
+
+		if ( $all_day ) {
+			$end_date = gmdate( 'Y-m-d', strtotime( '+1 day', strtotime( $end_date ) ) );
+		}
 
 		try {
 			$start_dt = new \DateTimeImmutable( "{$start_date} {$start_time}:00", $tz );
