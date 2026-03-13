@@ -1,7 +1,7 @@
 # Blockendar — Manual QA Checklist
 
-**Plugin version:** 0.1.0
-**Last updated:** 2026-03-11
+**Plugin version:** 0.9.1
+**Last updated:** 2026-03-12
 **Legend:** ✅ Pass · ❌ Fail · ⚠️ Partial · 🔲 Untested
 
 ---
@@ -51,20 +51,23 @@
 | 2.2.7 | Featured toggle saves | 🔲 | |
 | 2.2.8 | "Hide from listings" toggle saves | 🔲 | |
 
-### 2.3 Venue Panel
+### 2.3 Venue (native taxonomy panel)
+
+> The custom Venue sidebar panel was removed in 0.9.1. Venue selection uses the native WordPress taxonomy panel. To create or edit a venue, use the Venues term editor.
 
 | # | Test | Status | Notes |
 |---|------|--------|-------|
-| 2.3.1 | Venue panel appears in sidebar | 🔲 | |
-| 2.3.2 | Existing venue can be selected from the combobox | 🔲 | |
-| 2.3.3 | New venue can be created inline (name + address) | 🔲 | |
-| 2.3.4 | Selected venue is saved and persists on reload | 🔲 | |
+| 2.3.1 | Native **Event Venue** taxonomy panel appears in sidebar | 🔲 | |
+| 2.3.2 | Existing venue can be selected from the taxonomy panel | 🔲 | |
+| 2.3.3 | Selected venue is saved and persists on reload | 🔲 | |
 
-### 2.4 Recurrence Panel
+### 2.4 Recurrence (inside Date & Time panel)
+
+> Recurrence fields were merged into the Date & Time panel in 0.9.1. There is no separate Recurrence panel.
 
 | # | Test | Status | Notes |
 |---|------|--------|-------|
-| 2.4.1 | Recurrence panel appears in sidebar | 🔲 | |
+| 2.4.1 | Recurrence section appears inside the Date & Time panel | 🔲 | |
 | 2.4.2 | "Does not repeat" is the default | 🔲 | |
 | 2.4.3 | Daily recurrence saves and generates index rows | 🔲 | |
 | 2.4.4 | Weekly recurrence with specific days saves correctly | 🔲 | |
@@ -97,7 +100,7 @@
 | # | Test | Status | Notes |
 |---|------|--------|-------|
 | 4.1 | Block can be inserted from the block inserter | ✅ | |
-| 4.2 | Block shows a placeholder in the editor | 🔲 | |
+| 4.2 | Block shows a settings summary placeholder in the editor | 🔲 | Shows enabled views, first day, type/venue filters, featured-only badge |
 | 4.3 | Block renders FullCalendar on the frontend | ✅ | |
 | 4.4 | Month view displays events | ✅ | |
 | 4.5 | Week view displays events | 🔲 | |
@@ -232,45 +235,61 @@
 
 ---
 
-## 8. REST API Endpoints
+## 8. Admin Event List
+
+| # | Test | Status | Notes |
+|---|------|--------|-------|
+| 8.1 | Published Date column is hidden by default | 🔲 | Removed via `unset( $columns['date'] )` |
+| 8.2 | Start Date column appears after the title | 🔲 | |
+| 8.3 | End Date column appears after Start Date | 🔲 | |
+| 8.4 | Event tag column appears in the list | 🔲 | |
+| 8.5 | Start Date column is sortable (ascending) | 🔲 | |
+| 8.6 | Start Date column is sortable (descending) | 🔲 | |
+| 8.7 | Events default-sort by Start Date ascending when no orderby is set | 🔲 | |
+| 8.8 | All-day events show date only (no time) in Start/End columns | 🔲 | |
+| 8.9 | Events with no date show an em-dash in Start/End columns | 🔲 | |
+
+---
+
+## 9. REST API Endpoints
 
 | # | Endpoint | Test | Status | Notes |
 |---|----------|------|--------|-------|
-| 8.1 | `GET /blockendar/v1/calendar` | Returns events for a date range | ✅ | |
-| 8.2 | `GET /blockendar/v1/calendar` | `?venue=` filter works | 🔲 | |
-| 8.3 | `GET /blockendar/v1/calendar` | `?type=` filter works | 🔲 | |
-| 8.4 | `GET /blockendar/v1/calendar` | `?featured=1` filter works | 🔲 | |
-| 8.5 | `GET /blockendar/v1/calendar` | `?format=ics` returns valid iCal | 🔲 | |
-| 8.6 | `GET /blockendar/v1/events` | Returns paginated event list | 🔲 | |
-| 8.7 | `GET /blockendar/v1/events/{id}` | Returns single event detail | 🔲 | |
-| 8.8 | `GET /blockendar/v1/events/{id}/instances` | Returns recurrence instances | 🔲 | |
-| 8.9 | `GET /blockendar/v1/venues` | Returns venue list | 🔲 | |
-| 8.10 | `GET /blockendar/v1/venues/{id}` | Returns single venue + upcoming events | 🔲 | |
-| 8.11 | `POST /blockendar/v1/index/rebuild` | Requires authentication | 🔲 | |
-| 8.12 | `POST /blockendar/v1/index/rebuild` | Rebuilds index and returns stats | 🔲 | |
+| 9.1 | `GET /blockendar/v1/calendar` | Returns events for a date range | ✅ | |
+| 9.2 | `GET /blockendar/v1/calendar` | `?venue=` filter works | 🔲 | |
+| 9.3 | `GET /blockendar/v1/calendar` | `?type=` filter works | 🔲 | |
+| 9.4 | `GET /blockendar/v1/calendar` | `?featured=1` filter works | 🔲 | |
+| 9.5 | `GET /blockendar/v1/calendar` | `?format=ics` returns valid iCal | 🔲 | |
+| 9.6 | `GET /blockendar/v1/events` | Returns paginated event list | 🔲 | |
+| 9.7 | `GET /blockendar/v1/events/{id}` | Returns single event detail | 🔲 | |
+| 9.8 | `GET /blockendar/v1/events/{id}/instances` | Returns recurrence instances | 🔲 | |
+| 9.9 | `GET /blockendar/v1/venues` | Returns venue list | 🔲 | |
+| 9.10 | `GET /blockendar/v1/venues/{id}` | Returns single venue + upcoming events | 🔲 | |
+| 9.11 | `POST /blockendar/v1/index/rebuild` | Requires authentication | 🔲 | |
+| 9.12 | `POST /blockendar/v1/index/rebuild` | Rebuilds index and returns stats | 🔲 | |
 
 ---
 
-## 9. iCalendar Export
+## 10. iCalendar Export
 
 | # | Test | Status | Notes |
 |---|------|--------|-------|
-| 9.1 | `/blockendar/v1/calendar?format=ics` returns valid `.ics` content-type | 🔲 | |
-| 9.2 | Downloaded `.ics` imports correctly into Apple Calendar | 🔲 | |
-| 9.3 | Downloaded `.ics` imports correctly into Google Calendar | 🔲 | |
-| 9.4 | All-day events use date-only `DTSTART;VALUE=DATE` format | 🔲 | |
-| 9.5 | Timed events use UTC `DTSTART` with Z suffix | 🔲 | |
-| 9.6 | Event titles with special characters are correctly escaped | 🔲 | |
+| 10.1 | `/blockendar/v1/calendar?format=ics` returns valid `.ics` content-type | 🔲 | |
+| 10.2 | Downloaded `.ics` imports correctly into Apple Calendar | 🔲 | |
+| 10.3 | Downloaded `.ics` imports correctly into Google Calendar | 🔲 | |
+| 10.4 | All-day events use date-only `DTSTART;VALUE=DATE` format | 🔲 | |
+| 10.5 | Timed events use UTC `DTSTART` with Z suffix | 🔲 | |
+| 10.6 | Event titles with special characters are correctly escaped | 🔲 | |
 
 ---
 
-## 10. Uninstall
+## 11. Uninstall
 
 | # | Test | Status | Notes |
 |---|------|--------|-------|
-| 10.1 | Deleting the plugin via WP admin runs `uninstall.php` | 🔲 | |
-| 10.2 | Both custom tables are dropped on uninstall | 🔲 | |
-| 10.3 | `blockendar_settings` option is removed on uninstall | 🔲 | |
+| 11.1 | Deleting the plugin via WP admin runs `uninstall.php` | 🔲 | |
+| 11.2 | Both custom tables are dropped on uninstall | 🔲 | |
+| 11.3 | `blockendar_settings` option is removed on uninstall | 🔲 | |
 
 ---
 
