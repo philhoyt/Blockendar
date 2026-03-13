@@ -70,6 +70,12 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * Removed the Related Events block (superseded by Events Query's built-in related mode).
 * Event Countdown block reworked: fixed garbled segment display, full unit labels (days, hours, minutes, seconds), format picker (days+hours+minutes+seconds / days+hours+minutes / days+hours / days only), pin-to-any-event selector, and improved editor preview.
 * Added full color, typography, spacing, border, and dimensions supports to the Event Countdown block.
+* Fixed: plugin header version was mismatched with the BLOCKENDAR_VERSION constant.
+* Fixed: uninstalling the plugin now correctly clears the WP-Cron schedule even if the plugin was not deactivated first.
+* Fixed: venue name is now HTML-escaped before being passed to the Leaflet map popup, preventing potential XSS.
+* Fixed: event-countdown timer is stopped when its element is removed from the DOM, preventing detached-element leaks.
+* Fixed: all-day events now store an exclusive end boundary (next-day midnight) in the index, matching RFC 5545 and improving range-query accuracy. Requires an index rebuild after updating.
+* Added inline warning in the Event Details panel when min cost exceeds max cost.
 
 = 0.9.3 =
 * Reworked Date & Time editor panel — new field order (start date → start time → end time → end date), smart defaults, end date/time safeguards that prevent end from being set before start, and past-date prevention on the start date field.
@@ -114,7 +120,7 @@ Each site in a multisite network gets its own database tables. The plugin has no
 == Upgrade Notice ==
 
 = 0.9.4 =
-The Related Events block has been removed. Replace any existing instances with the Events Query block and enable the "Related events" mode in its settings.
+The Related Events block has been removed. Replace any existing instances with the Events Query block and enable the "Related events" mode in its settings. After updating, run Rebuild Index from Settings > Blockendar > Performance to correct all-day event end boundaries.
 
 = 0.9.3 =
 No upgrade steps required.

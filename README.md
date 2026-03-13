@@ -62,6 +62,12 @@ npm run plugin-zip   # Build distributable zip
 - Removed the Related Events block
 - Event Countdown block reworked: fixed garbled segment display, full unit labels, format picker, pin-to-any-event selector, improved editor preview
 - Added full color, typography, spacing, border, and dimensions supports to Event Countdown
+- Fixed: plugin header version was mismatched with the `BLOCKENDAR_VERSION` constant
+- Fixed: uninstalling the plugin now correctly clears the WP-Cron schedule even if the plugin was not deactivated first
+- Fixed: venue name is now HTML-escaped before being passed to the Leaflet map popup, preventing potential XSS
+- Fixed: event-countdown timer is stopped when its element is removed from the DOM, preventing detached-element leaks
+- Fixed: all-day events now store an exclusive end boundary (`DATE+1 00:00:00`) in the index, matching RFC 5545 and improving range-query accuracy (requires an index rebuild after updating)
+- Added inline warning in the Event Details panel when min cost exceeds max cost
 
 ### 0.9.3
 - Reworked Date & Time editor panel — new field order (start date → start time → end time → end date), smart defaults, end date/time safeguards, and past-date prevention on the start date field
