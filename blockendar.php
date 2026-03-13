@@ -48,6 +48,9 @@ spl_autoload_register(
 	}
 );
 
+// Global helper functions (loaded directly — not via autoloader).
+require_once BLOCKENDAR_DIR . 'includes/Helpers.php';
+
 // Activation / deactivation hooks — registered before the plugin loads.
 register_activation_hook(
 	__FILE__,

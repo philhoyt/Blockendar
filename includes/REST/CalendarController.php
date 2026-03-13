@@ -167,7 +167,7 @@ class CalendarController extends AbstractController {
 			'start'         => $start,
 			'end'           => $end,
 			'allDay'        => (bool) $row->all_day,
-			'url'           => get_permalink( $post_id ),
+			'url'           => add_query_arg( 'occurrence_date', $row->start_date, get_permalink( $post_id ) ),
 			'color'         => $color,
 			'status'        => $row->status,
 			'extendedProps' => [

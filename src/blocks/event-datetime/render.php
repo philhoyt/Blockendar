@@ -18,11 +18,15 @@ $show_end_date   = (bool) ( $attributes['showEndDate'] ?? true );
 $show_end_time   = (bool) ( $attributes['showEndTime'] ?? true );
 $show_tz         = (bool) ( $attributes['showTimezone'] ?? false );
 
-$start_date = get_post_meta( $post_id, 'blockendar_start_date', true );
-$end_date   = get_post_meta( $post_id, 'blockendar_end_date', true );
+// For recurring events honour ?occurrence_date= (set by calendar links); fall back
+// to next upcoming occurrence, or post meta when all occurrences are past.
+$occurrence = blockendar_resolve_occurrence( $post_id );
+$start_date = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
+$end_date   = $occurrence ? $occurrence->end_date : get_post_meta( $post_id, 'blockendar_end_date', true );
+$all_day    = $occurrence ? (bool) $occurrence->all_day : (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
+// Time and timezone are the same across all occurrences — always read from meta.
 $start_time = get_post_meta( $post_id, 'blockendar_start_time', true );
 $end_time   = get_post_meta( $post_id, 'blockendar_end_time', true );
-$all_day    = (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
 $tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 
 if ( ! $start_date ) {

@@ -14,7 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
 $post_id       = $block->context['postId'] ?? get_the_ID();
-$start_date    = get_post_meta( $post_id, 'blockendar_start_date', true );
+$occurrence    = blockendar_resolve_occurrence( $post_id );
+$start_date    = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
 $start_time    = get_post_meta( $post_id, 'blockendar_start_time', true );
 $tz_str        = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 $expired_label = $attributes['expiredLabel'] ?: __( 'This event has started.', 'blockendar' );

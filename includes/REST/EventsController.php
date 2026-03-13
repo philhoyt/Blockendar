@@ -25,12 +25,14 @@ use WP_Error;
  * Handles GET /blockendar/v1/events and related sub-routes.
  *
  * Registered endpoints:
- *   GET  /blockendar/v1/events
- *   GET  /blockendar/v1/events/{id}
- *   GET  /blockendar/v1/events/{id}/instances
- *   POST /blockendar/v1/events/{id}/instances/{date}/cancel
- *   POST /blockendar/v1/events/{id}/instances/{date}/exception
- *   POST /blockendar/v1/index/rebuild
+ *   GET    /blockendar/v1/events
+ *   GET    /blockendar/v1/events/{id}
+ *   GET    /blockendar/v1/events/{id}/instances
+ *   POST   /blockendar/v1/events/{id}/recurrence
+ *   DELETE /blockendar/v1/events/{id}/recurrence
+ *   POST   /blockendar/v1/events/{id}/instances/{date}/cancel
+ *   POST   /blockendar/v1/events/{id}/instances/{date}/exception
+ *   POST   /blockendar/v1/index/rebuild
  */
 class EventsController extends AbstractController {
 
@@ -90,6 +92,42 @@ class EventsController extends AbstractController {
 					'id' => [
 						'type'    => 'integer',
 						'minimum' => 1,
+					],
+				],
+			]
+		);
+
+		// Save (upsert) recurrence rule.
+		register_rest_route(
+			self::NAMESPACE,
+			'/events/(?P<id>\d+)/recurrence',
+			[
+				'methods'             => 'POST',
+				'callback'            => [ $this, 'save_recurrence' ],
+				'permission_callback' => [ $this, 'check_edit_permission' ],
+				'args'                => [
+					'id' => [
+						'type'     => 'integer',
+						'required' => true,
+						'minimum'  => 1,
+					],
+				],
+			]
+		);
+
+		// Delete recurrence rule.
+		register_rest_route(
+			self::NAMESPACE,
+			'/events/(?P<id>\d+)/recurrence',
+			[
+				'methods'             => 'DELETE',
+				'callback'            => [ $this, 'delete_recurrence' ],
+				'permission_callback' => [ $this, 'check_edit_permission' ],
+				'args'                => [
+					'id' => [
+						'type'     => 'integer',
+						'required' => true,
+						'minimum'  => 1,
 					],
 				],
 			]
@@ -235,6 +273,53 @@ class EventsController extends AbstractController {
 		$rows = $this->index->get_by_post_id( $post_id );
 
 		return $this->respond( array_map( [ $this, 'format_instance_row' ], $rows ) );
+	}
+
+	/**
+	 * POST /blockendar/v1/events/{id}/recurrence
+	 * Upserts the recurrence rule and rebuilds the index for the event.
+	 */
+	public function save_recurrence( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$post_id = (int) $request->get_param( 'id' );
+		$post    = get_post( $post_id );
+
+		if ( ! $post || 'blockendar_event' !== $post->post_type ) {
+			return new WP_Error( 'blockendar_not_found', __( 'Event not found.', 'blockendar' ), [ 'status' => 404 ] );
+		}
+
+		$data = $request->get_json_params() ?? [];
+
+		$saved = $this->rules->upsert( $post_id, $data );
+
+		if ( ! $saved ) {
+			return new WP_Error( 'blockendar_save_failed', __( 'Failed to save recurrence rule.', 'blockendar' ), [ 'status' => 500 ] );
+		}
+
+		$this->index->delete_by_post_id( $post_id );
+		$this->builder->build_for_post( $post_id );
+
+		$rule = $this->rules->get( $post_id );
+
+		return $this->respond( [ 'recurrence' => $rule ? $this->format_rule( $rule ) : null ], 200 );
+	}
+
+	/**
+	 * DELETE /blockendar/v1/events/{id}/recurrence
+	 * Removes the recurrence rule and rebuilds the index as a single occurrence.
+	 */
+	public function delete_recurrence( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$post_id = (int) $request->get_param( 'id' );
+		$post    = get_post( $post_id );
+
+		if ( ! $post || 'blockendar_event' !== $post->post_type ) {
+			return new WP_Error( 'blockendar_not_found', __( 'Event not found.', 'blockendar' ), [ 'status' => 404 ] );
+		}
+
+		$this->rules->delete( $post_id );
+		$this->index->delete_by_post_id( $post_id );
+		$this->builder->build_for_post( $post_id );
+
+		return $this->respond( [ 'recurrence' => null ], 200 );
 	}
 
 	/**

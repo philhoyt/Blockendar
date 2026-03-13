@@ -12,11 +12,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
 $post_id    = $block->context['postId'] ?? get_the_ID();
-$start_date = get_post_meta( $post_id, 'blockendar_start_date', true );
-$end_date   = get_post_meta( $post_id, 'blockendar_end_date', true );
+$occurrence = blockendar_resolve_occurrence( $post_id );
+$start_date = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
+$end_date   = $occurrence ? $occurrence->end_date : get_post_meta( $post_id, 'blockendar_end_date', true );
+$all_day    = $occurrence ? (bool) $occurrence->all_day : (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
 $start_time = get_post_meta( $post_id, 'blockendar_start_time', true );
 $end_time   = get_post_meta( $post_id, 'blockendar_end_time', true );
-$all_day    = (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
 $tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 $title      = get_the_title( $post_id );
 $detail_url = get_permalink( $post_id );
