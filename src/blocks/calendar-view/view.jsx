@@ -55,7 +55,9 @@ function BlockendarCalendar( { dataset } ) {
 		fetch( `${ restUrl }/calendar?${ params.toString() }` )
 			.then( ( r ) => {
 				if ( ! r.ok ) {
-					throw new Error( `Blockendar: calendar fetch failed (${ r.status })` );
+					throw new Error(
+						`Blockendar: calendar fetch failed (${ r.status })`
+					);
 				}
 				return r.json();
 			} )
@@ -85,7 +87,10 @@ function BlockendarCalendar( { dataset } ) {
 			eventDidMount={ ( info ) => {
 				const color = info.event.backgroundColor;
 				if ( color ) {
-					info.el.style.setProperty( '--blockendar-event-color', color );
+					info.el.style.setProperty(
+						'--blockendar-event-color',
+						color
+					);
 				}
 			} }
 			eventClick={ ( info ) => {

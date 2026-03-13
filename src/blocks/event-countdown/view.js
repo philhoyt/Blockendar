@@ -3,13 +3,13 @@
  * Hydrates .blockendar-event-countdown elements with a live ticker.
  */
 document.querySelectorAll( '.blockendar-event-countdown' ).forEach( ( el ) => {
-	const target       = new Date( el.dataset.target );
+	const target = new Date( el.dataset.target );
 	const expiredLabel = el.dataset.expiredLabel ?? 'This event has started.';
-	const format       = el.dataset.format ?? 'd:h:m:s';
-	const segments     = new Set( format.split( ':' ) );
+	const format = el.dataset.format ?? 'd:h:m:s';
+	const segments = new Set( format.split( ':' ) );
 
 	const labels = { d: 'days', h: 'hours', m: 'minutes', s: 'seconds' };
-	const pad    = ( n ) => String( n ).padStart( 2, '0' );
+	const pad = ( n ) => String( n ).padStart( 2, '0' );
 
 	let timer;
 	const tick = () => {
@@ -25,8 +25,8 @@ document.querySelectorAll( '.blockendar-event-countdown' ).forEach( ( el ) => {
 			return;
 		}
 
-		const days    = Math.floor( diff / 86_400_000 );
-		const hours   = Math.floor( ( diff % 86_400_000 ) / 3_600_000 );
+		const days = Math.floor( diff / 86_400_000 );
+		const hours = Math.floor( ( diff % 86_400_000 ) / 3_600_000 );
 		const minutes = Math.floor( ( diff % 3_600_000 ) / 60_000 );
 		const seconds = Math.floor( ( diff % 60_000 ) / 1_000 );
 

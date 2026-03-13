@@ -119,10 +119,12 @@ export function GeneralSection( { settings, update, defaults } ) {
 						'blockendar'
 					),
 					siteTimezone
-				) }
-				{ ' ' }
+				) }{ ' ' }
 				<a href={ generalSettingsUrl }>
-					{ __( 'Change in WordPress General Settings →', 'blockendar' ) }
+					{ __(
+						'Change in WordPress General Settings →',
+						'blockendar'
+					) }
 				</a>
 			</p>
 		</VStack>

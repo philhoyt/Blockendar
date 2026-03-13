@@ -61,7 +61,9 @@
 								"'": '&#39;',
 							} )[ c ]
 					);
-				L.marker( [ lat, lng ] ).addTo( map ).bindPopup( escapeHtml( name ) );
+				L.marker( [ lat, lng ] )
+					.addTo( map )
+					.bindPopup( escapeHtml( name ) );
 			}
 		} );
 	} );

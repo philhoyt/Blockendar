@@ -18,7 +18,7 @@ import { useState } from '@wordpress/element';
 import metadata from './block.json';
 
 const LABELS = { d: 'days', h: 'hours', m: 'minutes', s: 'seconds' };
-const DEMO   = { d: '05', h: '12', m: '30', s: '45' };
+const DEMO = { d: '05', h: '12', m: '30', s: '45' };
 
 function Edit( { attributes, setAttributes } ) {
 	const { expiredLabel, format, pinnedPostId } = attributes;
@@ -26,12 +26,16 @@ function Edit( { attributes, setAttributes } ) {
 
 	const events = useSelect(
 		( select ) =>
-			select( coreStore ).getEntityRecords( 'postType', 'blockendar_event', {
-				per_page: 20,
-				search,
-				_fields: [ 'id', 'title' ],
-				status:   'publish',
-			} ),
+			select( coreStore ).getEntityRecords(
+				'postType',
+				'blockendar_event',
+				{
+					per_page: 20,
+					search,
+					_fields: [ 'id', 'title' ],
+					status: 'publish',
+				}
+			),
 		[ search ]
 	);
 
@@ -41,7 +45,9 @@ function Edit( { attributes, setAttributes } ) {
 	} ) );
 
 	const segments = ( format ?? 'd:h:m:s' ).split( ':' );
-	const blockProps = useBlockProps( { className: 'blockendar-event-countdown' } );
+	const blockProps = useBlockProps( {
+		className: 'blockendar-event-countdown',
+	} );
 
 	return (
 		<>
