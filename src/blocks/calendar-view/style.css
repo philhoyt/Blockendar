@@ -138,6 +138,11 @@
 	padding-left: var(--blockendar-cal-event-indent);
 }
 
+/* Auto-contrast text colour based on the event type background colour */
+.wp-block-blockendar-calendar-view .fc-h-event .fc-event-main {
+	color: contrast-color( var(--blockendar-event-color, #3788d8) );
+}
+
 /* Hide the all-day indicator dot on desktop */
 .wp-block-blockendar-calendar-view .fc-daygrid-event-dot {
 	display: none;

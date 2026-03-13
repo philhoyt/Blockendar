@@ -77,6 +77,12 @@ function BlockendarCalendar( { dataset } ) {
 			} }
 			events={ fetchEvents }
 			dayMaxEvents={ 3 }
+			eventDidMount={ ( info ) => {
+				const color = info.event.backgroundColor;
+				if ( color ) {
+					info.el.style.setProperty( '--blockendar-event-color', color );
+				}
+			} }
 			eventClick={ ( info ) => {
 				if ( info.event.url ) {
 					info.jsEvent.preventDefault();
