@@ -7,6 +7,7 @@
 	"category": "blockendar",
 	"icon": "backup",
 	"description": "Live countdown timer to event start. Updates client-side.",
+	"keywords": [ "countdown", "timer", "clock" ],
 	"textdomain": "blockendar",
 	"usesContext": [ "postId", "postType" ],
 	"supports": {

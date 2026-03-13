@@ -7,6 +7,7 @@
 	"category": "blockendar",
 	"icon": "clock",
 	"description": "Displays formatted start and end date/time with timezone.",
+	"keywords": [ "date", "time", "schedule" ],
 	"textdomain": "blockendar",
 	"usesContext": [ "postId", "postType" ],
 	"supports": {

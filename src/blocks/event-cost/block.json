@@ -7,6 +7,7 @@
 	"category": "blockendar",
 	"icon": "tickets-alt",
 	"description": "Displays the event cost and a registration/ticket link button.",
+	"keywords": [ "price", "ticket", "registration" ],
 	"textdomain": "blockendar",
 	"usesContext": [
 		"postId",

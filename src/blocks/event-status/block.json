@@ -7,6 +7,7 @@
 	"category": "blockendar",
 	"icon": "flag",
 	"description": "Shows a styled status badge (Cancelled, Postponed, Sold Out). Hidden for scheduled events.",
+	"keywords": [ "status", "badge", "cancelled" ],
 	"textdomain": "blockendar",
 	"usesContext": [
 		"postId",

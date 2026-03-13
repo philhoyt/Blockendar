@@ -7,6 +7,7 @@
 	"category": "blockendar",
 	"icon": "calendar",
 	"description": "Generates add-to-calendar links: Google, Apple, Outlook, and .ics download.",
+	"keywords": [ "calendar", "ics", "subscribe" ],
 	"textdomain": "blockendar",
 	"usesContext": [
 		"postId",

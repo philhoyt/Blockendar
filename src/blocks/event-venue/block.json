@@ -7,6 +7,7 @@
 	"category": "blockendar",
 	"icon": "location",
 	"description": "Displays venue name, address, and optional map embed.",
+	"keywords": [ "venue", "location", "address" ],
 	"textdomain": "blockendar",
 	"usesContext": [ "postId", "postType" ],
 	"supports": { "html": false },
