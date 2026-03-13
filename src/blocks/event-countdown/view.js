@@ -3,10 +3,13 @@
  * Hydrates .blockendar-event-countdown elements with a live ticker.
  */
 document.querySelectorAll( '.blockendar-event-countdown' ).forEach( ( el ) => {
-	const target = new Date( el.dataset.target );
+	const target       = new Date( el.dataset.target );
 	const expiredLabel = el.dataset.expiredLabel ?? 'This event has started.';
+	const format       = el.dataset.format ?? 'd:h:m:s';
+	const segments     = new Set( format.split( ':' ) );
 
-	const pad = ( n ) => String( n ).padStart( 2, '0' );
+	const labels = { d: 'days', h: 'hours', m: 'minutes', s: 'seconds' };
+	const pad    = ( n ) => String( n ).padStart( 2, '0' );
 
 	const tick = () => {
 		const diff = target - Date.now();
@@ -16,22 +19,28 @@ document.querySelectorAll( '.blockendar-event-countdown' ).forEach( ( el ) => {
 			return;
 		}
 
-		const days = Math.floor( diff / 86_400_000 );
-		const hours = Math.floor( ( diff % 86_400_000 ) / 3_600_000 );
+		const days    = Math.floor( diff / 86_400_000 );
+		const hours   = Math.floor( ( diff % 86_400_000 ) / 3_600_000 );
 		const minutes = Math.floor( ( diff % 3_600_000 ) / 60_000 );
 		const seconds = Math.floor( ( diff % 60_000 ) / 1_000 );
 
-		el.innerHTML =
-			`<span class="blockendar-countdown__segment"><strong>${ days }</strong> d</span>` +
-			`<span class="blockendar-countdown__segment"><strong>${ pad(
-				hours
-			) }</strong> h</span>` +
-			`<span class="blockendar-countdown__segment"><strong>${ pad(
-				minutes
-			) }</strong> m</span>` +
-			`<span class="blockendar-countdown__segment"><strong>${ pad(
-				seconds
-			) }</strong> s</span>`;
+		const allSegments = [
+			{ key: 'd', value: String( days ) },
+			{ key: 'h', value: pad( hours ) },
+			{ key: 'm', value: pad( minutes ) },
+			{ key: 's', value: pad( seconds ) },
+		];
+
+		el.innerHTML = allSegments
+			.filter( ( { key } ) => segments.has( key ) )
+			.map(
+				( { key, value } ) =>
+					`<span class="blockendar-countdown__segment">` +
+					`<strong>${ value }</strong>` +
+					` <span class="blockendar-countdown__unit">${ labels[ key ] }</span>` +
+					`</span>`
+			)
+			.join( ' ' );
 
 		setTimeout( tick, 1_000 );
 	};

@@ -13,12 +13,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
-$post_id       = $block->context['postId'] ?? get_the_ID();
-$occurrence    = blockendar_resolve_occurrence( $post_id );
-$start_date    = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
-$start_time    = get_post_meta( $post_id, 'blockendar_start_time', true );
-$tz_str        = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
+$allowed_formats = [ 'd:h:m:s', 'd:h:m', 'd:h', 'd' ];
+$format          = in_array( $attributes['format'] ?? 'd:h:m:s', $allowed_formats, true )
+	? $attributes['format']
+	: 'd:h:m:s';
+
 $expired_label = $attributes['expiredLabel'] ?: __( 'This event has started.', 'blockendar' );
+
+$pinned_id = (int) ( $attributes['pinnedPostId'] ?? 0 );
+
+if ( $pinned_id > 0 ) {
+	// Pinned event — always use its next occurrence (not URL-based).
+	$post_id    = $pinned_id;
+	$occurrence = \Blockendar\DB\EventIndex::next_occurrence( $post_id );
+	$start_date = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
+} else {
+	// Context event — honour ?occurrence_date= if present.
+	$post_id    = $block->context['postId'] ?? get_the_ID();
+	$occurrence = blockendar_resolve_occurrence( (int) $post_id );
+	$start_date = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
+}
+
+$start_time = get_post_meta( $post_id, 'blockendar_start_time', true );
+$tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 
 if ( ! $start_date ) {
 	return;
@@ -34,6 +51,7 @@ try {
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-countdown' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-target="<?php echo esc_attr( $target_utc ); ?>"
+	data-format="<?php echo esc_attr( $format ); ?>"
 	data-expired-label="<?php echo esc_attr( $expired_label ); ?>"
 >
 	<noscript><?php esc_html_e( 'Enable JavaScript to see the countdown.', 'blockendar' ); ?></noscript>

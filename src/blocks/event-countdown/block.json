@@ -9,11 +9,49 @@
 	"description": "Live countdown timer to event start. Updates client-side.",
 	"textdomain": "blockendar",
 	"usesContext": [ "postId", "postType" ],
-	"supports": { "html": false },
-	"attributes": {
-		"expiredLabel": { "type": "string", "default": "" }
+	"supports": {
+		"html": false,
+		"color": {
+			"text":       true,
+			"background": true,
+			"gradients":  true
+		},
+		"typography": {
+			"fontSize":                        true,
+			"lineHeight":                      true,
+			"textAlign":                       true,
+			"__experimentalFontFamily":        true,
+			"__experimentalFontStyle":         true,
+			"__experimentalFontWeight":        true,
+			"__experimentalLetterSpacing":     true,
+			"__experimentalTextTransform":     true,
+			"__experimentalTextDecoration":    true,
+			"__experimentalWritingMode":       true,
+			"__experimentalDefaultControls": {
+				"fontSize": true
+			}
+		},
+		"spacing": {
+			"padding": true,
+			"margin":  true
+		},
+		"border": {
+			"color":  true,
+			"radius": true,
+			"style":  true,
+			"width":  true
+		},
+		"dimensions": {
+			"minHeight": true
+		}
 	},
-	"render": "file:./render.php",
+	"attributes": {
+		"expiredLabel": { "type": "string",  "default": "" },
+		"format":       { "type": "string",  "default": "d:h:m:s", "enum": [ "d:h:m:s", "d:h:m", "d:h", "d" ] },
+		"pinnedPostId": { "type": "integer", "default": 0 }
+	},
+	"render":       "file:./render.php",
 	"editorScript": "file:./index.js",
-	"viewScript":   "file:./view.js"
+	"viewScript":   "file:./view.js",
+	"style":        "file:./style-index.css"
 }
