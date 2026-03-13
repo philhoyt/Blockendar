@@ -12,50 +12,54 @@ if ( ! defined( 'ABSPATH' ) ) {
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
 /** Map ISO 4217 code → display symbol (mirrors edit.jsx CURRENCY_SYMBOLS). */
-function blockendar_currency_symbol( string $code ): string {
-	static $map = [
-		'USD' => '$',
-		'EUR' => '€',
-		'GBP' => '£',
-		'CAD' => 'CA$',
-		'AUD' => 'A$',
-		'JPY' => '¥',
-		'CHF' => 'CHF',
-		'CNY' => '¥',
-		'INR' => '₹',
-		'MXN' => 'MX$',
-		'BRL' => 'R$',
-		'KRW' => '₩',
-		'SEK' => 'kr',
-		'NOK' => 'kr',
-		'DKK' => 'kr',
-		'NZD' => 'NZ$',
-		'SGD' => 'S$',
-		'HKD' => 'HK$',
-		'ZAR' => 'R',
-	];
-	return $map[ $code ] ?? $code;
-}
+if ( ! function_exists( 'blockendar_currency_symbol' ) ) :
+	function blockendar_currency_symbol( string $code ): string {
+		static $map = [
+			'USD' => '$',
+			'EUR' => '€',
+			'GBP' => '£',
+			'CAD' => 'CA$',
+			'AUD' => 'A$',
+			'JPY' => '¥',
+			'CHF' => 'CHF',
+			'CNY' => '¥',
+			'INR' => '₹',
+			'MXN' => 'MX$',
+			'BRL' => 'R$',
+			'KRW' => '₩',
+			'SEK' => 'kr',
+			'NOK' => 'kr',
+			'DKK' => 'kr',
+			'NZD' => 'NZ$',
+			'SGD' => 'S$',
+			'HKD' => 'HK$',
+			'ZAR' => 'R',
+		];
+		return $map[ $code ] ?? $code;
+	}
+endif;
 
 /**
  * If $raw is a plain number, wrap it with the correct currency symbol.
  * Non-numeric strings ("Free", "$10–$25") are returned unchanged.
  */
-function blockendar_format_cost( string $raw, int $post_id ): string {
-	if ( '' === $raw || ! is_numeric( $raw ) ) {
-		return $raw;
-	}
+if ( ! function_exists( 'blockendar_format_cost' ) ) :
+	function blockendar_format_cost( string $raw, int $post_id ): string {
+		if ( '' === $raw || ! is_numeric( $raw ) ) {
+			return $raw;
+		}
 
-	$settings = (array) get_option( 'blockendar_settings', [] );
-	$currency = (string) get_post_meta( $post_id, 'blockendar_currency', true );
-	if ( ! $currency ) {
-		$currency = $settings['default_currency'] ?? 'USD';
-	}
-	$position = $settings['currency_position'] ?? 'before';
-	$symbol   = blockendar_currency_symbol( $currency );
+		$settings = (array) get_option( 'blockendar_settings', [] );
+		$currency = (string) get_post_meta( $post_id, 'blockendar_currency', true );
+		if ( ! $currency ) {
+			$currency = $settings['default_currency'] ?? 'USD';
+		}
+		$position = $settings['currency_position'] ?? 'before';
+		$symbol   = blockendar_currency_symbol( $currency );
 
-	return 'before' === $position ? $symbol . $raw : $raw . $symbol;
-}
+		return 'before' === $position ? $symbol . $raw : $raw . $symbol;
+	}
+endif;
 
 $post_id      = $block->context['postId'] ?? get_the_ID();
 $cost         = (string) get_post_meta( $post_id, 'blockendar_cost', true );
