@@ -19,11 +19,13 @@
 			}
 		}
 	},
+	"usesContext": [ "postId", "postType" ],
 	"attributes": {
 		"typeIds":       { "type": "array",   "default": [], "items": { "type": "integer" } },
 		"perPage":       { "type": "integer", "default": 10 },
 		"showPast":      { "type": "boolean", "default": false },
 		"order":         { "type": "string",  "default": "ASC" },
+		"relatedTo":     { "type": "string",  "default": "none", "enum": [ "none", "type", "venue", "both" ] },
 		"displayLayout": {
 			"type": "object",
 			"default": { "type": "list" }

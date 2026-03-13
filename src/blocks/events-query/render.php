@@ -23,14 +23,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Blockendar\DB\EventIndex;
 
-$type_ids     = array_filter( array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) ) );
-$per_page     = max( 1, min( 50, (int) ( $attributes['perPage'] ?? 10 ) ) );
-$show_past    = ! empty( $attributes['showPast'] );
-$order        = 'DESC' === ( $attributes['order'] ?? 'ASC' ) ? 'DESC' : 'ASC';
-$layout       = $attributes['displayLayout'] ?? [ 'type' => 'list' ];
-$is_grid      = 'grid' === ( $layout['type'] ?? 'list' );
-$column_count = max( 2, min( 6, (int) ( $layout['columnCount'] ?? 3 ) ) );
-$now          = gmdate( 'Y-m-d H:i:s' );
+$type_ids        = array_filter( array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) ) );
+$per_page        = max( 1, min( 50, (int) ( $attributes['perPage'] ?? 10 ) ) );
+$show_past       = ! empty( $attributes['showPast'] );
+$order           = 'DESC' === ( $attributes['order'] ?? 'ASC' ) ? 'DESC' : 'ASC';
+$related_to      = in_array( $attributes['relatedTo'] ?? 'none', [ 'none', 'type', 'venue', 'both' ], true )
+	? ( $attributes['relatedTo'] ?? 'none' )
+	: 'none';
+$layout          = $attributes['displayLayout'] ?? [ 'type' => 'list' ];
+$is_grid         = 'grid' === ( $layout['type'] ?? 'list' );
+$column_count    = max( 2, min( 6, (int) ( $layout['columnCount'] ?? 3 ) ) );
+$now             = gmdate( 'Y-m-d H:i:s' );
+$current_post_id = 'none' !== $related_to ? (int) ( $block->context['postId'] ?? 0 ) : 0;
 
 if ( $show_past ) {
 	$start = '2000-01-01 00:00:00';
@@ -40,18 +44,73 @@ if ( $show_past ) {
 	$end   = gmdate( 'Y-m-d H:i:s', strtotime( '+3 years' ) );
 }
 
-$index  = new EventIndex();
-$events = $index->get_events_in_range(
-	$start,
-	$end,
-	[
-		'type_term_id' => ! empty( $type_ids ) ? $type_ids : null,
-		'per_page'     => $per_page,
-		'page'         => 1,
-		'orderby'      => 'start_datetime',
-		'order'        => $order,
-	]
-);
+$index     = new EventIndex();
+$base_args = [
+	'per_page' => $per_page + 1,
+	'page'     => 1,
+	'orderby'  => 'start_datetime',
+	'order'    => $order,
+];
+
+if ( 'none' !== $related_to && $current_post_id ) {
+	// Resolve the current event's taxonomy terms for related-events mode.
+	$type_terms  = get_the_terms( $current_post_id, 'event_type' );
+	$venue_terms = get_the_terms( $current_post_id, 'event_venue' );
+
+	$rel_type_ids  = ( ! is_wp_error( $type_terms ) && ! empty( $type_terms ) )
+		? array_column( (array) $type_terms, 'term_id' )
+		: [];
+	$rel_venue_ids = ( ! is_wp_error( $venue_terms ) && ! empty( $venue_terms ) )
+		? array_column( (array) $venue_terms, 'term_id' )
+		: [];
+
+	$raw_events = [];
+
+	if ( in_array( $related_to, [ 'type', 'both' ], true ) && ! empty( $rel_type_ids ) ) {
+		$raw_events = array_merge(
+			$raw_events,
+			$index->get_events_in_range( $start, $end, array_merge( $base_args, [ 'type_term_id' => $rel_type_ids ] ) )
+		);
+	}
+
+	if ( in_array( $related_to, [ 'venue', 'both' ], true ) && ! empty( $rel_venue_ids ) ) {
+		$raw_events = array_merge(
+			$raw_events,
+			$index->get_events_in_range( $start, $end, array_merge( $base_args, [ 'venue_term_id' => $rel_venue_ids ] ) )
+		);
+	}
+
+	// Sort merged results, deduplicate by index row ID, and exclude the current post.
+	usort( $raw_events, static fn( $a, $b ) => strcmp( $a->start_datetime, $b->start_datetime ) * ( 'DESC' === $order ? -1 : 1 ) );
+
+	$seen   = [];
+	$events = [];
+
+	foreach ( $raw_events as $event ) {
+		if ( (int) $event->post_id === $current_post_id || isset( $seen[ $event->id ] ) ) {
+			continue;
+		}
+
+		$seen[ $event->id ] = true;
+		$events[]           = $event;
+
+		if ( count( $events ) >= $per_page ) {
+			break;
+		}
+	}
+} else {
+	$events = $index->get_events_in_range(
+		$start,
+		$end,
+		array_merge(
+			$base_args,
+			[
+				'type_term_id' => ! empty( $type_ids ) ? $type_ids : null,
+				'per_page'     => $per_page,
+			]
+		)
+	);
+}
 
 if ( empty( $events ) ) {
 	echo '<p class="blockendar-events-query__empty">' . esc_html__( 'No events found.', 'blockendar' ) . '</p>';

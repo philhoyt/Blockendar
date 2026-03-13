@@ -11,6 +11,7 @@ import {
 import {
 	PanelBody,
 	RangeControl,
+	SelectControl,
 	ToggleControl,
 	CheckboxControl,
 	ToolbarButton,
@@ -53,7 +54,7 @@ const TEMPLATE = [
 ];
 
 export function Edit( { attributes, setAttributes } ) {
-	const { typeIds, perPage, showPast, order, displayLayout } = attributes;
+	const { typeIds, perPage, showPast, order, relatedTo, displayLayout } = attributes;
 	const isGrid = displayLayout?.type === 'grid';
 	const columnCount = displayLayout?.columnCount ?? 3;
 
@@ -172,10 +173,50 @@ export function Edit( { attributes, setAttributes } ) {
 							}
 							__nextHasNoMarginBottom
 						/>
+						<SelectControl
+							label={ __( 'Related events', 'blockendar' ) }
+							value={ relatedTo ?? 'none' }
+							options={ [
+								{
+									label: __( 'Off', 'blockendar' ),
+									value: 'none',
+								},
+								{
+									label: __(
+										'Same event type',
+										'blockendar'
+									),
+									value: 'type',
+								},
+								{
+									label: __( 'Same venue', 'blockendar' ),
+									value: 'venue',
+								},
+								{
+									label: __(
+										'Same type or venue',
+										'blockendar'
+									),
+									value: 'both',
+								},
+							] }
+							onChange={ ( val ) =>
+								setAttributes( { relatedTo: val } )
+							}
+							help={
+								relatedTo !== 'none'
+									? __(
+											'Shows events sharing the current post\u2019s type or venue. Place this block inside a single-event template.',
+											'blockendar'
+									  )
+									: undefined
+							}
+							__nextHasNoMarginBottom
+						/>
 					</VStack>
 				</PanelBody>
 
-				{ terms?.length > 0 && (
+				{ relatedTo === 'none' && terms?.length > 0 && (
 					<PanelBody
 						title={ __( 'Filter by Event Type', 'blockendar' ) }
 						initialOpen={ false }
