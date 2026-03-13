@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 0.9.2
+Stable tag: 0.9.3
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -65,6 +65,14 @@ Each site in a multisite network gets its own database tables. The plugin has no
 
 == Changelog ==
 
+= 0.9.3 =
+* Reworked Date & Time editor panel — new field order (start date → start time → end time → end date), smart defaults, end date/time safeguards that prevent end from being set before start, and past-date prevention on the start date field.
+* Recurrence preset labels are now context-aware and derived from the selected start date (e.g. "Weekly on Thursday", "Monthly on the third Thursday", "Annually on March 13").
+* Fixed: recurring events now auto-save their recurrence rule whenever the post is updated — no separate save step required.
+* Fixed: changing a recurrence preset now correctly marks the post as dirty, activating the Update button immediately.
+* Calendar View event pills use `contrast-color()` (CSS Color Level 6) to automatically select black or white text based on the event type's background colour.
+* Added `blockendar_recurrence_preset` post meta field (REST-exposed) as a dirty-state proxy for recurrence changes.
+
 = 0.9.2 =
 * Occurrence-aware routing — calendar chip links include `?occurrence_date=YYYY-MM-DD`; single-event blocks (`event-datetime`, `event-countdown`, `add-to-calendar`) display the clicked occurrence rather than always defaulting to the next upcoming one.
 * Events Query block now shows each occurrence in the queried range as its own list item with correct dates and permalinks; removed post-ID deduplication.
@@ -98,6 +106,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 0.9.3 =
+No upgrade steps required.
 
 = 0.9.2 =
 No upgrade steps required. The event-list block is removed; replace any instances with the events-query block.

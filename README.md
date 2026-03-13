@@ -57,6 +57,14 @@ npm run plugin-zip   # Build distributable zip
 
 ## Changelog
 
+### 0.9.3
+- Reworked Date & Time editor panel — new field order (start date → start time → end time → end date), smart defaults, end date/time safeguards, and past-date prevention on the start date field
+- Recurrence preset labels are context-aware and derived from the selected start date ("Weekly on Thursday", "Monthly on the third Thursday", "Annually on March 13")
+- Fixed: recurring events auto-save their recurrence rule when the post is updated — no separate save step required
+- Fixed: changing a recurrence preset now marks the post dirty, activating the Update button immediately
+- Calendar View event pills use `contrast-color()` (CSS Color Level 6) for automatic black/white text contrast against the event type background colour
+- Added `blockendar_recurrence_preset` post meta field (REST-exposed) as a dirty-state proxy for recurrence changes
+
 ### 0.9.2
 - Occurrence-aware routing — calendar chip links include `?occurrence_date=YYYY-MM-DD`; single-event blocks (`event-datetime`, `event-countdown`, `add-to-calendar`) display the clicked occurrence rather than always defaulting to the next upcoming one
 - Events Query block now shows each occurrence in the queried range as its own list item with correct dates and permalinks; removed post-ID deduplication
