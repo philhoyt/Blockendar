@@ -39,6 +39,13 @@ if ( is_tax( 'event_venue' ) ) {
 
 $rest_url = esc_url_raw( rest_url( 'blockendar/v1' ) );
 
+// Resolve the site's IANA timezone identifier for FullCalendar.
+// wp_timezone_string() can return a UTC-offset string (e.g. '+05:30') when
+// the site uses a manual offset; fall back to 'UTC' so it's always a valid
+// FullCalendar timeZone value.
+$raw_tz        = wp_timezone_string();
+$site_timezone = preg_match( '/^[A-Za-z]/', $raw_tz ) ? $raw_tz : 'UTC';
+
 $data_attrs = [
 	'data-rest-url'      => $rest_url,
 	'data-default-view'  => $default_view,
@@ -47,6 +54,7 @@ $data_attrs = [
 	'data-featured-only' => $featured_only,
 	'data-venue-ids'     => wp_json_encode( array_values( $venue_ids ) ),
 	'data-type-ids'      => wp_json_encode( array_values( $type_ids ) ),
+	'data-timezone'      => $site_timezone,
 ];
 
 $data_attr_str = '';

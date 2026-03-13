@@ -8,7 +8,10 @@ import {
 	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { dateI18n } from '@wordpress/date';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
+
+const { siteTimezone = 'UTC', generalSettingsUrl = '' } =
+	window.blockendarSettings ?? {};
 
 const TIMEZONE_OPTIONS = [
 	{
@@ -107,6 +110,21 @@ export function GeneralSection( { settings, update, defaults } ) {
 				onChange={ ( val ) => update( { timezone_mode: val } ) }
 				__nextHasNoMarginBottom
 			/>
+
+			<p style={ { margin: 0 } }>
+				{ sprintf(
+					/* translators: %s: IANA timezone identifier e.g. America/New_York */
+					__(
+						'Event times are stored and displayed in the site timezone: %s.',
+						'blockendar'
+					),
+					siteTimezone
+				) }
+				{ ' ' }
+				<a href={ generalSettingsUrl }>
+					{ __( 'Change in WordPress General Settings →', 'blockendar' ) }
+				</a>
+			</p>
 		</VStack>
 	);
 }

@@ -19,6 +19,7 @@ function BlockendarCalendar( { dataset } ) {
 	const featuredOnly = dataset.featuredOnly === 'true';
 	const defaultView = dataset.defaultView ?? 'dayGridMonth';
 	const firstDay = dataset.firstDay ? parseInt( dataset.firstDay, 10 ) : 0;
+	const timezone = dataset.timezone ?? 'UTC';
 	const enabledViews = dataset.enabledViews
 		? JSON.parse( dataset.enabledViews )
 		: [ 'dayGridMonth', 'timeGridWeek', 'listNextMonth' ];
@@ -65,6 +66,7 @@ function BlockendarCalendar( { dataset } ) {
 				listPlugin,
 				interactionPlugin,
 			] }
+			timeZone={ timezone }
 			initialView={ defaultView }
 			firstDay={ firstDay }
 			views={ customViews }

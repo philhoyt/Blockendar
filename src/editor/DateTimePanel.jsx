@@ -511,6 +511,15 @@ export function DateTimePanel() {
 	const setMeta = ( updates ) =>
 		editPost( { meta: { ...meta, ...updates } } );
 
+	// If the timezone meta is empty (new event or never saved), seed it with
+	// the site timezone so the stored value matches what the UI displays.
+	useEffect( () => {
+		if ( ! meta.blockendar_timezone && siteTimezone ) {
+			editPost( { meta: { ...meta, blockendar_timezone: siteTimezone } } );
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [] );
+
 	const allDay = !! meta.blockendar_all_day;
 	const startDate = meta.blockendar_start_date ?? '';
 	const endDate = meta.blockendar_end_date ?? '';
