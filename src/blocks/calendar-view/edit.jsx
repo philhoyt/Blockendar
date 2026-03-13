@@ -211,8 +211,91 @@ export function Edit( { attributes, setAttributes } ) {
 
 			<div { ...blockProps }>
 				<div className="blockendar-calendar-placeholder">
-					<span className="dashicons dashicons-calendar-alt" />
-					<p>{ __( 'Event Calendar', 'blockendar' ) }</p>
+					<div className="blockendar-calendar-placeholder__header">
+						<span className="blockendar-calendar-placeholder__title">
+							{ __( 'Event Calendar', 'blockendar' ) }
+						</span>
+					</div>
+
+					<div className="blockendar-calendar-placeholder__settings">
+						<div className="blockendar-calendar-placeholder__row">
+							<span className="blockendar-calendar-placeholder__label">
+								{ __( 'Views', 'blockendar' ) }
+							</span>
+							<span className="blockendar-calendar-placeholder__value">
+								{ VIEW_OPTIONS.filter( ( v ) =>
+									enabledViews.includes( v.value )
+								).map( ( v ) => (
+									<span
+										key={ v.value }
+										className={ `blockendar-calendar-placeholder__pill${
+											v.value === defaultView
+												? ' is-default'
+												: ''
+										}` }
+									>
+										{ v.label }
+									</span>
+								) ) }
+							</span>
+						</div>
+
+						<div className="blockendar-calendar-placeholder__row">
+							<span className="blockendar-calendar-placeholder__label">
+								{ __( 'First day', 'blockendar' ) }
+							</span>
+							<span className="blockendar-calendar-placeholder__value">
+								{ FIRST_DAY_OPTIONS.find(
+									( o ) => o.value === firstDay
+								)?.label ?? __( 'Sunday', 'blockendar' ) }
+							</span>
+						</div>
+
+						{ types.length > 0 && (
+							<div className="blockendar-calendar-placeholder__row">
+								<span className="blockendar-calendar-placeholder__label">
+									{ __( 'Event types', 'blockendar' ) }
+								</span>
+								<span className="blockendar-calendar-placeholder__value">
+									{ typeIds.length === 0
+										? __( 'All', 'blockendar' )
+										: types
+												.filter( ( t ) =>
+													typeIds.includes( t.id )
+												)
+												.map( ( t ) => t.name )
+												.join( ', ' ) }
+								</span>
+							</div>
+						) }
+
+						{ venues.length > 0 && (
+							<div className="blockendar-calendar-placeholder__row">
+								<span className="blockendar-calendar-placeholder__label">
+									{ __( 'Venues', 'blockendar' ) }
+								</span>
+								<span className="blockendar-calendar-placeholder__value">
+									{ venueIds.length === 0
+										? __( 'All', 'blockendar' )
+										: venues
+												.filter( ( v ) =>
+													venueIds.includes( v.id )
+												)
+												.map( ( v ) => v.name )
+												.join( ', ' ) }
+								</span>
+							</div>
+						) }
+
+						{ featuredOnly && (
+							<div className="blockendar-calendar-placeholder__row">
+								<span className="blockendar-calendar-placeholder__badge">
+									{ __( 'Featured only', 'blockendar' ) }
+								</span>
+							</div>
+						) }
+					</div>
+
 					<p className="blockendar-calendar-placeholder__hint">
 						{ __(
 							'The interactive calendar renders on the frontend.',

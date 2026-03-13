@@ -39,6 +39,8 @@ class EventColumns {
 	 * @return array<string, string>
 	 */
 	public function add_columns( array $columns ): array {
+		unset( $columns['date'] );
+
 		$new = [];
 		foreach ( $columns as $key => $label ) {
 			$new[ $key ] = $label;

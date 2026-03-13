@@ -1,0 +1,94 @@
+/* ==========================================================================
+	Blockendar — Calendar View block editor placeholder styles
+	========================================================================== */
+
+.blockendar-calendar-editor-preview .blockendar-calendar-placeholder {
+	display:          flex;
+	flex-direction:   column;
+	gap:              12px;
+	padding:          20px;
+	background:       #f9f9f9;
+	border:           1px dashed #ccc;
+	border-radius:    4px;
+	font-family:      inherit;
+	min-height:       120px;
+}
+
+.blockendar-calendar-placeholder__header {
+	display:     flex;
+	align-items: center;
+	gap:         8px;
+	color:       #1d2327;
+}
+
+.blockendar-calendar-placeholder__header .dashicons {
+	font-size:   24px;
+	width:       24px;
+	height:      24px;
+	color:       #3858e9;
+}
+
+.blockendar-calendar-placeholder__title {
+	font-size:   15px;
+	font-weight: 600;
+	color:       #1d2327;
+}
+
+.blockendar-calendar-placeholder__settings {
+	display:        flex;
+	flex-direction: column;
+	gap:            6px;
+}
+
+.blockendar-calendar-placeholder__row {
+	display:     flex;
+	align-items: baseline;
+	gap:         8px;
+	font-size:   13px;
+}
+
+.blockendar-calendar-placeholder__label {
+	flex-shrink:  0;
+	font-weight:  600;
+	color:        #646970;
+	min-width:    80px;
+}
+
+.blockendar-calendar-placeholder__value {
+	color:       #1d2327;
+	display:     flex;
+	flex-wrap:   wrap;
+	gap:         4px;
+	align-items: center;
+}
+
+.blockendar-calendar-placeholder__pill {
+	display:       inline-block;
+	padding:       2px 8px;
+	border-radius: 12px;
+	font-size:     12px;
+	background:    #e2e4e7;
+	color:         #1d2327;
+	border:        1px solid transparent;
+}
+
+.blockendar-calendar-placeholder__pill.is-default {
+	background: #3858e9;
+	color:      #fff;
+}
+
+.blockendar-calendar-placeholder__badge {
+	display:       inline-block;
+	padding:       2px 8px;
+	border-radius: 12px;
+	font-size:     12px;
+	background:    #fcf9e8;
+	color:         #614200;
+	border:        1px solid #f0c33c;
+}
+
+.blockendar-calendar-placeholder__hint {
+	margin:    0;
+	font-size: 12px;
+	color:     #757575;
+}
