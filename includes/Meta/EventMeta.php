@@ -221,6 +221,21 @@ class EventMeta {
 			]
 		);
 
+		// Recurrence preset (mirrors the editor dropdown; used to mark the post
+		// dirty when recurrence changes so the Update button activates).
+		register_post_meta(
+			$post_type,
+			'blockendar_recurrence_preset',
+			[
+				'type'              => 'string',
+				'description'       => 'Recurrence preset key selected in the editor (none|daily|weekly_day|monthly_weekday|yearly_date).',
+				'single'            => true,
+				'default'           => 'none',
+				'sanitize_callback' => [ $this, 'sanitize_recurrence_preset' ],
+				'show_in_rest'      => true,
+			]
+		);
+
 		// Flags.
 		register_post_meta(
 			$post_type,
@@ -247,6 +262,16 @@ class EventMeta {
 				'show_in_rest'      => true,
 			]
 		);
+	}
+
+	/**
+	 * Sanitize a recurrence preset key.
+	 */
+	public function sanitize_recurrence_preset( mixed $value ): string {
+		$allowed = [ 'none', 'daily', 'weekly_day', 'monthly_weekday', 'yearly_date' ];
+		$value   = sanitize_text_field( (string) $value );
+
+		return in_array( $value, $allowed, true ) ? $value : 'none';
 	}
 
 	/**
