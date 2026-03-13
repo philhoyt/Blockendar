@@ -49,7 +49,19 @@
 			} ).addTo( map );
 
 			if ( name ) {
-				L.marker( [ lat, lng ] ).addTo( map ).bindPopup( name );
+				const escapeHtml = ( str ) =>
+					str.replace(
+						/[&<>"']/g,
+						( c ) =>
+							( {
+								'&': '&amp;',
+								'<': '&lt;',
+								'>': '&gt;',
+								'"': '&quot;',
+								"'": '&#39;',
+							} )[ c ]
+					);
+				L.marker( [ lat, lng ] ).addTo( map ).bindPopup( escapeHtml( name ) );
 			}
 		} );
 	} );

@@ -11,7 +11,13 @@ document.querySelectorAll( '.blockendar-event-countdown' ).forEach( ( el ) => {
 	const labels = { d: 'days', h: 'hours', m: 'minutes', s: 'seconds' };
 	const pad    = ( n ) => String( n ).padStart( 2, '0' );
 
+	let timer;
 	const tick = () => {
+		if ( ! el.isConnected ) {
+			clearTimeout( timer );
+			return;
+		}
+
 		const diff = target - Date.now();
 
 		if ( diff <= 0 ) {
@@ -42,7 +48,7 @@ document.querySelectorAll( '.blockendar-event-countdown' ).forEach( ( el ) => {
 			)
 			.join( ' ' );
 
-		setTimeout( tick, 1_000 );
+		timer = setTimeout( tick, 1_000 );
 	};
 
 	tick();

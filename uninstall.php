@@ -34,6 +34,7 @@ spl_autoload_register(
 	}
 );
 
+Blockendar\Recurrence\Cron::unschedule();
 Blockendar\DB\Schema::drop_tables();
 
 // Remove plugin options.

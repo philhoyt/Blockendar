@@ -222,10 +222,16 @@ class IndexBuilder {
 
 		$all_day    = ! empty( $meta['all_day'] );
 		$start_time = $all_day ? '00:00' : ( $meta['start_time'] ?: '00:00' );
-		$end_time   = $all_day ? '23:59' : ( $meta['end_time'] ?: $start_time );
+		$end_time   = $all_day ? '00:00' : ( $meta['end_time'] ?: $start_time );
 
 		$start_local_str = "{$meta['start_date']} {$start_time}:00";
-		$end_local_str   = "{$meta['end_date']} {$end_time}:00";
+
+		if ( $all_day ) {
+			$end_date_exclusive = gmdate( 'Y-m-d', strtotime( '+1 day', strtotime( $meta['end_date'] ) ) );
+			$end_local_str      = "{$end_date_exclusive} 00:00:00";
+		} else {
+			$end_local_str = "{$meta['end_date']} {$end_time}:00";
+		}
 
 		try {
 			$start_dt = new \DateTimeImmutable( $start_local_str, $tz );

@@ -7,6 +7,7 @@ import {
 } from '@wordpress/editor';
 import { useSelect, useDispatch } from '@wordpress/data';
 import {
+	Notice,
 	SelectControl,
 	TextControl,
 	ToggleControl,
@@ -38,6 +39,10 @@ export function EventDetailsPanel() {
 	const setMeta = ( updates ) =>
 		editPost( { meta: { ...meta, ...updates } } );
 
+	const minCost = parseFloat( meta.blockendar_cost_min ) || 0;
+	const maxCost = parseFloat( meta.blockendar_cost_max ) || 0;
+	const costRangeInvalid = minCost > 0 && maxCost > 0 && minCost > maxCost;
+
 	return (
 		<PluginDocumentSettingPanel
 			name="blockendar-event-details"
@@ -62,6 +67,15 @@ export function EventDetailsPanel() {
 					onChange={ ( val ) => setMeta( { blockendar_cost: val } ) }
 					__nextHasNoMarginBottom
 				/>
+
+				{ costRangeInvalid && (
+					<Notice status="warning" isDismissible={ false }>
+						{ __(
+							'Min cost must not exceed max cost.',
+							'blockendar'
+						) }
+					</Notice>
+				) }
 
 				<TextControl
 					label={ __( 'Min cost', 'blockendar' ) }
