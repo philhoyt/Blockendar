@@ -246,52 +246,74 @@ function getDateParts( dateStr ) {
 
 function buildFreqOptions( startDate ) {
 	const p = getDateParts( startDate );
+	let weeklyLabel, monthlyLabel, yearlyLabel;
+	if ( p ) {
+		// translators: %s: day name e.g. "Monday"
+		weeklyLabel = sprintf( __( 'Weekly on %s', 'blockendar' ), p.dayName );
+		monthlyLabel = sprintf(
+			// translators: 1: ordinal e.g. "second" 2: day name e.g. "Monday"
+			__( 'Monthly on the %1$s %2$s', 'blockendar' ),
+			p.nthLabel,
+			p.dayName
+		);
+		yearlyLabel = sprintf(
+			// translators: 1: month name 2: day number
+			__( 'Annually on %1$s %2$d', 'blockendar' ),
+			p.monthName,
+			p.dom
+		);
+	} else {
+		weeklyLabel = __( 'Weekly', 'blockendar' );
+		monthlyLabel = __( 'Monthly', 'blockendar' );
+		yearlyLabel = __( 'Annually', 'blockendar' );
+	}
 	return [
 		{ label: __( 'Does not repeat', 'blockendar' ), value: 'none' },
 		{ label: __( 'Daily', 'blockendar' ), value: 'daily' },
-		{
-			/* translators: %s: day name e.g. "Monday" */
-			label: p
-				? sprintf( __( 'Weekly on %s', 'blockendar' ), p.dayName )
-				: __( 'Weekly', 'blockendar' ),
-			value: 'weekly_day',
-		},
-		{
-			/* translators: 1: ordinal e.g. "second" 2: day name e.g. "Monday" */
-			label: p
-				? sprintf(
-					__( 'Monthly on the %1$s %2$s', 'blockendar' ),
-					p.nthLabel,
-					p.dayName
-			  )
-				: __( 'Monthly', 'blockendar' ),
-			value: 'monthly_weekday',
-		},
-		{
-			/* translators: 1: month name 2: day number */
-			label: p
-				? sprintf(
-					__( 'Annually on %1$s %2$d', 'blockendar' ),
-					p.monthName,
-					p.dom
-			  )
-				: __( 'Annually', 'blockendar' ),
-			value: 'yearly_date',
-		},
+		{ label: weeklyLabel, value: 'weekly_day' },
+		{ label: monthlyLabel, value: 'monthly_weekday' },
+		{ label: yearlyLabel, value: 'yearly_date' },
 	];
 }
 
 function presetToPayload( preset, startDate ) {
-	const p = getDateParts( startDate );
 	switch ( preset ) {
 		case 'daily':
-			return { frequency: 'daily', interval_val: 1, byday: null, bymonthday: null, bysetpos: null };
-		case 'weekly_day':
-			return { frequency: 'weekly', interval_val: 1, byday: p?.byday ?? null, bymonthday: null, bysetpos: null };
-		case 'monthly_weekday':
-			return { frequency: 'monthly', interval_val: 1, byday: p?.byday ?? null, bymonthday: null, bysetpos: p?.nth?.toString() ?? null };
+			return {
+				frequency: 'daily',
+				interval_val: 1,
+				byday: null,
+				bymonthday: null,
+				bysetpos: null,
+			};
+		case 'weekly_day': {
+			const p = getDateParts( startDate );
+			return {
+				frequency: 'weekly',
+				interval_val: 1,
+				byday: p?.byday ?? null,
+				bymonthday: null,
+				bysetpos: null,
+			};
+		}
+		case 'monthly_weekday': {
+			const p = getDateParts( startDate );
+			return {
+				frequency: 'monthly',
+				interval_val: 1,
+				byday: p?.byday ?? null,
+				bymonthday: null,
+				bysetpos: p?.nth?.toString() ?? null,
+			};
+		}
 		case 'yearly_date':
-			return { frequency: 'yearly', interval_val: 1, byday: null, bymonthday: null, bysetpos: null };
+			return {
+				frequency: 'yearly',
+				interval_val: 1,
+				byday: null,
+				bymonthday: null,
+				bysetpos: null,
+			};
 		default:
 			return null;
 	}
@@ -299,11 +321,16 @@ function presetToPayload( preset, startDate ) {
 
 function ruleToPreset( r ) {
 	switch ( r?.frequency ) {
-		case 'daily': return 'daily';
-		case 'weekly': return 'weekly_day';
-		case 'monthly': return 'monthly_weekday';
-		case 'yearly': return 'yearly_date';
-		default: return 'none';
+		case 'daily':
+			return 'daily';
+		case 'weekly':
+			return 'weekly_day';
+		case 'monthly':
+			return 'monthly_weekday';
+		case 'yearly':
+			return 'yearly_date';
+		default:
+			return 'none';
 	}
 }
 
@@ -333,8 +360,10 @@ function RecurrenceSection( { postId, startDate } ) {
 					const r = data.recurrence;
 					const p = ruleToPreset( r );
 					setPreset( p );
-					// eslint-disable-next-line no-nested-ternary
-					setEndType( r.until_date ? 'date' : r.count ? 'count' : 'never' );
+					setEndType(
+						// eslint-disable-next-line no-nested-ternary
+						r.until_date ? 'date' : r.count ? 'count' : 'never'
+					);
 					setUntilDate( r.until_date ?? '' );
 					setCount( r.count?.toString() ?? '' );
 				}
@@ -361,7 +390,13 @@ function RecurrenceSection( { postId, startDate } ) {
 			return;
 		}
 
-		const { preset: p, startDate: sd, endType: et, untilDate: ud, count: c } = stateRef.current;
+		const {
+			preset: p,
+			startDate: sd,
+			endType: et,
+			untilDate: ud,
+			count: c,
+		} = stateRef.current;
 
 		if ( p === 'none' ) {
 			apiFetch( {
@@ -451,9 +486,18 @@ function RecurrenceSection( { postId, startDate } ) {
 						label={ __( 'Ends', 'blockendar' ) }
 						selected={ endType }
 						options={ [
-							{ label: __( 'Never', 'blockendar' ), value: 'never' },
-							{ label: __( 'On date', 'blockendar' ), value: 'date' },
-							{ label: __( 'After N times', 'blockendar' ), value: 'count' },
+							{
+								label: __( 'Never', 'blockendar' ),
+								value: 'never',
+							},
+							{
+								label: __( 'On date', 'blockendar' ),
+								value: 'date',
+							},
+							{
+								label: __( 'After N times', 'blockendar' ),
+								value: 'count',
+							},
 						] }
 						onChange={ ( val ) => {
 							setEndType( val );
@@ -475,7 +519,10 @@ function RecurrenceSection( { postId, startDate } ) {
 
 					{ endType === 'count' && (
 						<TextControl
-							label={ __( 'Number of occurrences', 'blockendar' ) }
+							label={ __(
+								'Number of occurrences',
+								'blockendar'
+							) }
 							type="number"
 							min={ 1 }
 							value={ count }
@@ -484,7 +531,12 @@ function RecurrenceSection( { postId, startDate } ) {
 						/>
 					) }
 
-					<Button variant="secondary" onClick={ () => doSave( preset, endType, untilDate, count ) }>
+					<Button
+						variant="secondary"
+						onClick={ () =>
+							doSave( preset, endType, untilDate, count )
+						}
+					>
 						{ __( 'Save recurrence', 'blockendar' ) }
 					</Button>
 
@@ -522,9 +574,11 @@ export function DateTimePanel() {
 		const updates = {};
 
 		if ( ! meta.blockendar_start_date ) {
-			const seedNow  = new Date();
-			const seedPad  = ( n ) => String( n ).padStart( 2, '0' );
-			const seedToday = `${ seedNow.getFullYear() }-${ seedPad( seedNow.getMonth() + 1 ) }-${ seedPad( seedNow.getDate() ) }`;
+			const seedNow = new Date();
+			const seedPad = ( n ) => String( n ).padStart( 2, '0' );
+			const seedToday = `${ seedNow.getFullYear() }-${ seedPad(
+				seedNow.getMonth() + 1
+			) }-${ seedPad( seedNow.getDate() ) }`;
 
 			// Round up to the next full hour.
 			const next = new Date( seedNow );
@@ -532,9 +586,13 @@ export function DateTimePanel() {
 			next.setHours( next.getHours() + 1 );
 
 			updates.blockendar_start_date = seedToday;
-			updates.blockendar_end_date   = seedToday;
-			updates.blockendar_start_time = `${ seedPad( next.getHours() ) }:00`;
-			updates.blockendar_end_time   = `${ seedPad( ( next.getHours() + 1 ) % 24 ) }:00`;
+			updates.blockendar_end_date = seedToday;
+			updates.blockendar_start_time = `${ seedPad(
+				next.getHours()
+			) }:00`;
+			updates.blockendar_end_time = `${ seedPad(
+				( next.getHours() + 1 ) % 24
+			) }:00`;
 		}
 
 		if ( ! meta.blockendar_timezone ) {
@@ -544,19 +602,21 @@ export function DateTimePanel() {
 		if ( Object.keys( updates ).length ) {
 			editPost( { meta: { ...meta, ...updates } } );
 		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [] );
 
-	const now       = new Date();
-	const pad       = ( n ) => String( n ).padStart( 2, '0' );
-	const today     = `${ now.getFullYear() }-${ pad( now.getMonth() + 1 ) }-${ pad( now.getDate() ) }`;
+	const now = new Date();
+	const pad = ( n ) => String( n ).padStart( 2, '0' );
+	const today = `${ now.getFullYear() }-${ pad( now.getMonth() + 1 ) }-${ pad(
+		now.getDate()
+	) }`;
 
-	const allDay    = !! meta.blockendar_all_day;
+	const allDay = !! meta.blockendar_all_day;
 	const startDate = meta.blockendar_start_date ?? '';
-	const endDate   = meta.blockendar_end_date ?? '';
+	const endDate = meta.blockendar_end_date ?? '';
 	const startTime = meta.blockendar_start_time || '09:00';
-	const endTime   = meta.blockendar_end_time || '10:00';
-	const timezone  = meta.blockendar_timezone || siteTimezone;
+	const endTime = meta.blockendar_end_time || '10:00';
+	const timezone = meta.blockendar_timezone || siteTimezone;
 
 	const tzOptions = timezones.map( ( tz ) => ( { label: tz, value: tz } ) );
 
@@ -608,8 +668,8 @@ export function DateTimePanel() {
 			className="blockendar-panel-datetime"
 		>
 			<VStack spacing={ 3 }>
-
 				<BaseControl
+					id="blockendar-start-date"
 					label={ __( 'Start Date', 'blockendar' ) }
 					__nextHasNoMarginBottom
 				>
@@ -622,6 +682,7 @@ export function DateTimePanel() {
 
 				{ ! allDay && (
 					<BaseControl
+						id="blockendar-start-time"
 						label={ __( 'Start Time', 'blockendar' ) }
 						__nextHasNoMarginBottom
 					>
@@ -633,13 +694,21 @@ export function DateTimePanel() {
 				) }
 
 				{ ! allDay && (
-					<div style={ { textAlign: 'center', color: '#757575', fontSize: '12px', padding: '2px 0' } }>
+					<div
+						style={ {
+							textAlign: 'center',
+							color: '#757575',
+							fontSize: '12px',
+							padding: '2px 0',
+						} }
+					>
 						{ __( 'to', 'blockendar' ) }
 					</div>
 				) }
 
 				{ ! allDay && (
 					<BaseControl
+						id="blockendar-end-time"
 						label={ __( 'End Time', 'blockendar' ) }
 						__nextHasNoMarginBottom
 					>
@@ -651,6 +720,7 @@ export function DateTimePanel() {
 				) }
 
 				<BaseControl
+					id="blockendar-end-date"
 					label={ __( 'End Date', 'blockendar' ) }
 					__nextHasNoMarginBottom
 				>
@@ -680,7 +750,6 @@ export function DateTimePanel() {
 				/>
 
 				<RecurrenceSection postId={ postId } startDate={ startDate } />
-
 			</VStack>
 		</PluginDocumentSettingPanel>
 	);

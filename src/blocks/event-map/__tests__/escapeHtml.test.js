@@ -1,3 +1,4 @@
+/* eslint-env jest */
 /**
  * Tests for the escapeHtml utility used in event-map/view.js.
  *
@@ -29,7 +30,7 @@ describe( 'escapeHtml', () => {
 		expect( escapeHtml( '"value"' ) ).toBe( '&quot;value&quot;' );
 	} );
 
-	test( "escapes single-quotes", () => {
+	test( 'escapes single-quotes', () => {
 		expect( escapeHtml( "it's" ) ).toBe( 'it&#39;s' );
 	} );
 

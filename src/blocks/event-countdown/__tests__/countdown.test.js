@@ -1,3 +1,4 @@
+/* eslint-env jest */
 /**
  * Tests for event-countdown/view.js tick() behaviour.
  *
@@ -10,9 +11,11 @@
 const pad = ( n ) => String( n ).padStart( 2, '0' );
 
 function getSegments( diff ) {
-	if ( diff <= 0 ) return null;
-	const days    = Math.floor( diff / 86_400_000 );
-	const hours   = Math.floor( ( diff % 86_400_000 ) / 3_600_000 );
+	if ( diff <= 0 ) {
+		return null;
+	}
+	const days = Math.floor( diff / 86_400_000 );
+	const hours = Math.floor( ( diff % 86_400_000 ) / 3_600_000 );
 	const minutes = Math.floor( ( diff % 3_600_000 ) / 60_000 );
 	const seconds = Math.floor( ( diff % 60_000 ) / 1_000 );
 	return { days, hours, minutes, seconds };
@@ -25,7 +28,11 @@ describe( 'tick — timer stops when element disconnected', () => {
 		const clearTimeoutSpy = jest.spyOn( global, 'clearTimeout' );
 		const el = {
 			isConnected: false,
-			dataset: { target: String( Date.now() + 100_000 ), expiredLabel: 'Started.', format: 'd:h:m:s' },
+			dataset: {
+				target: String( Date.now() + 100_000 ),
+				expiredLabel: 'Started.',
+				format: 'd:h:m:s',
+			},
 		};
 		const timerRef = { current: undefined };
 
@@ -33,7 +40,6 @@ describe( 'tick — timer stops when element disconnected', () => {
 		const tick = () => {
 			if ( ! el.isConnected ) {
 				clearTimeout( timerRef.current );
-				return;
 			}
 		};
 
@@ -56,23 +62,43 @@ describe( 'tick — expired label when diff ≤ 0', () => {
 describe( 'getSegments — correct time breakdown', () => {
 	test( '2 days exactly', () => {
 		const result = getSegments( 2 * 86_400_000 );
-		expect( result ).toEqual( { days: 2, hours: 0, minutes: 0, seconds: 0 } );
+		expect( result ).toEqual( {
+			days: 2,
+			hours: 0,
+			minutes: 0,
+			seconds: 0,
+		} );
 	} );
 
 	test( '1 hour 30 minutes', () => {
 		const result = getSegments( 90 * 60_000 );
-		expect( result ).toEqual( { days: 0, hours: 1, minutes: 30, seconds: 0 } );
+		expect( result ).toEqual( {
+			days: 0,
+			hours: 1,
+			minutes: 30,
+			seconds: 0,
+		} );
 	} );
 
 	test( '45 seconds', () => {
 		const result = getSegments( 45_000 );
-		expect( result ).toEqual( { days: 0, hours: 0, minutes: 0, seconds: 45 } );
+		expect( result ).toEqual( {
+			days: 0,
+			hours: 0,
+			minutes: 0,
+			seconds: 45,
+		} );
 	} );
 
 	test( '1 day 2 hours 3 minutes 4 seconds', () => {
 		const diff = 86_400_000 + 2 * 3_600_000 + 3 * 60_000 + 4_000;
 		const result = getSegments( diff );
-		expect( result ).toEqual( { days: 1, hours: 2, minutes: 3, seconds: 4 } );
+		expect( result ).toEqual( {
+			days: 1,
+			hours: 2,
+			minutes: 3,
+			seconds: 4,
+		} );
 	} );
 } );
 
