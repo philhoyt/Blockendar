@@ -313,7 +313,7 @@ class Generator {
 
 			// No more target days this month — advance to next interval month.
 			$next_month = $cursor->modify( "+{$interval} months" );
-			$first_day  = reset( $rule->bymonthday );
+			$first_day  = $rule->bymonthday[0];
 
 			try {
 				return new \DateTimeImmutable(
