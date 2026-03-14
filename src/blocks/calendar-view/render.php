@@ -40,11 +40,15 @@ if ( is_tax( 'event_venue' ) ) {
 $rest_url = esc_url_raw( rest_url( 'blockendar/v1' ) );
 
 // Resolve the site's IANA timezone identifier for FullCalendar.
-// wp_timezone_string() can return a UTC-offset string (e.g. '+05:30') when
-// the site uses a manual offset; fall back to 'UTC' so it's always a valid
-// FullCalendar timeZone value.
+// FullCalendar requires either 'local', 'UTC', or a valid IANA timezone name.
+// wp_timezone_string() can return a UTC-offset string (e.g. '-4:00') when
+// the site uses a manual offset — fall back to 'local' in that case so the
+// calendar uses the visitor's browser timezone rather than UTC.
+// Note: timezone_mode='event' cannot be honoured in the calendar view because
+// FullCalendar is single-timezone-per-view; per-event timezone display is
+// handled by the individual single-event blocks instead.
 $raw_tz        = wp_timezone_string();
-$site_timezone = preg_match( '/^[A-Za-z]/', $raw_tz ) ? $raw_tz : 'UTC';
+$site_timezone = preg_match( '/^[A-Za-z]/', $raw_tz ) ? $raw_tz : 'local';
 
 $data_attrs = [
 	'data-rest-url'      => $rest_url,

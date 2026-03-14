@@ -212,7 +212,7 @@ function blockendar_seed_event( array $args ): int {
 		'start_time'       => '09:00',
 		'end_time'         => '10:00',
 		'all_day'          => false,
-		'timezone'         => 'America/Chicago',
+		'timezone'         => wp_timezone_string() ?: 'UTC',
 		'status'           => 'scheduled',
 		'cost'             => '',
 		'cost_min'         => '',

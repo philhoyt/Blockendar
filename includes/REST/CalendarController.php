@@ -156,7 +156,7 @@ class CalendarController extends AbstractController {
 		$cost     = get_post_meta( $post_id, 'blockendar_cost', true );
 		$featured = (bool) get_post_meta( $post_id, 'blockendar_featured', true );
 
-		// FullCalendar expects ISO 8601. The index stores UTC — append Z.
+		// FullCalendar expects ISO 8601. Convert UTC to the site timezone so startStr is correct.
 		$start = $this->to_iso8601( $row->start_datetime, (bool) $row->all_day, $row->start_date );
 		$end   = $this->to_iso8601( $row->end_datetime, (bool) $row->all_day, $row->end_date );
 
@@ -181,14 +181,23 @@ class CalendarController extends AbstractController {
 
 	/**
 	 * Return a date string for FullCalendar.
-	 * All-day events use date-only strings; timed events use UTC ISO 8601.
+	 * All-day events use date-only strings; timed events use an offset-aware
+	 * ISO 8601 string in the site timezone so FullCalendar's startStr reflects
+	 * the local time rather than UTC.
 	 */
 	private function to_iso8601( string $utc_datetime, bool $all_day, string $date ): string {
 		if ( $all_day ) {
 			return $date;
 		}
 
-		return str_replace( ' ', 'T', $utc_datetime ) . 'Z';
+		try {
+			$dt = new \DateTimeImmutable( $utc_datetime, new \DateTimeZone( 'UTC' ) );
+			$dt = $dt->setTimezone( wp_timezone() );
+			return $dt->format( 'Y-m-d\TH:i:sP' );
+		} catch ( \Exception $e ) {
+			// Fallback to UTC string if conversion fails.
+			return str_replace( ' ', 'T', $utc_datetime ) . 'Z';
+		}
 	}
 
 	/**
