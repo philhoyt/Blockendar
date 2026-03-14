@@ -177,6 +177,10 @@
 		display: none;
 	}
 
+	.fc-popover-body .fc-event-time, .fc-popover-body .fc-event-title {
+		display: block;
+	}
+
 	/* Strip the pill — just the dot */
 	.wp-block-blockendar-calendar-view .fc-daygrid-event.fc-h-event {
 		background: transparent;
