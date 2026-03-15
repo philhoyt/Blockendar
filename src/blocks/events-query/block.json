@@ -19,7 +19,7 @@
 			}
 		}
 	},
-	"usesContext": [ "postId", "postType" ],
+	"usesContext": [ "postId", "postType", "blockendar/queryId" ],
 	"attributes": {
 		"typeIds":       { "type": "array",   "default": [], "items": { "type": "integer" } },
 		"perPage":       { "type": "integer", "default": 10 },

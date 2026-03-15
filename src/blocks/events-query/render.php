@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
+use Blockendar\Blocks\FilterContext;
 use Blockendar\DB\EventIndex;
 
 $type_ids        = array_filter( array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) ) );
@@ -32,8 +33,10 @@ $show_pagination = ! empty( $attributes['showPagination'] );
 $related_to      = in_array( $attributes['relatedTo'] ?? 'none', [ 'none', 'type', 'venue', 'both' ], true )
 	? ( $attributes['relatedTo'] ?? 'none' )
 	: 'none';
+$query_id        = (string) ( $block->context['blockendar/queryId'] ?? '' );
+$page_param      = FilterContext::param_name( 'page', $query_id );
 // phpcs:disable WordPress.Security.NonceVerification.Recommended
-$current_page = max( 1, absint( wp_unslash( $_GET['blockendar_page'] ?? 1 ) ) );
+$current_page = max( 1, absint( wp_unslash( $_GET[ $page_param ] ?? 1 ) ) );
 // phpcs:enable
 $total_pages     = 1;
 $layout          = $attributes['displayLayout'] ?? [ 'type' => 'list' ];
@@ -49,6 +52,9 @@ if ( $show_past ) {
 	$start = $now;
 	$end   = gmdate( 'Y-m-d H:i:s', strtotime( '+3 years' ) );
 }
+
+// Read active URL filters (only applied in standard query mode — not inherit/relatedTo).
+$url_filters = FilterContext::get_active_filters( $query_id );
 
 $index     = new EventIndex();
 $base_args = [
@@ -134,12 +140,35 @@ if ( $inherit ) {
 		}
 	}
 } else {
+	// Merge URL type filter with the block's static typeIds.
+	// Static typeIds act as a curator allowlist — the URL filter cannot widen
+	// past what the editor configured. If no static IDs are set, the URL filter
+	// applies freely.
+	if ( ! empty( $url_filters['type_ids'] ) ) {
+		$effective_type_ids = empty( $type_ids )
+			? $url_filters['type_ids']
+			: array_values( array_intersect( $url_filters['type_ids'], $type_ids ) );
+	} else {
+		$effective_type_ids = $type_ids;
+	}
+
+	// Apply date range filter. When showPast is false the effective start is
+	// max(now, filter_date_start) so past dates cannot sneak in via the URL.
+	if ( null !== $url_filters['date_start'] ) {
+		$filter_start = $url_filters['date_start'] . ' 00:00:00';
+		$start        = $show_past ? $filter_start : max( $now, $filter_start );
+	}
+	if ( null !== $url_filters['date_end'] ) {
+		$end = $url_filters['date_end'] . ' 23:59:59';
+	}
+
 	$standard_filters = [
-		'type_term_id' => ! empty( $type_ids ) ? $type_ids : null,
-		'per_page'     => $per_page,
-		'page'         => $current_page,
-		'orderby'      => 'start_datetime',
-		'order'        => $order,
+		'type_term_id'  => ! empty( $effective_type_ids ) ? $effective_type_ids : null,
+		'venue_term_id' => $url_filters['venue_id'],
+		'per_page'      => $per_page,
+		'page'          => $current_page,
+		'orderby'       => 'start_datetime',
+		'order'         => $order,
 	];
 	$events           = $index->get_events_in_range( $start, $end, $standard_filters );
 
@@ -196,11 +225,11 @@ unset( $GLOBALS['blockendar_current_occurrence'] );
 wp_reset_postdata();
 
 if ( $show_pagination && $total_pages > 1 ) {
-	$base_url   = esc_url_raw( remove_query_arg( 'blockendar_page' ) );
+	$base_url   = esc_url_raw( remove_query_arg( $page_param ) );
 	$sep        = str_contains( $base_url, '?' ) ? '&' : '?';
 	$pagination = paginate_links(
 		[
-			'base'      => $base_url . $sep . 'blockendar_page=%#%',
+			'base'      => $base_url . $sep . $page_param . '=%#%',
 			'format'    => '',
 			'current'   => $current_page,
 			'total'     => $total_pages,
