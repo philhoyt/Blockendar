@@ -139,6 +139,7 @@ function TimeSelect( { value, onChange } ) {
 						options={ HOUR_OPTIONS_12 }
 						onChange={ onHour }
 						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 				</div>
 				<div style={ { width: 64 } }>
@@ -149,6 +150,7 @@ function TimeSelect( { value, onChange } ) {
 							onChange( toHHMM( h24, parseInt( min, 10 ) ) )
 						}
 						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 				</div>
 				<div style={ { width: 74 } }>
@@ -157,6 +159,7 @@ function TimeSelect( { value, onChange } ) {
 						options={ AMPM_OPTIONS }
 						onChange={ onAmPm }
 						__nextHasNoMarginBottom
+						__next40pxDefaultSize
 					/>
 				</div>
 			</HStack>
@@ -173,6 +176,7 @@ function TimeSelect( { value, onChange } ) {
 						onChange( toHHMM( parseInt( h, 10 ), roundedM ) )
 					}
 					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 			</div>
 			<div style={ { width: 72 } }>
@@ -183,6 +187,7 @@ function TimeSelect( { value, onChange } ) {
 						onChange( toHHMM( h24, parseInt( min, 10 ) ) )
 					}
 					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 			</div>
 		</HStack>
@@ -478,6 +483,7 @@ function RecurrenceSection( { postId, startDate } ) {
 					doSave( val, endType, untilDate, count );
 				} }
 				__nextHasNoMarginBottom
+				__next40pxDefaultSize
 			/>
 
 			{ preset !== 'none' && (
@@ -738,6 +744,7 @@ export function DateTimePanel() {
 						setMeta( { blockendar_timezone: val } )
 					}
 					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 
 				<ToggleControl

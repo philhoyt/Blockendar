@@ -58,6 +58,7 @@ export function EventDetailsPanel() {
 						setMeta( { blockendar_status: val } )
 					}
 					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 
 				<TextControl
@@ -113,6 +114,7 @@ export function EventDetailsPanel() {
 						setMeta( { blockendar_currency: val } )
 					}
 					__nextHasNoMarginBottom
+					__next40pxDefaultSize
 				/>
 
 				<TextControl

@@ -12,10 +12,10 @@ import {
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
 import { useEntityProp } from '@wordpress/core-data';
-import { dateI18n, __experimentalGetSettings } from '@wordpress/date';
+import { dateI18n, getSettings } from '@wordpress/date';
 import { __ } from '@wordpress/i18n';
 
-const wpSettings = __experimentalGetSettings();
+const wpSettings = getSettings();
 const siteDateFormat =
 	window.blockendarEditor?.dateFormat ?? wpSettings.formats.date;
 const siteTimeFormat =
