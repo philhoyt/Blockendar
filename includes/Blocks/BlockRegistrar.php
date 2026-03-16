@@ -82,6 +82,8 @@ class BlockRegistrar {
 				'currencies'   => $this->get_currency_list(),
 				'siteTimezone' => $this->get_site_iana_timezone(),
 				'is12Hour'     => $this->is_12_hour_format(),
+				'dateFormat'   => $this->get_date_format(),
+				'timeFormat'   => $this->get_time_format(),
 			]
 		);
 
@@ -105,6 +107,26 @@ class BlockRegistrar {
 	private function get_site_iana_timezone(): string {
 		$tz = get_option( 'timezone_string', '' );
 		return ( is_string( $tz ) && '' !== $tz ) ? $tz : 'UTC';
+	}
+
+	/**
+	 * Return the active date format string (Blockendar setting or WP core fallback).
+	 */
+	private function get_date_format(): string {
+		$settings = get_option( 'blockendar_settings', [] );
+		return ( is_array( $settings ) && ! empty( $settings['date_format'] ) )
+			? $settings['date_format']
+			: get_option( 'date_format', 'F j, Y' );
+	}
+
+	/**
+	 * Return the active time format string (Blockendar setting or WP core fallback).
+	 */
+	private function get_time_format(): string {
+		$settings = get_option( 'blockendar_settings', [] );
+		return ( is_array( $settings ) && ! empty( $settings['time_format'] ) )
+			? $settings['time_format']
+			: get_option( 'time_format', 'g:i a' );
 	}
 
 	/**

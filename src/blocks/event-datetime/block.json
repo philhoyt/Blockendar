@@ -51,7 +51,11 @@
 		"showStartTime": { "type": "boolean", "default": true },
 		"showEndDate":   { "type": "boolean", "default": true },
 		"showEndTime":   { "type": "boolean", "default": true },
-		"showTimezone":  { "type": "boolean", "default": false }
+		"showTimezone":  { "type": "boolean", "default": false },
+		"dateFormat":    { "type": "string",  "default": "" },
+		"timeFormat":    { "type": "string",  "default": "" },
+		"timeSeparator": { "type": "string",  "default": "@" },
+		"rangeSeparator": { "type": "string", "default": "–" }
 	},
 	"render": "file:./render.php",
 	"editorScript": "file:./index.js"

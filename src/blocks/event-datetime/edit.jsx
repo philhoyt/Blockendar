@@ -3,13 +3,38 @@
  */
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
+	Button,
 	PanelBody,
+	RadioControl,
+	TextControl,
 	ToggleControl,
+	__experimentalHStack as HStack,
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
 import { useEntityProp } from '@wordpress/core-data';
 import { dateI18n, __experimentalGetSettings } from '@wordpress/date';
 import { __ } from '@wordpress/i18n';
+
+const wpSettings = __experimentalGetSettings();
+const siteDateFormat =
+	window.blockendarEditor?.dateFormat ?? wpSettings.formats.date;
+const siteTimeFormat =
+	window.blockendarEditor?.timeFormat ?? wpSettings.formats.time;
+
+const TIME_FORMAT_OPTIONS = [
+	{
+		label: __( 'Default (from settings)', 'blockendar' ),
+		value: '',
+	},
+	{
+		label: __( '12-hour (9:30 am / 2:15 pm)', 'blockendar' ),
+		value: 'g:i a',
+	},
+	{
+		label: __( '24-hour (09:30 / 14:15)', 'blockendar' ),
+		value: 'H:i',
+	},
+];
 
 export function Edit( { attributes, setAttributes, context } ) {
 	const {
@@ -18,6 +43,10 @@ export function Edit( { attributes, setAttributes, context } ) {
 		showEndDate,
 		showEndTime,
 		showTimezone,
+		dateFormat,
+		timeFormat,
+		timeSeparator,
+		rangeSeparator,
 	} = attributes;
 
 	const postId = context?.postId;
@@ -32,13 +61,15 @@ export function Edit( { attributes, setAttributes, context } ) {
 	const allDay = !! meta?.blockendar_all_day;
 	const timezone = meta?.blockendar_timezone ?? '';
 
-	const { formats } = __experimentalGetSettings();
+	const effectiveDateFormat = dateFormat || siteDateFormat;
+	const effectiveTimeFormat = timeFormat || siteTimeFormat;
 
-	const fmtDate = ( date ) => ( date ? dateI18n( formats.date, date ) : '' );
+	const fmtDate = ( date ) =>
+		date ? dateI18n( effectiveDateFormat, date ) : '';
 
 	const fmtTime = ( time, date ) =>
 		! allDay && time && date
-			? dateI18n( formats.time, `${ date }T${ time }` )
+			? dateI18n( effectiveTimeFormat, `${ date }T${ time }` )
 			: '';
 
 	// Use placeholder dates when no event data is set.
@@ -110,6 +141,81 @@ export function Edit( { attributes, setAttributes, context } ) {
 						/>
 					</VStack>
 				</PanelBody>
+
+				<PanelBody
+					title={ __( 'Format', 'blockendar' ) }
+					initialOpen={ false }
+				>
+					<VStack spacing={ 4 }>
+						<HStack alignment="flex-end" spacing={ 2 }>
+							<TextControl
+								label={ __( 'Date format', 'blockendar' ) }
+								help={
+									<>
+										{ __( 'Preview:', 'blockendar' ) }{ ' ' }
+										<code>
+											{ dateI18n(
+												effectiveDateFormat,
+												new Date()
+											) }
+										</code>
+									</>
+								}
+								placeholder={ siteDateFormat }
+								value={ dateFormat }
+								onChange={ ( val ) =>
+									setAttributes( { dateFormat: val } )
+								}
+								__nextHasNoMarginBottom
+							/>
+							{ dateFormat && (
+								<Button
+									variant="tertiary"
+									onClick={ () =>
+										setAttributes( { dateFormat: '' } )
+									}
+								>
+									{ __( 'Reset', 'blockendar' ) }
+								</Button>
+							) }
+						</HStack>
+
+						<RadioControl
+							label={ __( 'Time format', 'blockendar' ) }
+							selected={ timeFormat }
+							options={ TIME_FORMAT_OPTIONS }
+							onChange={ ( val ) =>
+								setAttributes( { timeFormat: val } )
+							}
+						/>
+
+						<TextControl
+							label={ __( 'Date/time separator', 'blockendar' ) }
+							help={ __(
+								'Symbol placed between the date and time.',
+								'blockendar'
+							) }
+							value={ timeSeparator }
+							onChange={ ( val ) =>
+								setAttributes( { timeSeparator: val } )
+							}
+							__nextHasNoMarginBottom
+						/>
+
+						<TextControl
+							label={ __( 'Range separator', 'blockendar' ) }
+							help={ __(
+								'Symbol placed between start and end.',
+								'blockendar'
+							) }
+							value={ rangeSeparator }
+							onChange={ ( val ) =>
+								setAttributes( { rangeSeparator: val } )
+							}
+							__nextHasNoMarginBottom
+						/>
+					</VStack>
+				</PanelBody>
 			</InspectorControls>
 
 			<div { ...blockProps }>
@@ -121,7 +227,9 @@ export function Edit( { attributes, setAttributes, context } ) {
 							! activeAllDay &&
 							activeStartTime && (
 								<>
-									{ showStartDate ? ' @ ' : '' }
+									{ showStartDate
+										? ` ${ timeSeparator } `
+										: '' }
 									{ fmtTime(
 										activeStartTime,
 										activeStartDate
@@ -138,8 +246,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 							className="blockendar-event-datetime__sep"
 							aria-hidden="true"
 						>
-							{ ' ' }
-							–{ ' ' }
+							{ ` ${ rangeSeparator } ` }
 						</span>
 						<time className="blockendar-event-datetime__end">
 							{ fmtDate( activeEndDate ) }
@@ -147,7 +254,9 @@ export function Edit( { attributes, setAttributes, context } ) {
 								! activeAllDay &&
 								activeEndTime && (
 									<>
-										{ showEndDate ? ' @ ' : '' }
+										{ showEndDate
+											? ` ${ timeSeparator } `
+											: '' }
 										{ fmtTime(
 											activeEndTime,
 											activeEndDate
@@ -169,8 +278,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 								className="blockendar-event-datetime__sep"
 								aria-hidden="true"
 							>
-								{ ' ' }
-								–{ ' ' }
+								{ ` ${ rangeSeparator } ` }
 							</span>
 							<time className="blockendar-event-datetime__end">
 								{ fmtTime( activeEndTime, activeEndDate ) }
@@ -186,16 +294,15 @@ export function Edit( { attributes, setAttributes, context } ) {
 				) }
 
 				{ /* All day */ }
-				{ activeAllDay && showStartDate && (
+				{ activeAllDay && showStartTime && showStartDate && (
 					<span
 						className="blockendar-event-datetime__sep"
 						aria-hidden="true"
 					>
-						{ ' ' }
-						–{ ' ' }
+						{ ` ${ rangeSeparator } ` }
 					</span>
 				) }
-				{ activeAllDay && (
+				{ activeAllDay && showStartTime && (
 					<span className="blockendar-event-datetime__allday">
 						{ __( 'All day', 'blockendar' ) }
 					</span>

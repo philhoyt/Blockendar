@@ -34,8 +34,12 @@ if ( ! $start_date ) {
 }
 
 $blockendar_settings = (array) get_option( 'blockendar_settings', [] );
-$date_format         = $blockendar_settings['date_format'] ?? get_option( 'date_format', 'F j, Y' );
-$time_format         = $blockendar_settings['time_format'] ?? get_option( 'time_format', 'g:i a' );
+$site_date_format    = $blockendar_settings['date_format'] ?? get_option( 'date_format', 'F j, Y' );
+$site_time_format    = $blockendar_settings['time_format'] ?? get_option( 'time_format', 'g:i a' );
+$date_format         = ( ! empty( $attributes['dateFormat'] ) ) ? $attributes['dateFormat'] : $site_date_format;
+$time_format         = ( ! empty( $attributes['timeFormat'] ) ) ? $attributes['timeFormat'] : $site_time_format;
+$time_sep            = isset( $attributes['timeSeparator'] ) ? $attributes['timeSeparator'] : '@';
+$range_sep           = isset( $attributes['rangeSeparator'] ) ? $attributes['rangeSeparator'] : '–';
 
 $fmt_date = fn( string $date ) => date_i18n( $date_format, strtotime( $date ) );
 $fmt_time = fn( string $time, string $date ) => date_i18n( $time_format, strtotime( "$date $time" ) );
@@ -51,22 +55,22 @@ $same_day = $start_date === $end_date;
 			?>
 			<?php
 			if ( $show_start_time && ! $all_day && $start_time ) {
-				echo ( $show_start_date ? ' @ ' : '' ) . esc_html( $fmt_time( $start_time, $start_date ) );}
+				echo ( $show_start_date ? ' ' . esc_html( $time_sep ) . ' ' : '' ) . esc_html( $fmt_time( $start_time, $start_date ) );}
 			?>
 		</time>
 	<?php endif; ?>
 
 	<?php if ( $show_end_date && $end_date && ! $same_day ) : ?>
-		<span class="blockendar-event-datetime__sep" aria-hidden="true"> – </span>
+		<span class="blockendar-event-datetime__sep" aria-hidden="true"> <?php echo esc_html( $range_sep ); ?> </span>
 		<time class="blockendar-event-datetime__end" datetime="<?php echo esc_attr( $end_date . ( $end_time ? "T$end_time" : '' ) ); ?>">
 			<?php echo esc_html( $fmt_date( $end_date ) ); ?>
 			<?php
 			if ( $show_end_time && ! $all_day && $end_time ) {
-				echo ( $show_end_date ? ' @ ' : '' ) . esc_html( $fmt_time( $end_time, $end_date ) );}
+				echo ( $show_end_date ? ' ' . esc_html( $time_sep ) . ' ' : '' ) . esc_html( $fmt_time( $end_time, $end_date ) );}
 			?>
 		</time>
 	<?php elseif ( $show_end_time && ! $all_day && $same_day && $end_time && $end_time !== $start_time ) : ?>
-		<span class="blockendar-event-datetime__sep" aria-hidden="true"> – </span>
+		<span class="blockendar-event-datetime__sep" aria-hidden="true"> <?php echo esc_html( $range_sep ); ?> </span>
 		<time class="blockendar-event-datetime__end" datetime="<?php echo esc_attr( "$end_date T$end_time" ); ?>">
 			<?php echo esc_html( $fmt_time( $end_time, $end_date ) ); ?>
 		</time>
@@ -76,11 +80,11 @@ $same_day = $start_date === $end_date;
 		<span class="blockendar-event-datetime__tz">(<?php echo esc_html( $tz_str ); ?>)</span>
 	<?php endif; ?>
 
-	<?php if ( $all_day && $show_start_date ) : ?>
-		<span class="blockendar-event-datetime__sep" aria-hidden="true"> – </span>
+	<?php if ( $all_day && $show_start_time && $show_start_date ) : ?>
+		<span class="blockendar-event-datetime__sep" aria-hidden="true"> <?php echo esc_html( $range_sep ); ?> </span>
 	<?php endif; ?>
 
-	<?php if ( $all_day ) : ?>
+	<?php if ( $all_day && $show_start_time ) : ?>
 		<span class="blockendar-event-datetime__allday"><?php esc_html_e( 'All day', 'blockendar' ); ?></span>
 	<?php endif; ?>
 </div>
