@@ -11,15 +11,10 @@ import {
 	__experimentalHStack as HStack,
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
-import { useEntityProp } from '@wordpress/core-data';
+import { useEntityProp, store as coreStore } from '@wordpress/core-data';
+import { useSelect } from '@wordpress/data';
 import { dateI18n, getSettings } from '@wordpress/date';
 import { __ } from '@wordpress/i18n';
-
-const wpSettings = getSettings();
-const siteDateFormat =
-	window.blockendarEditor?.dateFormat ?? wpSettings.formats.date;
-const siteTimeFormat =
-	window.blockendarEditor?.timeFormat ?? wpSettings.formats.time;
 
 const TIME_FORMAT_OPTIONS = [
 	{
@@ -37,6 +32,15 @@ const TIME_FORMAT_OPTIONS = [
 ];
 
 export function Edit( { attributes, setAttributes, context } ) {
+	const blockendarSettings = useSelect( ( select ) => {
+		const site = select( coreStore ).getEntityRecord( 'root', 'site' );
+		return site?.blockendar_settings ?? null;
+	} );
+
+	const wpFormats = getSettings().formats;
+	const siteDateFormat = blockendarSettings?.date_format || wpFormats.date;
+	const siteTimeFormat = blockendarSettings?.time_format || wpFormats.time;
+
 	const {
 		showStartDate,
 		showStartTime,
