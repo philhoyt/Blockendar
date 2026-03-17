@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 0.9.5
+Stable tag: 0.9.6
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -64,6 +64,13 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 0.9.6 =
+* Event Date & Time block: editor preview now reads date/time format from Blockendar settings via the WordPress data layer (fixes preview showing WP core format instead of plugin setting).
+* Event Date & Time block: added block-level date format, time format, date/time separator, and range separator overrides in a new Format inspector panel.
+* Event Date & Time block: fixed "All day" label displaying when Show start time is disabled.
+* Editor: replaced deprecated __experimentalGetSettings with stable getSettings from @wordpress/date.
+* Editor: added __next40pxDefaultSize to all SelectControl instances in the event editor sidebar panels.
 
 = 0.9.5 =
 * REST API: enforce rest_public / rest_feed_token settings across all public GET endpoints (events, calendar, iCal).
@@ -127,6 +134,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 0.9.6 =
+No upgrade steps required.
 
 = 0.9.5 =
 No upgrade steps required.

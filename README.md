@@ -57,6 +57,13 @@ npm run plugin-zip   # Build distributable zip
 
 ## Changelog
 
+### 0.9.6
+- Event Date & Time block: editor preview now reads date/time format from Blockendar settings via the WordPress data layer (fixes preview showing WP core format instead of plugin setting)
+- Event Date & Time block: added block-level date format, time format, date/time separator, and range separator overrides in a new Format inspector panel
+- Event Date & Time block: fixed "All day" label displaying when Show start time is disabled
+- Editor: replaced deprecated `__experimentalGetSettings` with stable `getSettings` from `@wordpress/date`
+- Editor: added `__next40pxDefaultSize` to all `SelectControl` instances in the event editor sidebar panels
+
 ### 0.9.5
 - REST API: enforce `rest_public` / `rest_feed_token` settings across all public GET endpoints (events, calendar, iCal)
 - Fixed: PHP fatal "Cannot redeclare" when two event-cost blocks appear on the same page (e.g. inside a Query Loop)
