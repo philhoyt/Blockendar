@@ -164,12 +164,26 @@ if ( $inherit ) {
 	}
 }
 
-if ( empty( $events ) ) {
-	echo '<p class="blockendar-events-query__empty">' . esc_html__( 'No events found.', 'blockendar' ) . '</p>';
-	return;
+// Partition inner blocks: separate the no-results block from the event card template.
+$no_results_block = null;
+$inner_blocks     = [];
+foreach ( $block->parsed_block['innerBlocks'] as $inner ) {
+	if ( 'blockendar/events-query-no-results' === $inner['blockName'] ) {
+		$no_results_block = $inner;
+	} else {
+		$inner_blocks[] = $inner;
+	}
 }
 
-$inner_blocks = $block->parsed_block['innerBlocks'];
+if ( empty( $events ) ) {
+	if ( $no_results_block ) {
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block output.
+		echo render_block( $no_results_block );
+	} else {
+		echo '<p class="blockendar-events-query__empty">' . esc_html__( 'No events found.', 'blockendar' ) . '</p>';
+	}
+	return;
+}
 
 $wrapper_attrs = [
 	'class' => 'blockendar-events-query is-' . ( $is_grid ? 'grid' : 'list' ) . '-view',

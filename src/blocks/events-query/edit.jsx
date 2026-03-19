@@ -51,6 +51,7 @@ const TEMPLATE = [
 	[ 'core/post-title', { isLink: true, level: 3 } ],
 	[ 'blockendar/event-datetime' ],
 	[ 'blockendar/event-venue' ],
+	[ 'blockendar/events-query-no-results' ],
 ];
 
 export function Edit( { attributes, setAttributes } ) {
