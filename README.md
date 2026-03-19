@@ -57,6 +57,9 @@ npm run plugin-zip   # Build distributable zip
 
 ## Changelog
 
+### 0.9.7
+- Events Query block: added responsive column controls for grid layout — separate column counts for mobile (≤599px), tablet (600–781px), and desktop
+
 ### 0.9.6
 - Event Date & Time block: editor preview now reads date/time format from Blockendar settings via the WordPress data layer (fixes preview showing WP core format instead of plugin setting)
 - Event Date & Time block: added block-level date format, time format, date/time separator, and range separator overrides in a new Format inspector panel

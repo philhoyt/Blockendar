@@ -35,12 +35,28 @@ $related_to      = in_array( $attributes['relatedTo'] ?? 'none', [ 'none', 'type
 // phpcs:disable WordPress.Security.NonceVerification.Recommended
 $current_page = max( 1, absint( wp_unslash( $_GET['blockendar_page'] ?? 1 ) ) );
 // phpcs:enable
-$total_pages     = 1;
-$layout          = $attributes['displayLayout'] ?? [ 'type' => 'list' ];
-$is_grid         = 'grid' === ( $layout['type'] ?? 'list' );
-$column_count    = max( 2, min( 6, (int) ( $layout['columnCount'] ?? 3 ) ) );
-$now             = gmdate( 'Y-m-d H:i:s' );
-$current_post_id = 'none' !== $related_to ? (int) ( $block->context['postId'] ?? 0 ) : 0;
+$total_pages         = 1;
+$layout              = $attributes['displayLayout'] ?? [ 'type' => 'list' ];
+$is_grid             = 'grid' === ( $layout['type'] ?? 'list' );
+$column_count        = max( 2, min( 6, (int) ( $layout['columnCount'] ?? 3 ) ) );
+$column_count_tablet = max( 1, min( 4, (int) ( $layout['columnCountTablet'] ?? 2 ) ) );
+$column_count_mobile = max( 1, min( 3, (int) ( $layout['columnCountMobile'] ?? 1 ) ) );
+$now                 = gmdate( 'Y-m-d H:i:s' );
+$current_post_id     = 'none' !== $related_to ? (int) ( $block->context['postId'] ?? 0 ) : 0;
+
+// Resolve block gap — WordPress only injects --wp--style--block-gap via layout support,
+// which we don't use, so we read and resolve the raw attribute value ourselves.
+$raw_block_gap   = $attributes['style']['spacing']['blockGap'] ?? null;
+$block_gap_style = '';
+if ( null !== $raw_block_gap && '' !== (string) $raw_block_gap ) {
+	if ( str_starts_with( (string) $raw_block_gap, 'var:' ) ) {
+		$parts           = explode( '|', substr( (string) $raw_block_gap, 4 ) );
+		$block_gap_value = 'var(--wp--' . implode( '--', $parts ) . ')';
+	} else {
+		$block_gap_value = (string) $raw_block_gap;
+	}
+	$block_gap_style = '--wp--style--block-gap:' . $block_gap_value . ';';
+}
 
 if ( $show_past ) {
 	$start = '2000-01-01 00:00:00';
@@ -159,9 +175,13 @@ $wrapper_attrs = [
 	'class' => 'blockendar-events-query is-' . ( $is_grid ? 'grid' : 'list' ) . '-view',
 ];
 if ( $is_grid ) {
-	$wrapper_attrs['style'] = '--blockendar-columns:' . $column_count . ';';
+	$wrapper_attrs['style'] = '--blockendar-columns:' . $column_count . ';'
+		. '--blockendar-columns-tablet:' . $column_count_tablet . ';'
+		. '--blockendar-columns-mobile:' . $column_count_mobile . ';'
+		. $block_gap_style;
+} elseif ( $block_gap_style ) {
+	$wrapper_attrs['style'] = $block_gap_style;
 }
-
 // Stamp ?occurrence_date= onto CPT permalinks while inner blocks render so that
 // core/post-title (and any other link) navigates to the correct occurrence.
 add_filter( 'post_type_link', 'blockendar_occurrence_permalink_filter', 10, 2 );

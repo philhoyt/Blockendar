@@ -66,6 +66,8 @@ export function Edit( { attributes, setAttributes } ) {
 	} = attributes;
 	const isGrid = displayLayout?.type === 'grid';
 	const columnCount = displayLayout?.columnCount ?? 3;
+	const columnCountTablet = displayLayout?.columnCountTablet ?? 2;
+	const columnCountMobile = displayLayout?.columnCountMobile ?? 1;
 
 	const terms = useSelect(
 		( select ) =>
@@ -90,7 +92,13 @@ export function Edit( { attributes, setAttributes } ) {
 		className: `blockendar-events-query is-${
 			isGrid ? 'grid' : 'list'
 		}-view`,
-		style: isGrid ? { '--blockendar-columns': columnCount } : undefined,
+		style: isGrid
+			? {
+					'--blockendar-columns': columnCount,
+					'--blockendar-columns-tablet': columnCountTablet,
+					'--blockendar-columns-mobile': columnCountMobile,
+			  }
+			: undefined,
 	} );
 
 	const toggleType = ( termId, checked ) => {
@@ -126,7 +134,12 @@ export function Edit( { attributes, setAttributes } ) {
 					isActive={ isGrid }
 					onClick={ () =>
 						setAttributes( {
-							displayLayout: { type: 'grid', columnCount },
+							displayLayout: {
+								type: 'grid',
+								columnCount,
+								columnCountTablet,
+								columnCountMobile,
+							},
 						} )
 					}
 				/>
@@ -135,21 +148,68 @@ export function Edit( { attributes, setAttributes } ) {
 				<PanelBody title={ __( 'Layout', 'blockendar' ) }>
 					<VStack spacing={ 3 }>
 						{ isGrid && (
-							<RangeControl
-								label={ __( 'Columns', 'blockendar' ) }
-								value={ columnCount }
-								onChange={ ( val ) =>
-									setAttributes( {
-										displayLayout: {
-											type: 'grid',
-											columnCount: val,
-										},
-									} )
-								}
-								min={ 2 }
-								max={ 6 }
-								__nextHasNoMarginBottom
-							/>
+							<>
+								<RangeControl
+									label={ __(
+										'Columns — Mobile',
+										'blockendar'
+									) }
+									value={ columnCountMobile }
+									onChange={ ( val ) =>
+										setAttributes( {
+											displayLayout: {
+												type: 'grid',
+												columnCount,
+												columnCountTablet,
+												columnCountMobile: val,
+											},
+										} )
+									}
+									min={ 1 }
+									max={ 3 }
+									__nextHasNoMarginBottom
+								/>
+								<RangeControl
+									label={ __(
+										'Columns — Tablet',
+										'blockendar'
+									) }
+									value={ columnCountTablet }
+									onChange={ ( val ) =>
+										setAttributes( {
+											displayLayout: {
+												type: 'grid',
+												columnCount,
+												columnCountTablet: val,
+												columnCountMobile,
+											},
+										} )
+									}
+									min={ 1 }
+									max={ 4 }
+									__nextHasNoMarginBottom
+								/>
+								<RangeControl
+									label={ __(
+										'Columns — Desktop',
+										'blockendar'
+									) }
+									value={ columnCount }
+									onChange={ ( val ) =>
+										setAttributes( {
+											displayLayout: {
+												type: 'grid',
+												columnCount: val,
+												columnCountTablet,
+												columnCountMobile,
+											},
+										} )
+									}
+									min={ 2 }
+									max={ 6 }
+									__nextHasNoMarginBottom
+								/>
+							</>
 						) }
 					</VStack>
 				</PanelBody>
