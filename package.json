@@ -31,7 +31,8 @@
     "@fullcalendar/interaction": "^6.1.15",
     "@fullcalendar/list": "^6.1.15",
     "@fullcalendar/react": "^6.1.15",
-    "@fullcalendar/timegrid": "^6.1.15"
+    "@fullcalendar/timegrid": "^6.1.15",
+    "leaflet": "^1.9.4"
   },
   "devDependencies": {
     "@wordpress/scripts": "^30.0.0"
