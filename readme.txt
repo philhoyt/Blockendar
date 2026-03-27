@@ -29,10 +29,12 @@ Blockendar is a fully block-native events plugin for WordPress. Every part of th
 
 == Installation ==
 
-1. Upload the `blockendar` directory to `/wp-content/plugins/`.
-2. Activate the plugin through the **Plugins** screen in WordPress.
-3. Navigate to **Events** in the admin menu to create your first event.
-4. Add the **Calendar View** or **Events Query** block to any page or post.
+1. Go to the [Releases page](https://github.com/philhoyt/Blockendar/releases) and download the latest `blockendar.zip` asset.
+2. In your WordPress admin, go to **Plugins → Add New Plugin → Upload Plugin**.
+3. Choose the downloaded `.zip` file and click **Install Now**.
+4. Click **Activate Plugin**.
+5. Navigate to **Events** in the admin menu to create your first event.
+6. Add the **Calendar View** or **Events Query** block to any page or post.
 
 == Frequently Asked Questions ==
 

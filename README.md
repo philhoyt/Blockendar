@@ -24,16 +24,10 @@ A block-native WordPress events plugin.
 
 ## Installation
 
-```bash
-# Clone or download the repository
-git clone https://github.com/philhoyt/Blockendar.git
-
-# Install JS dependencies and build
-npm install
-npm run build
-```
-
-Then upload the plugin directory to `/wp-content/plugins/` and activate through the WordPress admin.
+1. Go to the [Releases page](https://github.com/philhoyt/Blockendar/releases) and download the latest `blockendar.zip` asset.
+2. In your WordPress admin, go to **Plugins → Add New Plugin → Upload Plugin**.
+3. Choose the downloaded `.zip` file and click **Install Now**.
+4. Click **Activate Plugin**.
 
 ## Development
 
