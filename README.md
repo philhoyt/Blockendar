@@ -51,6 +51,9 @@ npm run plugin-zip   # Build distributable zip
 
 ## Changelog
 
+### 0.9.9
+- Added Plugin Update Checker (v5.6) for automatic update notifications via GitHub releases
+
 ### 0.9.8
 - Added `blockendar/events-query-no-results` block: a customisable empty-state block for the Events Query block, matching the pattern of `core/query-no-results`
 - Events Query block: block spacing (gap) now respects the spacing preset selected in the editor, including "None" to remove all gap

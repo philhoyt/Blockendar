@@ -3,7 +3,7 @@
  * Plugin Name:       Blockendar - Events and Calendars
  * Plugin URI:        https://github.com/philhoyt/Blockendar
  * Description:       A block-native WordPress events plugin. No shortcodes. No legacy widgets. The block editor is the UI.
- * Version:           0.9.8
+ * Version:           0.9.9
  * Requires at least: 6.8
  * Requires PHP:      8.1
  * Author:            philhoyt
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'BLOCKENDAR_VERSION', '0.9.8' );
+define( 'BLOCKENDAR_VERSION', '0.9.9' );
 define( 'BLOCKENDAR_FILE', __FILE__ );
 define( 'BLOCKENDAR_DIR', plugin_dir_path( __FILE__ ) );
 
@@ -52,6 +52,18 @@ spl_autoload_register(
 
 // Global helper functions (loaded directly — not via autoloader).
 require_once BLOCKENDAR_DIR . 'includes/Helpers.php';
+
+// Plugin Update Checker — GitHub release-based auto-updates.
+require_once BLOCKENDAR_DIR . 'lib/plugin-update-checker/plugin-update-checker.php';
+
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+$blockendar_update_checker = PucFactory::buildUpdateChecker(
+	'https://github.com/philhoyt/Blockendar/',
+	__FILE__,
+	'blockendar'
+);
+$blockendar_update_checker->getVcsApi()->enableReleaseAssets();
 
 // Activation / deactivation hooks — registered before the plugin loads.
 register_activation_hook(
