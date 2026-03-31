@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 0.9.9
+Stable tag: 0.10.0
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -66,6 +66,13 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 0.10.0 =
+* Calendar View block: automatically switches to list view on mobile (≤767px).
+* Calendar View block: view switcher buttons hidden on mobile (≤767px).
+* Calendar View block: toolbar buttons smaller below 425px.
+* Calendar View block: toolbar title right-aligned below 425px.
+* Calendar View block: list event time allowed to wrap below 425px.
 
 = 0.9.9 =
 * Added Plugin Update Checker (v5.6) for automatic update notifications via GitHub releases.
@@ -147,6 +154,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 0.10.0 =
+No upgrade steps required.
 
 = 0.9.9 =
 No upgrade steps required.

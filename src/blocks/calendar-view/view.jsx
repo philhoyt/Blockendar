@@ -5,14 +5,17 @@
  * Mounted into every .wp-block-blockendar-calendar-view element on the page.
  * Configuration is read from data-* attributes set by render.php.
  */
-import { createRoot } from '@wordpress/element';
+import { createRoot, useRef, useEffect } from '@wordpress/element';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 
+const MOBILE_MQ = '(max-width: 767px)';
+
 function BlockendarCalendar( { dataset } ) {
+	const calendarRef = useRef( null );
 	const restUrl = dataset.restUrl ?? '/wp-json/blockendar/v1';
 	const venueIds = dataset.venueIds ? JSON.parse( dataset.venueIds ) : [];
 	const typeIds = dataset.typeIds ? JSON.parse( dataset.typeIds ) : [];
@@ -34,6 +37,20 @@ function BlockendarCalendar( { dataset } ) {
 			buttonText: 'list',
 		},
 	};
+
+	const isMobile = () => window.matchMedia( MOBILE_MQ ).matches;
+	const mobileView = 'listNextMonth';
+
+	useEffect( () => {
+		const mq = window.matchMedia( MOBILE_MQ );
+		const onChange = ( e ) => {
+			const api = calendarRef.current?.getApi();
+			if ( ! api ) return;
+			api.changeView( e.matches ? mobileView : defaultView );
+		};
+		mq.addEventListener( 'change', onChange );
+		return () => mq.removeEventListener( 'change', onChange );
+	}, [ defaultView ] );
 
 	const fetchEvents = ( fetchInfo, successCallback, failureCallback ) => {
 		const params = new URLSearchParams( {
@@ -67,6 +84,7 @@ function BlockendarCalendar( { dataset } ) {
 
 	return (
 		<FullCalendar
+			ref={ calendarRef }
 			plugins={ [
 				dayGridPlugin,
 				timeGridPlugin,
@@ -74,7 +92,7 @@ function BlockendarCalendar( { dataset } ) {
 				interactionPlugin,
 			] }
 			timeZone={ timezone }
-			initialView={ defaultView }
+			initialView={ isMobile() ? mobileView : defaultView }
 			firstDay={ firstDay }
 			views={ customViews }
 			headerToolbar={ {

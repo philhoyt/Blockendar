@@ -42,6 +42,10 @@
 	Header toolbar buttons
 	-------------------------------------------------------------------------- */
 
+.wp-block-blockendar-calendar-view .fc .fc-toolbar-title {
+	font-size: 1em;
+}
+
 .wp-block-blockendar-calendar-view .fc-button-primary {
 	font-family:   inherit;
 	font-size:     var(--blockendar-cal-toolbar-size);
@@ -114,6 +118,7 @@
 	font-weight:     normal;
 	text-wrap:       auto;
 	text-wrap-style: balance;
+	overflow-wrap:   anywhere;
 }
 
 /* Multi-day / block event border-radius — respect segment position */
@@ -166,7 +171,28 @@
 	Mobile — dot only, no text
 	-------------------------------------------------------------------------- */
 
+@media (max-width: 425px) {
+	.wp-block-blockendar-calendar-view .fc-button-primary {
+		font-size: 0.75rem;
+		padding:   0.25em 0.5em;
+	}
+
+	.wp-block-blockendar-calendar-view .fc-list-event-time {
+		white-space: normal;
+	}
+
+	.wp-block-blockendar-calendar-view .fc .fc-toolbar-title {
+		text-align: right;
+	}
+}
+
 @media (max-width: 767px) {
+	.wp-block-blockendar-calendar-view .fc-toolbar-chunk:last-child {
+		display: none;
+	}
+
+
+
 	/* Show dot, hide title and time */
 	.wp-block-blockendar-calendar-view .fc-daygrid-event-dot {
 		display: inline-block;

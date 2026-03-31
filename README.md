@@ -51,6 +51,13 @@ npm run plugin-zip   # Build distributable zip
 
 ## Changelog
 
+### 0.10.0
+- Calendar View block: automatically switches to list view on mobile (≤767px)
+- Calendar View block: view switcher buttons hidden on mobile (≤767px)
+- Calendar View block: toolbar buttons smaller below 425px
+- Calendar View block: toolbar title right-aligned below 425px
+- Calendar View block: list event time allowed to wrap below 425px
+
 ### 0.9.9
 - Added Plugin Update Checker (v5.6) for automatic update notifications via GitHub releases
 
