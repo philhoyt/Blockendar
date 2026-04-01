@@ -21,7 +21,7 @@ const LABELS = { d: 'days', h: 'hours', m: 'minutes', s: 'seconds' };
 const DEMO = { d: '05', h: '12', m: '30', s: '45' };
 
 function Edit( { attributes, setAttributes } ) {
-	const { expiredLabel, format, pinnedPostId } = attributes;
+	const { expiredLabel, passedLabel, format, pinnedPostId } = attributes;
 	const [ search, setSearch ] = useState( '' );
 
 	const events = useSelect(
@@ -90,7 +90,7 @@ function Edit( { attributes, setAttributes } ) {
 							__nextHasNoMarginBottom
 						/>
 						<TextControl
-							label={ __( 'Expired message', 'blockendar' ) }
+							label={ __( 'Started message', 'blockendar' ) }
 							value={ expiredLabel }
 							placeholder={ __(
 								'This event has started.',
@@ -98,6 +98,18 @@ function Edit( { attributes, setAttributes } ) {
 							) }
 							onChange={ ( val ) =>
 								setAttributes( { expiredLabel: val } )
+							}
+							__nextHasNoMarginBottom
+						/>
+						<TextControl
+							label={ __( 'Passed message', 'blockendar' ) }
+							value={ passedLabel }
+							placeholder={ __(
+								'This event has passed.',
+								'blockendar'
+							) }
+							onChange={ ( val ) =>
+								setAttributes( { passedLabel: val } )
 							}
 							__nextHasNoMarginBottom
 						/>

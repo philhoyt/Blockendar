@@ -19,6 +19,7 @@ $format          = in_array( $attributes['format'] ?? 'd:h:m:s', $allowed_format
 	: 'd:h:m:s';
 
 $expired_label = $attributes['expiredLabel'] ?: __( 'This event has started.', 'blockendar' );
+$passed_label  = $attributes['passedLabel'] ?: __( 'This event has passed.', 'blockendar' );
 
 $pinned_id = (int) ( $attributes['pinnedPostId'] ?? 0 );
 
@@ -35,6 +36,8 @@ if ( $pinned_id > 0 ) {
 }
 
 $start_time = get_post_meta( $post_id, 'blockendar_start_time', true );
+$end_date   = get_post_meta( $post_id, 'blockendar_end_date', true );
+$end_time   = get_post_meta( $post_id, 'blockendar_end_time', true );
 $tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 
 if ( ! $start_date ) {
@@ -43,16 +46,25 @@ if ( ! $start_date ) {
 
 try {
 	$tz         = new DateTimeZone( $tz_str );
+	$utc        = new DateTimeZone( 'UTC' );
 	$dt         = new DateTimeImmutable( "$start_date " . ( $start_time ?: '00:00' ) . ':00', $tz );
-	$target_utc = $dt->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'c' );
+	$target_utc = $dt->setTimezone( $utc )->format( 'c' );
+
+	$end_utc = '';
+	if ( $end_date ) {
+		$end_dt  = new DateTimeImmutable( "$end_date " . ( $end_time ?: '23:59' ) . ':00', $tz );
+		$end_utc = $end_dt->setTimezone( $utc )->format( 'c' );
+	}
 } catch ( Exception ) {
 	return;
 }
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-countdown' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-target="<?php echo esc_attr( $target_utc ); ?>"
+	data-end-target="<?php echo esc_attr( $end_utc ); ?>"
 	data-format="<?php echo esc_attr( $format ); ?>"
 	data-expired-label="<?php echo esc_attr( $expired_label ); ?>"
+	data-passed-label="<?php echo esc_attr( $passed_label ); ?>"
 >
 	<noscript><?php esc_html_e( 'Enable JavaScript to see the countdown.', 'blockendar' ); ?></noscript>
 </div>

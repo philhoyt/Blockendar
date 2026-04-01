@@ -4,7 +4,9 @@
  */
 document.querySelectorAll( '.blockendar-event-countdown' ).forEach( ( el ) => {
 	const target = new Date( el.dataset.target );
+	const endTarget = el.dataset.endTarget ? new Date( el.dataset.endTarget ) : null;
 	const expiredLabel = el.dataset.expiredLabel ?? 'This event has started.';
+	const passedLabel = el.dataset.passedLabel ?? 'This event has passed.';
 	const format = el.dataset.format ?? 'd:h:m:s';
 	const segments = new Set( format.split( ':' ) );
 
@@ -18,10 +20,17 @@ document.querySelectorAll( '.blockendar-event-countdown' ).forEach( ( el ) => {
 			return;
 		}
 
-		const diff = target - Date.now();
+		const now = Date.now();
+		const diff = target - now;
+
+		if ( endTarget && endTarget - now <= 0 ) {
+			el.textContent = passedLabel;
+			return;
+		}
 
 		if ( diff <= 0 ) {
 			el.textContent = expiredLabel;
+			timer = setTimeout( tick, 10_000 );
 			return;
 		}
 

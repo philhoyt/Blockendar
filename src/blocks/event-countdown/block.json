@@ -48,6 +48,7 @@
 	},
 	"attributes": {
 		"expiredLabel": { "type": "string",  "default": "" },
+		"passedLabel":  { "type": "string",  "default": "" },
 		"format":       { "type": "string",  "default": "d:h:m:s", "enum": [ "d:h:m:s", "d:h:m", "d:h", "d" ] },
 		"pinnedPostId": { "type": "integer", "default": 0 }
 	},
