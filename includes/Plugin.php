@@ -31,6 +31,7 @@ use Blockendar\Blocks\BlockRegistrar;
 use Blockendar\Blocks\TemplateRegistrar;
 use Blockendar\Admin\EventColumns;
 use Blockendar\Admin\SettingsPage;
+use Blockendar\Admin\VenueGeocode;
 use Blockendar\CLI\RebuildIndexCommand;
 
 /**
@@ -80,6 +81,7 @@ class Plugin {
 		// Admin list table columns for events.
 		if ( is_admin() ) {
 			( new EventColumns() )->register();
+			( new VenueGeocode() )->register();
 		}
 
 		// WP-CLI commands.
