@@ -90,6 +90,11 @@
 	font-weight:     bold;
 }
 
+/* Past day numbers — dimmed */
+.wp-block-blockendar-calendar-view .fc-day-past .fc-daygrid-day-top {
+	opacity: 0.4;
+}
+
 /* --------------------------------------------------------------------------
 	Event pills
 	-------------------------------------------------------------------------- */
