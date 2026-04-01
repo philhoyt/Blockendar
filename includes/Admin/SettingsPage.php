@@ -200,9 +200,6 @@ class SettingsPage {
 			'events_slug'            => sanitize_title( $raw['events_slug'] ?? $d['events_slug'] ),
 
 			// Map.
-			'map_provider'           => in_array( $raw['map_provider'] ?? '', [ 'openstreetmap', 'google' ], true )
-				? $raw['map_provider'] : $d['map_provider'],
-			'google_maps_api_key'    => sanitize_text_field( $raw['google_maps_api_key'] ?? '' ),
 			'map_default_zoom'       => max( 1, min( 20, (int) ( $raw['map_default_zoom'] ?? $d['map_default_zoom'] ) ) ),
 
 			// Currency.
@@ -236,8 +233,6 @@ class SettingsPage {
 			'calendar_first_day'     => 0,
 			'calendar_slot_duration' => '00:30:00',
 			'events_slug'            => 'events',
-			'map_provider'           => 'openstreetmap',
-			'google_maps_api_key'    => '',
 			'map_default_zoom'       => 14,
 			'default_currency'       => 'USD',
 			'currency_position'      => 'before',
@@ -266,11 +261,6 @@ class SettingsPage {
 			'calendar_first_day'     => [ 'type' => 'integer' ],
 			'calendar_slot_duration' => [ 'type' => 'string' ],
 			'events_slug'            => [ 'type' => 'string' ],
-			'map_provider'           => [
-				'type' => 'string',
-				'enum' => [ 'openstreetmap', 'google' ],
-			],
-			'google_maps_api_key'    => [ 'type' => 'string' ],
 			'map_default_zoom'       => [ 'type' => 'integer' ],
 			'default_currency'       => [ 'type' => 'string' ],
 			'currency_position'      => [

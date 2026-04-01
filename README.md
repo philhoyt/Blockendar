@@ -51,6 +51,17 @@ npm run plugin-zip   # Build distributable zip
 
 ## Changelog
 
+### 1.0.0
+- Event Cost block: added Show Cost and Show Button toggles; removed unused min/max cost, currency, and capacity meta fields
+- Event Venue block: support for multiple venue terms with horizontal rule dividers; removed redundant Show Map toggle (use the dedicated Event Map block instead)
+- Event Map block: support for multiple venue pins with automatic bounds fitting
+- Event Countdown block: added three-state display — counting down, started (event in progress), and passed (after end time)
+- Venue admin: added "Look up coordinates" button using Nominatim (OpenStreetMap) geocoding — no API key required
+- Removed Google Maps integration — all map and geocoding features now use OpenStreetMap/Nominatim exclusively
+- Performance: replaced `wp_postmeta` subqueries for `featured` and `hide_from_listings` with denormalised columns in the event index table
+- Performance: replaced `JSON_CONTAINS` type-term filtering with a dedicated junction table (`blockendar_event_type_terms`)
+- DB schema upgraded to version 2; existing sites will rebuild the event index automatically on upgrade
+
 ### 0.10.0
 - Calendar View block: automatically switches to list view on mobile (≤767px)
 - Calendar View block: view switcher buttons hidden on mobile (≤767px)

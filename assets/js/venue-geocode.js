@@ -1,8 +1,8 @@
 /**
  * Venue geocoding — "Look up coordinates" button for the venue admin form.
  *
- * Reads blockendarGeocode (localized by VenueGeocode.php) and fires against
- * Nominatim (OSM) or the Google Geocoding API depending on the map provider.
+ * Uses Nominatim (OpenStreetMap) to resolve an address to lat/lng.
+ * Reads blockendarGeocode (localized by VenueGeocode.php).
  */
 ( function () {
 	'use strict';
@@ -41,7 +41,7 @@
 		if ( existing ) existing.remove();
 	}
 
-	function geocodeNominatim( parts, btn ) {
+	function geocode( parts, btn ) {
 		var query = [ parts.address, parts.city, parts.state, parts.country ]
 			.filter( Boolean )
 			.join( ', ' );
@@ -74,41 +74,6 @@
 			} );
 	}
 
-	function geocodeGoogle( parts, btn ) {
-		var query = [ parts.address, parts.city, parts.state, parts.country ]
-			.filter( Boolean )
-			.join( ', ' );
-
-		var url = 'https://maps.googleapis.com/maps/api/geocode/json?address='
-			+ encodeURIComponent( query )
-			+ '&key=' + encodeURIComponent( cfg.googleApiKey || '' );
-
-		fetch( url )
-			.then( function ( r ) {
-				if ( ! r.ok ) throw new Error( 'HTTP ' + r.status );
-				return r.json();
-			} )
-			.then( function ( data ) {
-				if ( data.status !== 'OK' || ! data.results.length ) {
-					showMessage( btn, cfg.msgNotFound || 'Address not found.' );
-					return;
-				}
-				clearMessage( btn );
-				var loc = data.results[ 0 ].geometry.location;
-				setCoords(
-					loc.lat.toFixed( 6 ),
-					loc.lng.toFixed( 6 )
-				);
-			} )
-			.catch( function () {
-				showMessage( btn, cfg.msgError || 'Geocoding failed.' );
-			} )
-			.finally( function () {
-				btn.disabled = false;
-				btn.textContent = cfg.labelLookup || 'Look up coordinates';
-			} );
-	}
-
 	function onLookup( btn ) {
 		var parts = getAddressParts();
 
@@ -121,18 +86,13 @@
 		btn.disabled = true;
 		btn.textContent = cfg.labelLooking || 'Looking up…';
 
-		if ( cfg.mapProvider === 'google' && cfg.googleApiKey ) {
-			geocodeGoogle( parts, btn );
-		} else {
-			geocodeNominatim( parts, btn );
-		}
+		geocode( parts, btn );
 	}
 
 	function insertButton( afterId ) {
 		var anchor = document.getElementById( afterId );
 		if ( ! anchor ) return;
 
-		// Walk up to the row container (tr or div.form-field).
 		var row = anchor.closest( 'tr, .form-field' );
 		if ( ! row ) return;
 
@@ -143,12 +103,10 @@
 		btn.textContent = cfg.labelLookup || 'Look up coordinates';
 		btn.addEventListener( 'click', function () { onLookup( btn ); } );
 
-		// Insert after the row.
 		row.parentNode.insertBefore( btn, row.nextSibling );
 	}
 
 	document.addEventListener( 'DOMContentLoaded', function () {
-		// Insert after the country row (last address field).
 		insertButton( 'blockendar_venue_country' );
 	} );
 }() );

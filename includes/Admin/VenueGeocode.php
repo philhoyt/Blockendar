@@ -17,8 +17,7 @@ use Blockendar\Taxonomy\Venue;
 
 /**
  * Loads a small JS file on the venue add/edit screens that provides a
- * "Look up coordinates" button wired to Nominatim (OSM) or the Google
- * Geocoding API, depending on the map_provider plugin setting.
+ * "Look up coordinates" button wired to Nominatim (OSM).
  */
 class VenueGeocode {
 
@@ -46,10 +45,6 @@ class VenueGeocode {
 			return;
 		}
 
-		$settings       = (array) get_option( 'blockendar_settings', [] );
-		$map_provider   = $settings['map_provider'] ?? 'openstreetmap';
-		$google_api_key = $settings['google_maps_api_key'] ?? '';
-
 		wp_enqueue_script(
 			'blockendar-venue-geocode',
 			plugins_url( 'assets/js/venue-geocode.js', BLOCKENDAR_FILE ),
@@ -62,8 +57,6 @@ class VenueGeocode {
 			'blockendar-venue-geocode',
 			'blockendarGeocode',
 			[
-				'mapProvider'  => $map_provider,
-				'googleApiKey' => $google_api_key,
 				'labelLookup'  => __( 'Look up coordinates', 'blockendar' ),
 				'labelLooking' => __( 'Looking up…', 'blockendar' ),
 				'msgNotFound'  => __( 'Address not found. Please enter coordinates manually.', 'blockendar' ),

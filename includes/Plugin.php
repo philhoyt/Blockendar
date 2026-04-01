@@ -43,9 +43,6 @@ class Plugin {
 	 * Attach all component hooks to WordPress.
 	 */
 	public function boot(): void {
-		// Run schema upgrades if needed.
-		Schema::maybe_upgrade();
-
 		// Register post types, taxonomies, and meta.
 		( new EventPostType() )->register();
 		( new EventType() )->register();
@@ -59,6 +56,18 @@ class Plugin {
 
 		// Recurrence engine — handles the blockendar_generate_recurrence_index action.
 		( new Generator() )->register();
+
+		// Schema upgrades must run after Generator is registered so that
+		// recurring events are correctly handled during any post-upgrade rebuild.
+		Schema::maybe_upgrade();
+
+		// Background rebuild triggered by a schema upgrade (fires via WP-Cron).
+		add_action(
+			'blockendar_index_rebuild_after_upgrade',
+			function () {
+				( new IndexBuilder() )->rebuild_all();
+			}
+		);
 
 		// Daily cron job to roll the recurrence horizon forward.
 		( new Cron() )->register();

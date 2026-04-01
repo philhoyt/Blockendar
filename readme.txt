@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 0.10.0
+Stable tag: 1.0.0
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -66,6 +66,17 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 1.0.0 =
+* Event Cost block: added Show Cost and Show Button toggles; removed unused min/max cost, currency, and capacity meta fields.
+* Event Venue block: support for multiple venue terms with horizontal rule dividers; removed redundant Show Map toggle.
+* Event Map block: support for multiple venue pins with automatic bounds fitting.
+* Event Countdown block: added three-state display — counting down, started (event in progress), and passed (after end time).
+* Venue admin: added "Look up coordinates" button using Nominatim (OpenStreetMap) geocoding — no API key required.
+* Removed Google Maps integration — all map and geocoding features now use OpenStreetMap/Nominatim exclusively.
+* Performance: replaced wp_postmeta subqueries for featured and hide_from_listings with denormalised columns in the event index table.
+* Performance: replaced JSON_CONTAINS type-term filtering with a dedicated junction table.
+* DB schema upgraded to version 2; existing sites will rebuild the event index automatically on upgrade.
 
 = 0.10.0 =
 * Calendar View block: automatically switches to list view on mobile (≤767px).
@@ -154,6 +165,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.0.0 =
+Database schema upgraded to version 2. The event index will be rebuilt automatically on first load after upgrading — no manual action required.
 
 = 0.10.0 =
 No upgrade steps required.

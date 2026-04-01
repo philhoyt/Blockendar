@@ -87,35 +87,28 @@ class EventIndex {
 			}
 		}
 
-		// Event type filter — JSON_CONTAINS check on denormalised type_term_ids.
+		// Event type filter — junction table subquery (replaces JSON_CONTAINS).
 		if ( null !== $filters['type_term_id'] ) {
 			$type_ids = array_map( 'absint', (array) $filters['type_term_id'] );
 			$type_ids = array_filter( $type_ids );
 
 			if ( ! empty( $type_ids ) ) {
-				$type_clauses = [];
-				foreach ( $type_ids as $type_id ) {
-					$type_clauses[] = 'JSON_CONTAINS(e.type_term_ids, %s, \'$\')';
-					$params[]       = (string) $type_id;
-				}
-				$where[] = '(' . implode( ' OR ', $type_clauses ) . ')';
+				$type_terms_table = Schema::type_terms_table();
+				$placeholders     = implode( ', ', array_fill( 0, count( $type_ids ), '%d' ) );
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$where[] = "e.id IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
+				$params  = array_merge( $params, $type_ids );
 			}
 		}
 
-		// Featured filter.
+		// Featured filter — denormalised column.
 		if ( true === $filters['featured'] ) {
-			$where[] = "p.ID IN (
-				SELECT post_id FROM {$wpdb->postmeta}
-				WHERE meta_key = 'blockendar_featured' AND meta_value = '1'
-			)";
+			$where[] = 'e.featured = 1';
 		}
 
-		// Hide hidden events.
+		// Hide hidden events — denormalised column.
 		if ( $filters['hide_hidden'] ) {
-			$where[] = "p.ID NOT IN (
-				SELECT post_id FROM {$wpdb->postmeta}
-				WHERE meta_key = 'blockendar_hide_from_listings' AND meta_value = '1'
-			)";
+			$where[] = 'e.hide_from_listings = 0';
 		}
 
 		// ORDER BY — whitelist columns to prevent injection.
@@ -138,7 +131,7 @@ class EventIndex {
 		$query = $wpdb->prepare(
 			"SELECT e.id, e.post_id, e.start_datetime, e.end_datetime, e.start_date,
 			        e.end_date, e.all_day, e.recurrence_id, e.status,
-			        e.venue_term_id, e.type_term_ids,
+			        e.venue_term_id, e.type_term_ids, e.featured, e.hide_from_listings,
 			        p.post_title, p.post_name, p.guid
 			FROM   {$events_table} e
 			JOIN   {$posts_table} p ON p.ID = e.post_id
@@ -202,27 +195,20 @@ class EventIndex {
 		if ( null !== $filters['type_term_id'] ) {
 			$type_ids = array_filter( array_map( 'absint', (array) $filters['type_term_id'] ) );
 			if ( ! empty( $type_ids ) ) {
-				$type_clauses = [];
-				foreach ( $type_ids as $type_id ) {
-					$type_clauses[] = 'JSON_CONTAINS(e.type_term_ids, %s, \'$\')';
-					$params[]       = (string) $type_id;
-				}
-				$where[] = '(' . implode( ' OR ', $type_clauses ) . ')';
+				$type_terms_table = Schema::type_terms_table();
+				$placeholders     = implode( ', ', array_fill( 0, count( $type_ids ), '%d' ) );
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$where[] = "e.id IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
+				$params  = array_merge( $params, $type_ids );
 			}
 		}
 
 		if ( true === $filters['featured'] ) {
-			$where[] = "p.ID IN (
-				SELECT post_id FROM {$wpdb->postmeta}
-				WHERE meta_key = 'blockendar_featured' AND meta_value = '1'
-			)";
+			$where[] = 'e.featured = 1';
 		}
 
 		if ( $filters['hide_hidden'] ) {
-			$where[] = "p.ID NOT IN (
-				SELECT post_id FROM {$wpdb->postmeta}
-				WHERE meta_key = 'blockendar_hide_from_listings' AND meta_value = '1'
-			)";
+			$where[] = 'e.hide_from_listings = 0';
 		}
 
 		$where_sql = 'WHERE ' . implode( ' AND ', $where );
@@ -347,16 +333,41 @@ class EventIndex {
 	}
 
 	/**
-	 * Delete all index rows for a given post ID.
+	 * Delete all index rows for a given post ID, including junction table rows.
 	 *
 	 * @param int $post_id The event post ID.
-	 * @return int Number of rows deleted.
+	 * @return int Number of rows deleted from the events table.
 	 */
 	public function delete_by_post_id( int $post_id ): int {
 		global $wpdb;
 
+		$events_table     = Schema::events_table();
+		$type_terms_table = Schema::type_terms_table();
+
+		// Collect index IDs so we can cascade-delete from the junction table.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$index_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT id FROM {$events_table} WHERE post_id = %d",
+				$post_id
+			)
+		);
+		// phpcs:enable
+
+		if ( ! empty( $index_ids ) ) {
+			$placeholders = implode( ', ', array_fill( 0, count( $index_ids ), '%d' ) );
+			// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$type_terms_table} WHERE event_index_id IN ({$placeholders})",
+					$index_ids
+				)
+			);
+			// phpcs:enable
+		}
+
 		$result = $wpdb->delete(
-			Schema::events_table(),
+			$events_table,
 			[ 'post_id' => $post_id ],
 			[ '%d' ]
 		);
@@ -365,45 +376,75 @@ class EventIndex {
 	}
 
 	/**
-	 * Insert a single occurrence row into the index.
+	 * Insert a single occurrence row into the index, and populate the type-terms
+	 * junction table.
 	 *
 	 * @param array $data {
-	 *     @type int    $post_id        Required.
-	 *     @type string $start_datetime UTC datetime Y-m-d H:i:s.
-	 *     @type string $end_datetime   UTC datetime Y-m-d H:i:s.
-	 *     @type string $start_date     Local date Y-m-d.
-	 *     @type string $end_date       Local date Y-m-d.
-	 *     @type int    $all_day        0 or 1.
-	 *     @type int    $recurrence_id  Optional recurrence rule ID.
-	 *     @type string $status         Event status string.
-	 *     @type int    $venue_term_id  Optional venue term ID.
-	 *     @type array  $type_term_ids  Optional array of event type term IDs.
+	 *     @type int    $post_id            Required.
+	 *     @type string $start_datetime     UTC datetime Y-m-d H:i:s.
+	 *     @type string $end_datetime       UTC datetime Y-m-d H:i:s.
+	 *     @type string $start_date         Local date Y-m-d.
+	 *     @type string $end_date           Local date Y-m-d.
+	 *     @type int    $all_day            0 or 1.
+	 *     @type int    $recurrence_id      Optional recurrence rule ID.
+	 *     @type string $status             Event status string.
+	 *     @type int    $venue_term_id      Optional venue term ID.
+	 *     @type array  $type_term_ids      Optional array of event type term IDs.
+	 *     @type int    $featured           1 if event is featured, 0 otherwise.
+	 *     @type int    $hide_from_listings 1 if event should be hidden from listings.
 	 * }
 	 * @return int|false Inserted row ID or false on failure.
 	 */
 	public function insert( array $data ): int|false {
 		global $wpdb;
 
+		$type_term_ids = isset( $data['type_term_ids'] )
+			? array_map( 'intval', (array) $data['type_term_ids'] )
+			: [];
+
 		$row = [
-			'post_id'        => (int) $data['post_id'],
-			'start_datetime' => $data['start_datetime'],
-			'end_datetime'   => $data['end_datetime'],
-			'start_date'     => $data['start_date'],
-			'end_date'       => $data['end_date'],
-			'all_day'        => isset( $data['all_day'] ) ? (int) $data['all_day'] : 0,
-			'recurrence_id'  => isset( $data['recurrence_id'] ) ? (int) $data['recurrence_id'] : null,
-			'status'         => $data['status'] ?? 'scheduled',
-			'venue_term_id'  => isset( $data['venue_term_id'] ) ? (int) $data['venue_term_id'] : null,
-			'type_term_ids'  => isset( $data['type_term_ids'] )
-				? wp_json_encode( array_map( 'intval', (array) $data['type_term_ids'] ) )
+			'post_id'            => (int) $data['post_id'],
+			'start_datetime'     => $data['start_datetime'],
+			'end_datetime'       => $data['end_datetime'],
+			'start_date'         => $data['start_date'],
+			'end_date'           => $data['end_date'],
+			'all_day'            => isset( $data['all_day'] ) ? (int) $data['all_day'] : 0,
+			'recurrence_id'      => isset( $data['recurrence_id'] ) ? (int) $data['recurrence_id'] : null,
+			'status'             => $data['status'] ?? 'scheduled',
+			'venue_term_id'      => isset( $data['venue_term_id'] ) ? (int) $data['venue_term_id'] : null,
+			'type_term_ids'      => ! empty( $type_term_ids )
+				? wp_json_encode( $type_term_ids )
 				: null,
+			'featured'           => isset( $data['featured'] ) ? (int) $data['featured'] : 0,
+			'hide_from_listings' => isset( $data['hide_from_listings'] ) ? (int) $data['hide_from_listings'] : 0,
 		];
 
-		$formats = [ '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s' ];
+		$formats = [ '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%d', '%d' ];
 
 		$result = $wpdb->insert( Schema::events_table(), $row, $formats );
 
-		return false !== $result ? $wpdb->insert_id : false;
+		if ( false === $result ) {
+			return false;
+		}
+
+		$index_id = $wpdb->insert_id;
+
+		// Populate junction table for fast type-term filtering.
+		if ( ! empty( $type_term_ids ) ) {
+			$type_terms_table = Schema::type_terms_table();
+			foreach ( $type_term_ids as $type_term_id ) {
+				$wpdb->insert(
+					$type_terms_table,
+					[
+						'event_index_id' => $index_id,
+						'type_term_id'   => $type_term_id,
+					],
+					[ '%d', '%d' ]
+				);
+			}
+		}
+
+		return $index_id;
 	}
 
 	/**

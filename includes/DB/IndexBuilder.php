@@ -150,10 +150,12 @@ class IndexBuilder {
 	public function rebuild_all(): array {
 		global $wpdb;
 
-		// Truncate the index — fastest way to clear the full table.
-		$events_table = Schema::events_table();
+		// Truncate both the index and the junction table.
+		$events_table     = Schema::events_table();
+		$type_terms_table = Schema::type_terms_table();
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "TRUNCATE TABLE {$type_terms_table}" );
 		$wpdb->query( "TRUNCATE TABLE {$events_table}" );
 		// phpcs:enable
 
@@ -241,16 +243,18 @@ class IndexBuilder {
 		}
 
 		return [
-			'post_id'        => $post_id,
-			'start_datetime' => $start_dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
-			'end_datetime'   => $end_dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
-			'start_date'     => $meta['start_date'],
-			'end_date'       => $meta['end_date'],
-			'all_day'        => $all_day ? 1 : 0,
-			'recurrence_id'  => null,
-			'status'         => $meta['status'] ?? 'scheduled',
-			'venue_term_id'  => $this->get_venue_term_id( $post_id ),
-			'type_term_ids'  => $this->get_type_term_ids( $post_id ),
+			'post_id'            => $post_id,
+			'start_datetime'     => $start_dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
+			'end_datetime'       => $end_dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
+			'start_date'         => $meta['start_date'],
+			'end_date'           => $meta['end_date'],
+			'all_day'            => $all_day ? 1 : 0,
+			'recurrence_id'      => null,
+			'status'             => $meta['status'] ?? 'scheduled',
+			'venue_term_id'      => $this->get_venue_term_id( $post_id ),
+			'type_term_ids'      => $this->get_type_term_ids( $post_id ),
+			'featured'           => ! empty( $meta['featured'] ) ? 1 : 0,
+			'hide_from_listings' => ! empty( $meta['hide_from_listings'] ) ? 1 : 0,
 		];
 	}
 
@@ -262,13 +266,15 @@ class IndexBuilder {
 	 */
 	public function get_event_meta( int $post_id ): array {
 		return [
-			'start_date' => get_post_meta( $post_id, 'blockendar_start_date', true ),
-			'end_date'   => get_post_meta( $post_id, 'blockendar_end_date', true ),
-			'start_time' => get_post_meta( $post_id, 'blockendar_start_time', true ),
-			'end_time'   => get_post_meta( $post_id, 'blockendar_end_time', true ),
-			'all_day'    => get_post_meta( $post_id, 'blockendar_all_day', true ),
-			'timezone'   => get_post_meta( $post_id, 'blockendar_timezone', true ),
-			'status'     => get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled',
+			'start_date'         => get_post_meta( $post_id, 'blockendar_start_date', true ),
+			'end_date'           => get_post_meta( $post_id, 'blockendar_end_date', true ),
+			'start_time'         => get_post_meta( $post_id, 'blockendar_start_time', true ),
+			'end_time'           => get_post_meta( $post_id, 'blockendar_end_time', true ),
+			'all_day'            => get_post_meta( $post_id, 'blockendar_all_day', true ),
+			'timezone'           => get_post_meta( $post_id, 'blockendar_timezone', true ),
+			'status'             => get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled',
+			'featured'           => (bool) get_post_meta( $post_id, 'blockendar_featured', true ),
+			'hide_from_listings' => (bool) get_post_meta( $post_id, 'blockendar_hide_from_listings', true ),
 		];
 	}
 
