@@ -44,16 +44,13 @@ endif;
  * Non-numeric strings ("Free", "$10–$25") are returned unchanged.
  */
 if ( ! function_exists( 'blockendar_format_cost' ) ) :
-	function blockendar_format_cost( string $raw, int $post_id ): string {
+	function blockendar_format_cost( string $raw ): string {
 		if ( '' === $raw || ! is_numeric( $raw ) ) {
 			return $raw;
 		}
 
 		$settings = (array) get_option( 'blockendar_settings', [] );
-		$currency = (string) get_post_meta( $post_id, 'blockendar_currency', true );
-		if ( ! $currency ) {
-			$currency = $settings['default_currency'] ?? 'USD';
-		}
+		$currency = $settings['default_currency'] ?? 'USD';
 		$position = $settings['currency_position'] ?? 'before';
 		$symbol   = blockendar_currency_symbol( $currency );
 
@@ -67,21 +64,27 @@ $reg_url      = get_post_meta( $post_id, 'blockendar_registration_url', true );
 $button_label = ! empty( $attributes['buttonLabel'] )
 	? $attributes['buttonLabel']
 	: __( 'Register / Get Tickets', 'blockendar' );
+$show_cost    = $attributes['showCost'] ?? true;
+$show_button  = $attributes['showButton'] ?? true;
 
 if ( ! $cost && ! $reg_url ) {
 	return;
 }
 
-$cost_display = blockendar_format_cost( $cost, (int) $post_id );
+$cost_display = blockendar_format_cost( $cost );
+
+if ( ( ! $show_cost || ! $cost_display ) && ( ! $show_button || ! $reg_url ) ) {
+	return;
+}
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-cost' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<?php if ( $cost_display ) : ?>
+	<?php if ( $show_cost && $cost_display ) : ?>
 		<span class="blockendar-event-cost__amount">
 			<?php echo esc_html( $cost_display ); ?>
 		</span>
 	<?php endif; ?>
 
-	<?php if ( $reg_url ) : ?>
+	<?php if ( $show_button && $reg_url ) : ?>
 		<a class="blockendar-event-cost__cta wp-element-button" href="<?php echo esc_url( $reg_url ); ?>" target="_blank" rel="noopener noreferrer">
 			<?php echo esc_html( $button_label ); ?>
 		</a>

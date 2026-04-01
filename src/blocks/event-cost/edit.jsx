@@ -2,7 +2,12 @@
  * event-cost block — editor component.
  */
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, TextControl } from '@wordpress/components';
+import {
+	PanelBody,
+	TextControl,
+	ToggleControl,
+	__experimentalVStack as VStack,
+} from '@wordpress/components';
 import { useEntityProp, store as coreStore } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
@@ -46,7 +51,7 @@ function formatCost( value, currency, position ) {
 }
 
 export function Edit( { attributes, setAttributes, context } ) {
-	const { buttonLabel } = attributes;
+	const { buttonLabel, showCost, showButton } = attributes;
 	const postId = context?.postId;
 	const postType = context?.postType ?? 'blockendar_event';
 
@@ -54,7 +59,6 @@ export function Edit( { attributes, setAttributes, context } ) {
 
 	const cost = meta?.blockendar_cost ?? '';
 	const regUrl = meta?.blockendar_registration_url ?? '';
-	const eventCurrency = meta?.blockendar_currency ?? '';
 
 	// Read default currency + position from plugin settings.
 	const site = useSelect(
@@ -64,12 +68,11 @@ export function Edit( { attributes, setAttributes, context } ) {
 	const pluginSettings = site?.blockendar_settings ?? {};
 	const defaultCurrency = pluginSettings.default_currency ?? 'USD';
 	const currencyPosition = pluginSettings.currency_position ?? 'before';
-	const activeCurrency = eventCurrency || defaultCurrency;
 
 	const isPlaceholder = ! cost && ! regUrl;
 	const rawCost = isPlaceholder ? '25.00' : cost;
-	const displayCost = formatCost( rawCost, activeCurrency, currencyPosition );
-	const showButton = isPlaceholder || !! regUrl;
+	const displayCost = formatCost( rawCost, defaultCurrency, currencyPosition );
+	const hasButton = isPlaceholder || !! regUrl;
 	const displayLabel =
 		buttonLabel || __( 'Register / Get Tickets', 'blockendar' );
 
@@ -105,7 +108,30 @@ export function Edit( { attributes, setAttributes, context } ) {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Settings', 'blockendar' ) }>
+				<PanelBody title={ __( 'Display', 'blockendar' ) }>
+					<VStack spacing={ 0 }>
+						<ToggleControl
+							label={ __( 'Show cost', 'blockendar' ) }
+							checked={ showCost }
+							onChange={ ( val ) =>
+								setAttributes( { showCost: val } )
+							}
+							__nextHasNoMarginBottom
+						/>
+						<ToggleControl
+							label={ __( 'Show button', 'blockendar' ) }
+							checked={ showButton }
+							onChange={ ( val ) =>
+								setAttributes( { showButton: val } )
+							}
+							__nextHasNoMarginBottom
+						/>
+					</VStack>
+				</PanelBody>
+				<PanelBody
+					title={ __( 'Settings', 'blockendar' ) }
+					initialOpen={ false }
+				>
 					<TextControl
 						label={ __( 'Button label', 'blockendar' ) }
 						value={ buttonLabel }
@@ -122,12 +148,12 @@ export function Edit( { attributes, setAttributes, context } ) {
 			</InspectorControls>
 
 			<div { ...blockProps } style={ wrapperStyle }>
-				{ displayCost && (
+				{ showCost && displayCost && (
 					<span className="blockendar-event-cost__amount">
 						{ displayCost }
 					</span>
 				) }
-				{ showButton && (
+				{ showButton && hasButton && (
 					<span className="blockendar-event-cost__cta wp-element-button">
 						{ displayLabel }
 					</span>

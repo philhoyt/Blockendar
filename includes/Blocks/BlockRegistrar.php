@@ -79,7 +79,6 @@ class BlockRegistrar {
 				'nonce'        => wp_create_nonce( 'wp_rest' ),
 				'postType'     => EventPostType::POST_TYPE,
 				'timezones'    => $this->get_timezone_list(),
-				'currencies'   => $this->get_currency_list(),
 				'siteTimezone' => $this->get_site_iana_timezone(),
 				'is12Hour'     => $this->is_12_hour_format(),
 				'dateFormat'   => $this->get_date_format(),
@@ -150,39 +149,5 @@ class BlockRegistrar {
 	 */
 	private function get_timezone_list(): array {
 		return \DateTimeZone::listIdentifiers();
-	}
-
-	/**
-	 * Return common ISO 4217 currency codes for the currency selector.
-	 *
-	 * @return string[]
-	 */
-	private function get_currency_list(): array {
-		return [
-			'USD',
-			'EUR',
-			'GBP',
-			'CAD',
-			'AUD',
-			'JPY',
-			'CHF',
-			'CNY',
-			'INR',
-			'MXN',
-			'BRL',
-			'KRW',
-			'SEK',
-			'NOK',
-			'DKK',
-			'NZD',
-			'SGD',
-			'HKD',
-			'ZAR',
-			'AED',
-			'PLN',
-			'CZK',
-			'HUF',
-			'THB',
-		];
 	}
 }

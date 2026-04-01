@@ -59,6 +59,14 @@
 		"buttonLabel": {
 			"type": "string",
 			"default": ""
+		},
+		"showCost": {
+			"type": "boolean",
+			"default": true
+		},
+		"showButton": {
+			"type": "boolean",
+			"default": true
 		}
 	},
 	"style": "file:./style-index.css",

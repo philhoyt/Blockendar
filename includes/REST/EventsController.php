@@ -507,11 +507,7 @@ class EventsController extends AbstractController {
 			'blockendar_timezone',
 			'blockendar_status',
 			'blockendar_cost',
-			'blockendar_cost_min',
-			'blockendar_cost_max',
-			'blockendar_currency',
 			'blockendar_registration_url',
-			'blockendar_capacity',
 			'blockendar_featured',
 			'blockendar_hide_from_listings',
 		];

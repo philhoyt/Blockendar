@@ -149,45 +149,6 @@ class EventMeta {
 			]
 		);
 
-		register_post_meta(
-			$post_type,
-			'blockendar_cost_min',
-			[
-				'type'              => 'number',
-				'description'       => 'Numeric minimum cost for filtering/sorting.',
-				'single'            => true,
-				'default'           => 0.0,
-				'sanitize_callback' => [ $this, 'sanitize_float' ],
-				'show_in_rest'      => true,
-			]
-		);
-
-		register_post_meta(
-			$post_type,
-			'blockendar_cost_max',
-			[
-				'type'              => 'number',
-				'description'       => 'Numeric maximum cost for filtering/sorting.',
-				'single'            => true,
-				'default'           => 0.0,
-				'sanitize_callback' => [ $this, 'sanitize_float' ],
-				'show_in_rest'      => true,
-			]
-		);
-
-		register_post_meta(
-			$post_type,
-			'blockendar_currency',
-			[
-				'type'              => 'string',
-				'description'       => 'ISO 4217 currency code (e.g. USD).',
-				'single'            => true,
-				'default'           => '',
-				'sanitize_callback' => [ $this, 'sanitize_currency' ],
-				'show_in_rest'      => true,
-			]
-		);
-
 		// Registration URL.
 		register_post_meta(
 			$post_type,
@@ -204,20 +165,6 @@ class EventMeta {
 						'format' => 'uri',
 					],
 				],
-			]
-		);
-
-		// Capacity.
-		register_post_meta(
-			$post_type,
-			'blockendar_capacity',
-			[
-				'type'              => 'integer',
-				'description'       => 'Maximum attendees. 0 = unlimited.',
-				'single'            => true,
-				'default'           => 0,
-				'sanitize_callback' => 'absint',
-				'show_in_rest'      => true,
 			]
 		);
 
@@ -330,21 +277,5 @@ class EventMeta {
 		$value   = sanitize_text_field( (string) $value );
 
 		return in_array( $value, $allowed, true ) ? $value : 'scheduled';
-	}
-
-	/**
-	 * Sanitize a float value.
-	 */
-	public function sanitize_float( mixed $value ): float {
-		return max( 0.0, (float) $value );
-	}
-
-	/**
-	 * Sanitize an ISO 4217 currency code (3 uppercase letters).
-	 */
-	public function sanitize_currency( mixed $value ): string {
-		$value = strtoupper( sanitize_text_field( (string) $value ) );
-
-		return preg_match( '/^[A-Z]{3}$/', $value ) ? $value : '';
 	}
 }
