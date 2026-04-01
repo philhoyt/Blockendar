@@ -12,8 +12,7 @@
 	"usesContext": [ "postId", "postType" ],
 	"supports": { "html": false },
 	"attributes": {
-		"showAddress": { "type": "boolean", "default": true },
-		"showMap":     { "type": "boolean", "default": false }
+		"showAddress": { "type": "boolean", "default": true }
 	},
 	"render": "file:./render.php",
 	"editorScript": "file:./index.js"

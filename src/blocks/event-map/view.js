@@ -18,15 +18,31 @@ L.Icon.Default.mergeOptions( {
 	shadowUrl: markerShadow,
 } );
 
-const maps = document.querySelectorAll( '.blockendar-event-map[data-lat]' );
+const escapeHtml = ( str ) =>
+	str.replace(
+		/[&<>"']/g,
+		( c ) =>
+			( {
+				'&': '&amp;',
+				'<': '&lt;',
+				'>': '&gt;',
+				'"': '&quot;',
+				"'": '&#39;',
+			} )[ c ]
+	);
 
-maps.forEach( ( el ) => {
-	const lat = parseFloat( el.dataset.lat );
-	const lng = parseFloat( el.dataset.lng );
+document.querySelectorAll( '.blockendar-event-map[data-pins]' ).forEach( ( el ) => {
+	let pins;
+	try {
+		pins = JSON.parse( el.dataset.pins );
+	} catch {
+		return;
+	}
+
+	if ( ! pins.length ) return;
+
 	const zoom = parseInt( el.dataset.zoom ?? '14', 10 );
-	const name = el.dataset.name ?? '';
-
-	const map = L.map( el, { scrollWheelZoom: false } ).setView( [ lat, lng ], zoom );
+	const map = L.map( el, { scrollWheelZoom: false } );
 
 	L.tileLayer( 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 		attribution:
@@ -34,19 +50,18 @@ maps.forEach( ( el ) => {
 		maxZoom: 19,
 	} ).addTo( map );
 
-	if ( name ) {
-		const escapeHtml = ( str ) =>
-			str.replace(
-				/[&<>"']/g,
-				( c ) =>
-					( {
-						'&': '&amp;',
-						'<': '&lt;',
-						'>': '&gt;',
-						'"': '&quot;',
-						"'": '&#39;',
-					} )[ c ]
-			);
-		L.marker( [ lat, lng ] ).addTo( map ).bindPopup( escapeHtml( name ) );
+	const markers = pins.map( ( pin ) => {
+		const marker = L.marker( [ pin.lat, pin.lng ] ).addTo( map );
+		if ( pin.name ) {
+			marker.bindPopup( escapeHtml( pin.name ) );
+		}
+		return marker;
+	} );
+
+	if ( pins.length === 1 ) {
+		map.setView( [ pins[ 0 ].lat, pins[ 0 ].lng ], zoom );
+	} else {
+		const group = L.featureGroup( markers );
+		map.fitBounds( group.getBounds(), { padding: [ 40, 40 ] } );
 	}
 } );
