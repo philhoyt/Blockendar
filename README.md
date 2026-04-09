@@ -51,6 +51,9 @@ npm run plugin-zip   # Build distributable zip
 
 ## Changelog
 
+### 1.0.1
+- Fixed: event titles containing `&` were displayed as `&amp;` in the Calendar View block
+
 ### 1.0.0
 - Event Cost block: added Show Cost and Show Button toggles; removed unused min/max cost, currency, and capacity meta fields
 - Event Venue block: support for multiple venue terms with horizontal rule dividers; removed redundant Show Map toggle (use the dedicated Event Map block instead)

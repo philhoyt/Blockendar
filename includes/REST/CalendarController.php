@@ -163,7 +163,7 @@ class CalendarController extends AbstractController {
 		return [
 			'id'            => "blockendar_{$post_id}_{$row->start_date}",
 			'post_id'       => $post_id,
-			'title'         => $row->post_title,
+			'title'         => html_entity_decode( $row->post_title, ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
 			'start'         => $start,
 			'end'           => $end,
 			'allDay'        => (bool) $row->all_day,

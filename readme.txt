@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 6.9
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -66,6 +66,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 1.0.1 =
+* Fixed: event titles containing & were displayed as &amp; in the Calendar View block.
 
 = 1.0.0 =
 * Event Cost block: added Show Cost and Show Button toggles; removed unused min/max cost, currency, and capacity meta fields.
@@ -165,6 +168,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.0.1 =
+No upgrade steps required.
 
 = 1.0.0 =
 Database schema upgraded to version 2. The event index will be rebuilt automatically on first load after upgrading — no manual action required.
