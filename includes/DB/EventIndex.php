@@ -20,6 +20,42 @@ if ( ! defined( 'ABSPATH' ) ) {
 class EventIndex {
 
 	/**
+	 * Object cache group for index reads.
+	 *
+	 * Invalidation is incremental: every cache key embeds the group's
+	 * "last changed" timestamp, so bumping that timestamp on write orphans every
+	 * previously cached key at once. This is the same approach core uses for its
+	 * own term and meta caches, and it avoids needing wp_cache_delete_group(),
+	 * which not every persistent backend implements.
+	 *
+	 * Without a persistent object cache these entries live for a single request,
+	 * which still collapses the repeated reads a calendar render performs.
+	 */
+	private const CACHE_GROUP = 'blockendar_events';
+
+	/**
+	 * Build a cache key scoped to the current state of the index.
+	 *
+	 * @param string $method Logical read being cached.
+	 * @param array  $args   Arguments that fully determine the result.
+	 */
+	private function cache_key( string $method, array $args ): string {
+		$last_changed = wp_cache_get_last_changed( self::CACHE_GROUP );
+
+		return $method . ':' . md5( (string) wp_json_encode( $args ) ) . ':' . $last_changed;
+	}
+
+	/**
+	 * Invalidate every cached read for this index.
+	 *
+	 * Cheap enough to call per row during a bulk rebuild: it writes a single
+	 * cache entry and issues no database query.
+	 */
+	public function flush_cache(): void {
+		wp_cache_set_last_changed( self::CACHE_GROUP );
+	}
+
+	/**
 	 * Query events within a datetime range.
 	 *
 	 * @param string $start      UTC datetime string (Y-m-d H:i:s).
@@ -40,6 +76,13 @@ class EventIndex {
 	 */
 	public function get_events_in_range( string $start, string $end, array $filters = [] ): array {
 		global $wpdb;
+
+		$cache_key = $this->cache_key( 'range', [ $start, $end, $filters ] );
+		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
+
+		if ( false !== $cached ) {
+			return $cached;
+		}
 
 		$events_table = Schema::events_table();
 		$posts_table  = $wpdb->posts;
@@ -141,8 +184,12 @@ class EventIndex {
 			array_merge( $params, [ $per_page, $offset ] )
 		);
 
-		return $wpdb->get_results( $query );
+		$results = $wpdb->get_results( $query );
 		// phpcs:enable
+
+		wp_cache_set( $cache_key, $results, self::CACHE_GROUP );
+
+		return $results;
 	}
 
 	/**
@@ -156,6 +203,13 @@ class EventIndex {
 		// Reuse the same WHERE logic by fetching IDs only.
 		$filters['per_page'] = 1;
 		$filters['page']     = 1;
+
+		$cache_key = $this->cache_key( 'range_count', [ $start, $end, $filters ] );
+		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
+
+		if ( false !== $cached ) {
+			return (int) $cached;
+		}
 
 		$events_table = Schema::events_table();
 		$posts_table  = $wpdb->posts;
@@ -226,6 +280,8 @@ class EventIndex {
 		);
 		// phpcs:enable
 
+		wp_cache_set( $cache_key, (int) $count, self::CACHE_GROUP );
+
 		return (int) $count;
 	}
 
@@ -238,16 +294,27 @@ class EventIndex {
 	public function get_by_post_id( int $post_id ): array {
 		global $wpdb;
 
+		$cache_key = $this->cache_key( 'by_post', [ $post_id ] );
+		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
+
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
 		$events_table = Schema::events_table();
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return $wpdb->get_results(
+		$results = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT * FROM {$events_table} WHERE post_id = %d ORDER BY start_datetime ASC",
 				$post_id
 			)
 		);
 		// phpcs:enable
+
+		wp_cache_set( $cache_key, $results, self::CACHE_GROUP );
+
+		return $results;
 	}
 
 	/**
@@ -256,6 +323,12 @@ class EventIndex {
 	 * @param int $post_id   The event post ID.
 	 * @param int $limit     Maximum number of instances to return.
 	 * @return array<object>
+	 */
+	/**
+	 * Deliberately not cached: the WHERE clause pivots on the current second, so a
+	 * cache key derived from it would miss on every call while filling the cache
+	 * with single-use entries. The query is a covered lookup on an indexed column
+	 * for one post, so it is cheap to run directly.
 	 */
 	public function get_upcoming_instances( int $post_id, int $limit = 10 ): array {
 		global $wpdb;
@@ -376,6 +449,8 @@ class EventIndex {
 			[ '%d' ]
 		);
 
+		$this->flush_cache();
+
 		return (int) $result;
 	}
 
@@ -448,6 +523,8 @@ class EventIndex {
 			}
 		}
 
+		$this->flush_cache();
+
 		return $index_id;
 	}
 
@@ -457,10 +534,21 @@ class EventIndex {
 	public function get_total_row_count(): int {
 		global $wpdb;
 
+		$cache_key = $this->cache_key( 'total_rows', [] );
+		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
+
+		if ( false !== $cached ) {
+			return (int) $cached;
+		}
+
 		$events_table = Schema::events_table();
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$events_table}" );
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$events_table}" );
 		// phpcs:enable
+
+		wp_cache_set( $cache_key, $count, self::CACHE_GROUP );
+
+		return $count;
 	}
 }
