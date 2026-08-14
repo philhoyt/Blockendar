@@ -30,18 +30,19 @@
     "env:cli": "wp-env run cli wp",
     "make-pot": "wp-env run cli -- wp i18n make-pot wp-content/plugins/blockendar wp-content/plugins/blockendar/languages/blockendar.pot --slug=blockendar --domain=blockendar --exclude=node_modules,vendor,build,lib,tests,bin --headers='{\"Report-Msgid-Bugs-To\":\"https://github.com/philhoyt/Blockendar/issues\",\"Language-Team\":\"philhoyt <https://github.com/philhoyt/Blockendar>\"}' --allow-root",
     "test:php": "vendor/bin/phpunit",
-    "test:js": "wp-scripts test-unit-js"
+    "test:js": "wp-scripts test-unit-js",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",
     "@fullcalendar/daygrid": "^6.1.15",
-    "@fullcalendar/interaction": "^6.1.15",
     "@fullcalendar/list": "^6.1.15",
     "@fullcalendar/react": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
     "leaflet": "^1.9.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@wordpress/env": "^11.13.0",
     "@wordpress/scripts": "^34.1.0"
   }
