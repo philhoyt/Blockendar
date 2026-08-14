@@ -150,27 +150,50 @@ class GeneratorExpandTest extends TestCase {
 
 	public function test_horizon_caps_occurrences_before_until_date(): void {
 		// Until date is far in the future (5 years), horizon is 365 days.
-		$rule  = $this->rule(
+		$rule = $this->rule(
 			[
 				'frequency'    => 'daily',
 				'until_date'   => '2031-01-01',
 				'interval_val' => 1,
 			]
 		);
+		// Pin the clock to the same day the event starts, so the horizon is exactly
+		// 365 days wide regardless of when this test runs.
+		$this->gen->set_now( new \DateTimeImmutable( self::TODAY, new \DateTimeZone( 'UTC' ) ) );
+
 		$pairs = $this->gen->expand( $rule, $this->meta() );
 
 		// Should not generate 5 years of events — generation stops at the horizon.
-		// Anchored to the real "today" rather than a fixed occurrence count:
-		// expand_dates() derives the horizon from the wall clock, while meta()
-		// starts at the fixed self::TODAY, so any hard-coded count drifts by one
-		// per day of real time elapsed.
-		$horizon = ( new \DateTimeImmutable( 'today', new \DateTimeZone( 'UTC' ) ) )
+		$this->assertLessThanOrEqual( 367, count( $pairs ) ); // 365 days + buffer for edges.
+		$this->assertGreaterThanOrEqual( 365, count( $pairs ) );
+
+		// And the last occurrence must fall on or before the horizon date.
+		$horizon = ( new \DateTimeImmutable( self::TODAY, new \DateTimeZone( 'UTC' ) ) )
 			->modify( '+365 days' );
-
-		$this->assertNotEmpty( $pairs );
-
-		$last = end( $pairs );
+		$last    = end( $pairs );
 		$this->assertLessThanOrEqual( $horizon->format( 'Y-m-d' ), $last['start_date'] );
+	}
+
+	public function test_horizon_is_anchored_to_the_injected_clock(): void {
+		$rule = $this->rule(
+			[
+				'frequency'    => 'daily',
+				'until_date'   => '2031-01-01',
+				'interval_val' => 1,
+			]
+		);
+
+		// Advancing the clock 100 days past the event start widens the window by
+		// exactly 100 occurrences. This is the drift that previously broke the
+		// test above when it relied on the real wall clock.
+		$this->gen->set_now(
+			( new \DateTimeImmutable( self::TODAY, new \DateTimeZone( 'UTC' ) ) )->modify( '+100 days' )
+		);
+
+		$pairs = $this->gen->expand( $rule, $this->meta() );
+
+		$this->assertLessThanOrEqual( 467, count( $pairs ) );
+		$this->assertGreaterThanOrEqual( 465, count( $pairs ) );
 	}
 
 	// -------------------------------------------------------------------------
