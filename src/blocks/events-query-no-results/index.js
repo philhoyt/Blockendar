@@ -1,6 +1,7 @@
 import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps, InnerBlocks } from '@wordpress/block-editor';
 import { SVG, Path } from '@wordpress/primitives';
+import { __ } from '@wordpress/i18n';
 import metadata from './block.json';
 
 const icon = (
@@ -9,26 +10,33 @@ const icon = (
 	</SVG>
 );
 
+// Named component rather than an `edit()` shorthand: useBlockProps() is a hook,
+// and the rules-of-hooks lint only recognises hook calls inside components whose
+// name starts with a capital letter.
+function Edit() {
+	return (
+		<div { ...useBlockProps() }>
+			<InnerBlocks
+				template={ [
+					[
+						'core/paragraph',
+						{
+							content: __( 'No events found.', 'blockendar' ),
+							placeholder: __(
+								'Add a message for when no events are found…',
+								'blockendar'
+							),
+						},
+					],
+				] }
+			/>
+		</div>
+	);
+}
+
 registerBlockType( metadata.name, {
 	icon,
-	edit() {
-		return (
-			<div { ...useBlockProps() }>
-				<InnerBlocks
-					template={ [
-						[
-							'core/paragraph',
-							{
-								content: 'No events found.',
-								placeholder:
-									'Add a message for when no events are found…',
-							},
-						],
-					] }
-				/>
-			</div>
-		);
-	},
+	edit: Edit,
 	save() {
 		return (
 			<div { ...useBlockProps.save() }>

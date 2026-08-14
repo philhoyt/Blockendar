@@ -9,31 +9,31 @@
 
 .wp-block-blockendar-calendar-view {
 	--blockendar-cal-event-title-size: 0.8em;
-	--blockendar-cal-event-time-size:  0.6em;
-	--blockendar-cal-header-size:      0.8rem;
-	--blockendar-cal-toolbar-size:     0.875rem;
-	--blockendar-cal-event-radius:     1em;
-	--blockendar-cal-event-indent:     0.5em;
+	--blockendar-cal-event-time-size: 0.6em;
+	--blockendar-cal-header-size: 0.8rem;
+	--blockendar-cal-toolbar-size: 0.875rem;
+	--blockendar-cal-event-radius: 1em;
+	--blockendar-cal-event-indent: 0.5em;
 
 	/* Toolbar button palette — neutral grays that suit any theme */
-	--blockendar-cal-btn-bg:           transparent;
-	--blockendar-cal-btn-border:       #949494;
-	--blockendar-cal-btn-color:        #1d2327;
-	--blockendar-cal-btn-hover-bg:     #f0f0f0;
+	--blockendar-cal-btn-bg: transparent;
+	--blockendar-cal-btn-border: #949494;
+	--blockendar-cal-btn-color: #1d2327;
+	--blockendar-cal-btn-hover-bg: #f0f0f0;
 	--blockendar-cal-btn-hover-border: #646970;
-	--blockendar-cal-btn-active-bg:    #e2e4e7;
-	--blockendar-cal-btn-radius:       3px;
+	--blockendar-cal-btn-active-bg: #e2e4e7;
+	--blockendar-cal-btn-radius: 3px;
 
 	/* FullCalendar internals */
-	--fc-button-bg-color:           var(--blockendar-cal-btn-bg);
-	--fc-button-border-color:       var(--blockendar-cal-btn-border);
-	--fc-button-text-color:         var(--blockendar-cal-btn-color);
-	--fc-button-hover-bg-color:     var(--blockendar-cal-btn-hover-bg);
+	--fc-button-bg-color: var(--blockendar-cal-btn-bg);
+	--fc-button-border-color: var(--blockendar-cal-btn-border);
+	--fc-button-text-color: var(--blockendar-cal-btn-color);
+	--fc-button-hover-bg-color: var(--blockendar-cal-btn-hover-bg);
 	--fc-button-hover-border-color: var(--blockendar-cal-btn-hover-border);
-	--fc-button-active-bg-color:    var(--blockendar-cal-btn-active-bg);
+	--fc-button-active-bg-color: var(--blockendar-cal-btn-active-bg);
 	--fc-button-active-border-color: var(--blockendar-cal-btn-hover-border);
-	--fc-border-color:              color-mix(in srgb, currentColor 12%, transparent);
-	--fc-list-event-hover-bg-color: color-mix(in srgb, currentColor 5%, transparent);
+	--fc-border-color: color-mix(in srgb, currentcolor 12%, transparent);
+	--fc-list-event-hover-bg-color: color-mix(in srgb, currentcolor 5%, transparent);
 
 	font-family: inherit;
 }
@@ -47,11 +47,11 @@
 }
 
 .wp-block-blockendar-calendar-view .fc-button-primary {
-	font-family:   inherit;
-	font-size:     var(--blockendar-cal-toolbar-size);
+	font-family: inherit;
+	font-size: var(--blockendar-cal-toolbar-size);
 	border-radius: var(--blockendar-cal-btn-radius);
-	box-shadow:    none;
-	text-shadow:   none;
+	box-shadow: none;
+	text-shadow: none;
 }
 
 .wp-block-blockendar-calendar-view .fc-button-primary:focus {
@@ -59,17 +59,17 @@
 }
 
 .wp-block-blockendar-calendar-view .fc-button-group > .fc-button {
-	display:         flex;
-	align-items:     center;
+	display: flex;
+	align-items: center;
 	justify-content: center;
 }
 
 /* Column headers (Mon, Tue …) */
 .wp-block-blockendar-calendar-view .fc-col-header-cell-cushion {
 	text-decoration: none;
-	font-size:       var(--blockendar-cal-header-size);
-	text-transform:  uppercase;
-	letter-spacing:  0.05em;
+	font-size: var(--blockendar-cal-header-size);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
 }
 
 /* --------------------------------------------------------------------------
@@ -87,7 +87,7 @@
 
 .wp-block-blockendar-calendar-view .fc-daygrid-day-number {
 	text-decoration: none;
-	font-weight:     bold;
+	font-weight: 700;
 }
 
 /* Past day numbers — dimmed */
@@ -101,7 +101,7 @@
 
 .wp-block-blockendar-calendar-view .fc-event {
 	flex-direction: column;
-	align-items:    flex-start;
+	align-items: flex-start;
 }
 
 .wp-block-blockendar-calendar-view .fc-h-event .fc-event-title-container {
@@ -113,17 +113,17 @@
 }
 
 .wp-block-blockendar-calendar-view .fc-direction-ltr .fc-daygrid-event .fc-event-time {
-	font-size:   var(--blockendar-cal-event-time-size);
+	font-size: var(--blockendar-cal-event-time-size);
 	line-height: 1.2;
 }
 
 .wp-block-blockendar-calendar-view .fc-event-title {
-	font-size:       var(--blockendar-cal-event-title-size);
-	line-height:     1.2;
-	font-weight:     normal;
-	text-wrap:       auto;
+	font-size: var(--blockendar-cal-event-title-size);
+	line-height: 1.2;
+	font-weight: 400;
+	text-wrap: auto;
 	text-wrap-style: balance;
-	overflow-wrap:   anywhere;
+	overflow-wrap: anywhere;
 }
 
 /* Multi-day / block event border-radius — respect segment position */
@@ -149,6 +149,7 @@
 }
 
 /* Auto-contrast text colour based on the event type background colour */
+
 /* .wp-block-blockendar-calendar-view .fc-h-event .fc-event-main {
 	color: var(--fc-event-text-color);
 	color: contrast-color( var(--blockendar-event-color, #3788d8) );
@@ -177,9 +178,10 @@
 	-------------------------------------------------------------------------- */
 
 @media (max-width: 425px) {
+
 	.wp-block-blockendar-calendar-view .fc-button-primary {
 		font-size: 0.75rem;
-		padding:   0.25em 0.5em;
+		padding: 0.25em 0.5em;
 	}
 
 	.wp-block-blockendar-calendar-view .fc-list-event-time {
@@ -192,10 +194,10 @@
 }
 
 @media (max-width: 767px) {
+
 	.wp-block-blockendar-calendar-view .fc-toolbar-chunk:last-child {
 		display: none;
 	}
-
 
 
 	/* Show dot, hide title and time */
@@ -208,14 +210,20 @@
 		display: none;
 	}
 
-	.fc-popover-body .fc-event-time, .fc-popover-body .fc-event-title {
+	/* FullCalendar renders popovers at body level, outside the block
+	   wrapper, so these cannot be prefixed with the block class. They
+	   target a different element than the daygrid rules above and do
+	   not actually compete in the cascade. */
+	/* stylelint-disable-next-line no-descending-specificity */
+	.fc-popover-body .fc-event-time,
+	.fc-popover-body .fc-event-title {
 		display: block;
 	}
 
 	/* Strip the pill — just the dot */
 	.wp-block-blockendar-calendar-view .fc-daygrid-event.fc-h-event {
 		background: transparent;
-		border:     none;
-		padding:    0;
+		border: none;
+		padding: 0;
 	}
 }

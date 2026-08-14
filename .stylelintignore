@@ -1,0 +1,6 @@
+build/
+node_modules/
+vendor/
+
+# Vendored third-party library — not ours to restyle.
+lib/plugin-update-checker/

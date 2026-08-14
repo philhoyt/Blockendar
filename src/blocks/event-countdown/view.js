@@ -4,7 +4,9 @@
  */
 document.querySelectorAll( '.blockendar-event-countdown' ).forEach( ( el ) => {
 	const target = new Date( el.dataset.target );
-	const endTarget = el.dataset.endTarget ? new Date( el.dataset.endTarget ) : null;
+	const endTarget = el.dataset.endTarget
+		? new Date( el.dataset.endTarget )
+		: null;
 	const expiredLabel = el.dataset.expiredLabel ?? 'This event has started.';
 	const passedLabel = el.dataset.passedLabel ?? 'This event has passed.';
 	const format = el.dataset.format ?? 'd:h:m:s';

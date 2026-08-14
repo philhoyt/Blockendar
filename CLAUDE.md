@@ -7,8 +7,16 @@ When creating git commits:
 - **Do NOT add `Co-Authored-By: Claude` or any Claude co-author line** to commit messages
 - Always run the relevant checks before committing:
   - **PHP lint:** `npm run lint:php`
+  - **PHP tests:** `npm run test:php`
+  - **JS lint:** `npm run lint:js`
+  - **CSS lint:** `npm run lint:css`
+  - **JS tests:** `npm run test:js`
   - **JS build:** `npm run build`
 - Fix any errors before proposing a commit.
+
+All six are expected to pass cleanly. `npm run build` emits three standing
+bundle-size warnings for `calendar-view/view.js`; those are warnings, not errors,
+and do not block a commit.
 
 ## Version bumps
 
