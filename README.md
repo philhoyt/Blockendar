@@ -17,10 +17,10 @@ A block-native WordPress events plugin.
 
 ## Requirements
 
-| | Minimum |
-|---|---|
-| WordPress | 6.8 |
-| PHP | 8.1 |
+| | Minimum | Tested up to |
+|---|---|---|
+| WordPress | 6.8 | 7.0 |
+| PHP | 8.1 | 8.1 |
 
 ## Installation
 

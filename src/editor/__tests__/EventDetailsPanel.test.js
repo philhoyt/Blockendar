@@ -1,4 +1,3 @@
-/* eslint-env jest */
 /**
  * Tests for the costRangeInvalid logic in EventDetailsPanel.jsx.
  *

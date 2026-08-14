@@ -149,6 +149,6 @@
 	<!-- ======================================================
 	     Minimum supported versions
 	     ====================================================== -->
-	<config name="minimum_supported_wp_version" value="6.7"/>
+	<config name="minimum_wp_version" value="6.8"/>
 	<config name="testVersion" value="8.1-"/>
 </ruleset>

@@ -1,4 +1,3 @@
-/* eslint-env jest */
 /**
  * Tests for the escapeHtml utility used in event-map/view.js.
  *

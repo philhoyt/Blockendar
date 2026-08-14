@@ -130,8 +130,18 @@ class GeneratorExpandTest extends TestCase {
 		] );
 		$pairs = $this->gen->expand( $rule, $this->meta() );
 
-		// Should not generate 5 years of events — horizon stops at ~365 days.
-		$this->assertLessThanOrEqual( 367, count( $pairs ) ); // 365 days + tiny buffer for edge
+		// Should not generate 5 years of events — generation stops at the horizon.
+		// Anchored to the real "today" rather than a fixed occurrence count:
+		// expand_dates() derives the horizon from the wall clock, while meta()
+		// starts at the fixed self::TODAY, so any hard-coded count drifts by one
+		// per day of real time elapsed.
+		$horizon = ( new \DateTimeImmutable( 'today', new \DateTimeZone( 'UTC' ) ) )
+			->modify( '+365 days' );
+
+		$this->assertNotEmpty( $pairs );
+
+		$last = end( $pairs );
+		$this->assertLessThanOrEqual( $horizon->format( 'Y-m-d' ), $last['start_date'] );
 	}
 
 	// -------------------------------------------------------------------------

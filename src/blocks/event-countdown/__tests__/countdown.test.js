@@ -1,4 +1,3 @@
-/* eslint-env jest */
 /**
  * Tests for event-countdown/view.js tick() behaviour.
  *
