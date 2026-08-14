@@ -71,19 +71,23 @@ class BlockRegistrar {
 		);
 
 		// Pass REST namespace and nonce to the editor panels.
-		wp_localize_script(
+		// wp_add_inline_script() rather than wp_localize_script(): localisation casts
+		// every scalar to a string, and it is the wrong tool for a REST nonce.
+		$editor_data = [
+			'restUrl'      => esc_url_raw( rest_url( 'blockendar/v1' ) ),
+			'nonce'        => wp_create_nonce( 'wp_rest' ),
+			'postType'     => EventPostType::POST_TYPE,
+			'timezones'    => $this->get_timezone_list(),
+			'siteTimezone' => $this->get_site_iana_timezone(),
+			'is12Hour'     => $this->is_12_hour_format(),
+			'dateFormat'   => $this->get_date_format(),
+			'timeFormat'   => $this->get_time_format(),
+		];
+
+		wp_add_inline_script(
 			'blockendar-editor-panels',
-			'blockendarEditor',
-			[
-				'restUrl'      => esc_url_raw( rest_url( 'blockendar/v1' ) ),
-				'nonce'        => wp_create_nonce( 'wp_rest' ),
-				'postType'     => EventPostType::POST_TYPE,
-				'timezones'    => $this->get_timezone_list(),
-				'siteTimezone' => $this->get_site_iana_timezone(),
-				'is12Hour'     => $this->is_12_hour_format(),
-				'dateFormat'   => $this->get_date_format(),
-				'timeFormat'   => $this->get_time_format(),
-			]
+			'window.blockendarEditor = ' . wp_json_encode( $editor_data ) . ';',
+			'before'
 		);
 
 		wp_enqueue_style(
