@@ -1,0 +1,1690 @@
+# Copyright (C) 2026 philhoyt
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Blockendar - Events and Calendars 1.0.1\n"
+"Report-Msgid-Bugs-To: https://github.com/philhoyt/Blockendar/issues\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: philhoyt <https://github.com/philhoyt/Blockendar>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-08-14T19:45:35+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: blockendar\n"
+
+#. Plugin Name of the plugin
+#: blockendar.php
+msgid "Blockendar - Events and Calendars"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: blockendar.php
+msgid "https://github.com/philhoyt/Blockendar"
+msgstr ""
+
+#. Description of the plugin
+#: blockendar.php
+msgid "A block-native WordPress events plugin. No shortcodes. No legacy widgets. The block editor is the UI."
+msgstr ""
+
+#. Author of the plugin
+#: blockendar.php
+msgid "philhoyt"
+msgstr ""
+
+#. Author URI of the plugin
+#: blockendar.php
+msgid "https://philhoyt.com"
+msgstr ""
+
+#: includes/Admin/EventColumns.php:48
+#: src/editor/DateTimePanel.jsx:679
+msgid "Start Date"
+msgstr ""
+
+#: includes/Admin/EventColumns.php:49
+#: src/editor/DateTimePanel.jsx:730
+msgid "End Date"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:47
+#: src/admin/SettingsApp.jsx:99
+msgid "Blockendar Settings"
+msgstr ""
+
+#: includes/Admin/SettingsPage.php:48
+#: src/blocks/add-to-calendar/edit.jsx:25
+#: src/blocks/event-cost/edit.jsx:132
+msgid "Settings"
+msgstr ""
+
+#: includes/Admin/VenueGeocode.php:60
+msgid "Look up coordinates"
+msgstr ""
+
+#: includes/Admin/VenueGeocode.php:61
+msgid "Looking up…"
+msgstr ""
+
+#: includes/Admin/VenueGeocode.php:62
+msgid "Address not found. Please enter coordinates manually."
+msgstr ""
+
+#: includes/Admin/VenueGeocode.php:63
+msgid "Geocoding request failed. Please try again."
+msgstr ""
+
+#: includes/Admin/VenueGeocode.php:64
+msgid "Please enter at least a city or address first."
+msgstr ""
+
+#: includes/Blocks/TemplateRegistrar.php:41
+msgid "Single Event"
+msgstr ""
+
+#: includes/Blocks/TemplateRegistrar.php:42
+msgid "Displays a single event with date, venue, description, and related events."
+msgstr ""
+
+#: includes/Blocks/TemplateRegistrar.php:50
+msgid "Events Archive"
+msgstr ""
+
+#: includes/Blocks/TemplateRegistrar.php:51
+msgid "Displays all events in a calendar view."
+msgstr ""
+
+#: includes/Blocks/TemplateRegistrar.php:59
+msgid "Event Type Archive"
+msgstr ""
+
+#: includes/Blocks/TemplateRegistrar.php:60
+msgid "Displays a calendar filtered to a single event type."
+msgstr ""
+
+#: includes/CPT/EventPostType.php:35
+msgctxt "post type general name"
+msgid "Events"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:36
+msgctxt "post type singular name"
+msgid "Event"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:37
+msgid "Add New"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:38
+msgid "Add New Event"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:39
+msgid "Edit Event"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:40
+msgid "New Event"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:41
+msgid "View Event"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:42
+msgid "View Events"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:43
+msgid "Search Events"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:44
+#: src/blocks/events-query/render.php:183
+#: src/blocks/events-query-no-results/index.js:24
+msgid "No events found."
+msgstr ""
+
+#: includes/CPT/EventPostType.php:45
+msgid "No events found in Trash."
+msgstr ""
+
+#: includes/CPT/EventPostType.php:46
+msgid "All Events"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:47
+msgid "Event Archives"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:48
+msgid "Event Attributes"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:49
+msgid "Insert into event"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:50
+msgid "Uploaded to this event"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:51
+msgctxt "admin menu"
+msgid "Events"
+msgstr ""
+
+#: includes/CPT/EventPostType.php:52
+msgctxt "add new on admin bar"
+msgid "Event"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:174
+msgid "Virtual / Online venue"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:179
+#: includes/Meta/VenueMeta.php:293
+msgid "Stream URL"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:186
+#: includes/Meta/VenueMeta.php:302
+msgid "Stream link shown on virtual events (e.g. Zoom, YouTube)."
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:190
+#: includes/Meta/VenueMeta.php:308
+msgid "Address"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:200
+#: includes/Meta/VenueMeta.php:322
+msgid "City"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:210
+#: includes/Meta/VenueMeta.php:336
+msgid "State / Province"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:220
+#: includes/Meta/VenueMeta.php:350
+msgid "Country"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:228
+#: includes/Meta/VenueMeta.php:360
+msgid "Two-letter country code (e.g. US, GB, CA)."
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:232
+#: includes/Meta/VenueMeta.php:366
+msgid "Latitude"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:245
+#: includes/Meta/VenueMeta.php:383
+msgid "Longitude"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:276
+msgid "Virtual venue"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:286
+msgid "This is an online / virtual venue"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:449
+#: includes/Meta/VenueMeta.php:472
+msgid "Calendar colour"
+msgstr ""
+
+#: includes/Meta/VenueMeta.php:456
+#: includes/Meta/VenueMeta.php:481
+msgid "Colour used to display events of this type on the calendar."
+msgstr ""
+
+#: includes/Plugin.php:116
+msgid "Blockendar"
+msgstr ""
+
+#: includes/REST/AbstractController.php:86
+msgid "Invalid datetime parameter. Expected Y-m-d or ISO 8601 format."
+msgstr ""
+
+#: includes/REST/EventsController.php:234
+#: includes/REST/EventsController.php:270
+#: includes/REST/EventsController.php:287
+#: includes/REST/EventsController.php:315
+#: includes/REST/EventsController.php:334
+#: includes/REST/IcsEndpoint.php:87
+msgid "Event not found."
+msgstr ""
+
+#: includes/REST/EventsController.php:238
+msgid "You do not have permission to view this event."
+msgstr ""
+
+#: includes/REST/EventsController.php:295
+msgid "Failed to save recurrence rule."
+msgstr ""
+
+#: includes/REST/EventsController.php:351
+msgid "Failed to cancel instance."
+msgstr ""
+
+#: includes/REST/EventsController.php:374
+msgid "Event has no recurrence rule."
+msgstr ""
+
+#: includes/REST/IcsEndpoint.php:92
+msgid "Event has no date."
+msgstr ""
+
+#: includes/REST/ImportController.php:50
+msgid "No file uploaded."
+msgstr ""
+
+#: includes/REST/ImportController.php:56
+msgid "File upload failed."
+msgstr ""
+
+#: includes/REST/ImportController.php:61
+msgid "File exceeds 10 MB limit."
+msgstr ""
+
+#: includes/REST/ImportController.php:68
+msgid "Could not read uploaded file."
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:38
+msgctxt "taxonomy general name"
+msgid "Event Tags"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:39
+msgctxt "taxonomy singular name"
+msgid "Event Tag"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:40
+msgid "Search Event Tags"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:41
+msgid "Popular Event Tags"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:42
+msgid "All Event Tags"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:43
+msgid "Edit Event Tag"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:44
+msgid "Update Event Tag"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:45
+msgid "Add New Event Tag"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:46
+msgid "New Event Tag Name"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:47
+msgid "Separate event tags with commas"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:48
+msgid "Add or remove event tags"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:49
+msgid "Choose from the most used event tags"
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:50
+msgid "No event tags found."
+msgstr ""
+
+#: includes/Taxonomy/EventTag.php:51
+msgid "Event Tags"
+msgstr ""
+
+#: includes/Taxonomy/EventType.php:39
+msgctxt "taxonomy general name"
+msgid "Event Types"
+msgstr ""
+
+#: includes/Taxonomy/EventType.php:40
+msgctxt "taxonomy singular name"
+msgid "Event Type"
+msgstr ""
+
+#: includes/Taxonomy/EventType.php:41
+msgid "Search Event Types"
+msgstr ""
+
+#: includes/Taxonomy/EventType.php:42
+msgid "All Event Types"
+msgstr ""
+
+#: includes/Taxonomy/EventType.php:43
+msgid "Parent Event Type"
+msgstr ""
+
+#: includes/Taxonomy/EventType.php:44
+msgid "Parent Event Type:"
+msgstr ""
+
+#: includes/Taxonomy/EventType.php:45
+msgid "Edit Event Type"
+msgstr ""
+
+#: includes/Taxonomy/EventType.php:46
+msgid "Update Event Type"
+msgstr ""
+
+#: includes/Taxonomy/EventType.php:47
+msgid "Add New Event Type"
+msgstr ""
+
+#: includes/Taxonomy/EventType.php:48
+msgid "New Event Type Name"
+msgstr ""
+
+#: includes/Taxonomy/EventType.php:49
+msgid "Event Types"
+msgstr ""
+
+#: includes/Taxonomy/Venue.php:40
+msgctxt "taxonomy general name"
+msgid "Venues"
+msgstr ""
+
+#: includes/Taxonomy/Venue.php:41
+msgctxt "taxonomy singular name"
+msgid "Venue"
+msgstr ""
+
+#: includes/Taxonomy/Venue.php:42
+msgid "Search Venues"
+msgstr ""
+
+#: includes/Taxonomy/Venue.php:43
+msgid "All Venues"
+msgstr ""
+
+#: includes/Taxonomy/Venue.php:44
+msgid "Parent Venue"
+msgstr ""
+
+#: includes/Taxonomy/Venue.php:45
+msgid "Parent Venue:"
+msgstr ""
+
+#: includes/Taxonomy/Venue.php:46
+msgid "Edit Venue"
+msgstr ""
+
+#: includes/Taxonomy/Venue.php:47
+msgid "Update Venue"
+msgstr ""
+
+#: includes/Taxonomy/Venue.php:48
+msgid "Add New Venue"
+msgstr ""
+
+#: includes/Taxonomy/Venue.php:49
+msgid "New Venue Name"
+msgstr ""
+
+#: includes/Taxonomy/Venue.php:50
+#: src/blocks/calendar-view/edit.jsx:275
+msgid "Venues"
+msgstr ""
+
+#: src/blocks/add-to-calendar/render.php:25
+#: src/blocks/add-to-calendar/edit.jsx:17
+#: src/blocks/add-to-calendar/edit.jsx:33
+msgid "Add to Calendar"
+msgstr ""
+
+#: src/blocks/add-to-calendar/render.php:79
+#: src/blocks/add-to-calendar/edit.jsx:40
+#: src/blocks/add-to-calendar/edit.jsx:87
+msgid "Google Calendar"
+msgstr ""
+
+#: src/blocks/add-to-calendar/render.php:88
+#: src/blocks/add-to-calendar/edit.jsx:48
+#: src/blocks/add-to-calendar/edit.jsx:94
+msgid "iCalendar"
+msgstr ""
+
+#: src/blocks/add-to-calendar/render.php:98
+#: src/blocks/add-to-calendar/edit.jsx:56
+#: src/blocks/add-to-calendar/edit.jsx:101
+msgid "Outlook 365"
+msgstr ""
+
+#: src/blocks/add-to-calendar/render.php:108
+#: src/blocks/add-to-calendar/edit.jsx:64
+#: src/blocks/add-to-calendar/edit.jsx:108
+msgid "Outlook Live"
+msgstr ""
+
+#: src/blocks/event-cost/render.php:66
+#: src/blocks/event-cost/edit.jsx:77
+#: src/blocks/event-cost/edit.jsx:141
+msgid "Register / Get Tickets"
+msgstr ""
+
+#: src/blocks/event-countdown/render.php:21
+#: src/blocks/event-countdown/index.js:99
+msgid "This event has started."
+msgstr ""
+
+#: src/blocks/event-countdown/render.php:22
+#: src/blocks/event-countdown/index.js:111
+msgid "This event has passed."
+msgstr ""
+
+#: src/blocks/event-countdown/render.php:69
+msgid "Enable JavaScript to see the countdown."
+msgstr ""
+
+#: src/blocks/event-datetime/render.php:88
+#: src/blocks/event-datetime/edit.jsx:311
+msgid "All day"
+msgstr ""
+
+#. translators: %s: venue name
+#: src/blocks/event-map/render.php:51
+#, php-format
+msgid "Map of %s"
+msgstr ""
+
+#: src/blocks/event-map/render.php:52
+msgid "Event venue map"
+msgstr ""
+
+#: src/blocks/event-status/render.php:22
+#: src/blocks/event-status/edit.jsx:9
+#: src/editor/EventDetailsPanel.jsx:19
+msgid "Cancelled"
+msgstr ""
+
+#: src/blocks/event-status/render.php:23
+#: src/blocks/event-status/edit.jsx:10
+#: src/editor/EventDetailsPanel.jsx:20
+msgid "Postponed"
+msgstr ""
+
+#: src/blocks/event-status/render.php:24
+#: src/blocks/event-status/edit.jsx:11
+#: src/editor/EventDetailsPanel.jsx:21
+msgid "Sold Out"
+msgstr ""
+
+#: src/blocks/event-venue/render.php:43
+#: src/blocks/event-venue/edit.jsx:109
+msgid "Online"
+msgstr ""
+
+#: src/blocks/event-venue/render.php:46
+#: src/blocks/event-venue/edit.jsx:116
+msgid "Join stream"
+msgstr ""
+
+#: src/blocks/events-query/render.php:242
+msgid "Previous"
+msgstr ""
+
+#: src/blocks/events-query/render.php:243
+msgid "Next"
+msgstr ""
+
+#: src/blocks/events-query/render.php:248
+msgid "Events navigation"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:8
+msgid "Month (Grid)"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:9
+msgid "Week (Time)"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:10
+msgid "Day (Time)"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:11
+msgid "List (Week)"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:15
+#: src/blocks/calendar-view/edit.jsx:24
+#: src/blocks/calendar-view/edit.jsx:250
+#: src/editor/DateTimePanel.jsx:203
+msgid "Sunday"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:16
+#: src/blocks/calendar-view/edit.jsx:25
+#: src/editor/DateTimePanel.jsx:204
+msgid "Monday"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:17
+#: src/blocks/calendar-view/edit.jsx:26
+#: src/editor/DateTimePanel.jsx:209
+msgid "Saturday"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:21
+msgid "15 minutes"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:22
+msgid "30 minutes"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:23
+msgid "1 hour"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:29
+msgid "Calendar Display"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:32
+#: src/blocks/calendar-view/edit.jsx:186
+msgid "Default view"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:33
+msgid "The view shown when a visitor first loads the calendar block."
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:44
+#: src/blocks/calendar-view/edit.jsx:198
+msgid "First day of week"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:54
+msgid "Time slot duration"
+msgstr ""
+
+#: src/admin/sections/CalendarSection.jsx:55
+msgid "Height of each time slot in week/day views."
+msgstr ""
+
+#: src/admin/sections/CurrencySection.jsx:35
+msgid "Before amount ($10)"
+msgstr ""
+
+#: src/admin/sections/CurrencySection.jsx:36
+msgid "After amount (10$)"
+msgstr ""
+
+#: src/admin/sections/CurrencySection.jsx:47
+#: src/admin/SettingsApp.jsx:32
+msgid "Currency"
+msgstr ""
+
+#: src/admin/sections/CurrencySection.jsx:50
+msgid "Default currency"
+msgstr ""
+
+#: src/admin/sections/CurrencySection.jsx:51
+msgid "Used as the default for new events. Individual events can override this."
+msgstr ""
+
+#: src/admin/sections/CurrencySection.jsx:65
+msgid "Symbol position"
+msgstr ""
+
+#: src/admin/sections/CurrencySection.jsx:66
+#: src/admin/sections/GeneralSection.jsx:55
+#: src/blocks/event-datetime/edit.jsx:159
+msgid "Preview:"
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:18
+msgid "Use each event's own timezone"
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:22
+msgid "Always use the site timezone"
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:29
+#: src/blocks/event-datetime/edit.jsx:25
+msgid "12-hour (9:30 am / 2:15 pm)"
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:33
+#: src/blocks/event-datetime/edit.jsx:29
+msgid "24-hour (09:30 / 14:15)"
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:46
+#: src/admin/SettingsApp.jsx:28
+msgid "General"
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:52
+#: src/blocks/event-datetime/edit.jsx:156
+msgid "Date format"
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:64
+msgid "PHP date format reference"
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:86
+#: src/blocks/event-datetime/edit.jsx:182
+msgid "Reset"
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:92
+#: src/blocks/event-datetime/edit.jsx:188
+msgid "Time format"
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:93
+msgid "Used in the event editor time picker and on the frontend."
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:103
+msgid "Timezone display"
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:104
+msgid "Controls how event times are displayed to visitors."
+msgstr ""
+
+#. translators: %s: IANA timezone identifier e.g. America/New_York
+#: src/admin/sections/GeneralSection.jsx:117
+#, js-format
+msgid "Event times are stored and displayed in the site timezone: %s."
+msgstr ""
+
+#: src/admin/sections/GeneralSection.jsx:124
+msgid "Change in WordPress General Settings →"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:23
+#: src/blocks/event-countdown/index.js:124
+msgid "Event"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:24
+msgid "Result"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:85
+msgid "Import failed."
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:100
+msgid "would be imported"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:101
+msgid "imported"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:102
+msgid "skipped"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:107
+#: src/admin/SettingsApp.jsx:36
+msgid "Import"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:111
+msgid "The Events Calendar"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:114
+msgid "Import events from a WordPress WXR export generated by The Events Calendar plugin. Go to Tools → Export on the source site and export only \"Events\"."
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:134
+msgid "Choose XML file…"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:145
+msgid "Preview"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:154
+msgid "Import Events"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:170
+#: src/admin/sections/RestApiSection.jsx:88
+msgid "Clear"
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:203
+msgid "Preview complete — no changes were saved."
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:207
+msgid "Import complete."
+msgstr ""
+
+#: src/admin/sections/ImportSection.jsx:213
+msgid "error(s)"
+msgstr ""
+
+#: src/admin/sections/MapSection.jsx:10
+#: src/admin/SettingsApp.jsx:31
+msgid "Map"
+msgstr ""
+
+#: src/admin/sections/MapSection.jsx:13
+msgid "Default zoom level"
+msgstr ""
+
+#: src/admin/sections/MapSection.jsx:14
+msgid "1 = world, 14 = city block, 20 = building."
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:39
+msgid "events indexed,"
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:43
+msgid "skipped."
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:49
+msgid "Rebuild failed."
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:58
+#: src/admin/SettingsApp.jsx:34
+msgid "Performance"
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:74
+msgid "Index row count"
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:78
+msgid "Last full rebuild"
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:81
+#: src/editor/DateTimePanel.jsx:496
+msgid "Never"
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:85
+msgid "Database version"
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:89
+msgid "Plugin version"
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:104
+msgid "Rebuilding…"
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:105
+msgid "Rebuild Event Index"
+msgstr ""
+
+#: src/admin/sections/PerformanceSection.jsx:108
+msgid "Clears and regenerates the event occurrence index from all published events. Use after bulk imports or plugin upgrades."
+msgstr ""
+
+#: src/admin/sections/PermalinksSection.jsx:13
+#: src/admin/SettingsApp.jsx:30
+msgid "Permalinks"
+msgstr ""
+
+#: src/admin/sections/PermalinksSection.jsx:16
+msgid "Events base slug"
+msgstr ""
+
+#: src/admin/sections/PermalinksSection.jsx:19
+msgid "The URL prefix for events. Preview:"
+msgstr ""
+
+#: src/admin/sections/PermalinksSection.jsx:25
+msgid "Save and visit Settings > Permalinks to flush rewrite rules after changing this."
+msgstr ""
+
+#: src/admin/sections/RecurringSection.jsx:10
+msgid "On save (synchronous for small sets, background for large)"
+msgstr ""
+
+#: src/admin/sections/RecurringSection.jsx:17
+msgid "Cron only (generate instances via daily WP-Cron job)"
+msgstr ""
+
+#: src/admin/sections/RecurringSection.jsx:28
+#: src/admin/SettingsApp.jsx:33
+msgid "Recurring Events"
+msgstr ""
+
+#: src/admin/sections/RecurringSection.jsx:31
+msgid "Lookahead horizon (days)"
+msgstr ""
+
+#: src/admin/sections/RecurringSection.jsx:46
+msgid "Max instances per event"
+msgstr ""
+
+#: src/admin/sections/RecurringSection.jsx:47
+msgid "Hard cap on occurrences generated per recurring event."
+msgstr ""
+
+#: src/admin/sections/RecurringSection.jsx:60
+msgid "Generation strategy"
+msgstr ""
+
+#: src/admin/sections/RestApiSection.jsx:31
+#: src/admin/SettingsApp.jsx:35
+msgid "REST API"
+msgstr ""
+
+#: src/admin/sections/RestApiSection.jsx:34
+msgid "Public REST endpoints"
+msgstr ""
+
+#: src/admin/sections/RestApiSection.jsx:47
+msgid "Calendar feed token (optional)"
+msgstr ""
+
+#: src/admin/sections/RestApiSection.jsx:69
+msgid "Hide"
+msgstr ""
+
+#: src/admin/sections/RestApiSection.jsx:70
+msgid "Show"
+msgstr ""
+
+#: src/admin/sections/RestApiSection.jsx:79
+msgid "Generate"
+msgstr ""
+
+#: src/admin/sections/RestApiSection.jsx:95
+msgid "Calendar feed URL:"
+msgstr ""
+
+#: src/admin/SettingsApp.jsx:29
+msgid "Calendar"
+msgstr ""
+
+#: src/admin/SettingsApp.jsx:59
+msgid "Could not load settings."
+msgstr ""
+
+#: src/admin/SettingsApp.jsx:79
+msgid "Settings saved."
+msgstr ""
+
+#: src/admin/SettingsApp.jsx:86
+msgid "Save failed. Please try again."
+msgstr ""
+
+#: src/admin/SettingsApp.jsx:177
+msgid "Saving…"
+msgstr ""
+
+#: src/admin/SettingsApp.jsx:178
+msgid "Save Settings"
+msgstr ""
+
+#: src/blocks/add-to-calendar/edit.jsx:28
+#: src/blocks/event-cost/edit.jsx:136
+msgid "Button label"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:17
+msgid "Month"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:18
+msgid "Week"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:19
+msgid "Day"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:20
+msgid "List"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:113
+msgid "Filter"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:121
+msgid "Event type"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:129
+msgid "No event types found."
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:142
+msgid "Venue"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:150
+msgid "No venues found."
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:158
+msgid "Featured events only"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:167
+#: src/blocks/event-cost/edit.jsx:111
+#: src/blocks/event-datetime/edit.jsx:104
+#: src/blocks/event-venue/edit.jsx:62
+msgid "Display"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:173
+msgid "Enabled views"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:216
+msgid "Event Calendar"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:223
+msgid "Views"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:245
+msgid "First day"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:257
+msgid "Event types"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:261
+#: src/blocks/calendar-view/edit.jsx:279
+msgid "All"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:293
+msgid "Featured only"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:300
+msgid "The interactive calendar renders on the frontend."
+msgstr ""
+
+#: src/blocks/event-cost/edit.jsx:114
+msgid "Show cost"
+msgstr ""
+
+#: src/blocks/event-cost/edit.jsx:122
+msgid "Show button"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:20
+msgid "days"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:21
+msgid "hours"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:22
+msgid "minutes"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:23
+msgid "seconds"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:59
+msgid "Countdown"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:62
+#: src/blocks/event-datetime/edit.jsx:150
+msgid "Format"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:66
+msgid "Days, hours, minutes & seconds"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:73
+msgid "Days, hours & minutes"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:80
+msgid "Days & hours"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:87
+msgid "Days only"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:97
+msgid "Started message"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:109
+msgid "Passed message"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:128
+msgid "Pin to event"
+msgstr ""
+
+#: src/blocks/event-countdown/index.js:137
+msgid "Override which event this block counts down to. Leave empty to use the current page’s event."
+msgstr ""
+
+#: src/blocks/event-datetime/edit.jsx:21
+msgid "Default (from settings)"
+msgstr ""
+
+#: src/blocks/event-datetime/edit.jsx:107
+msgid "Show start date"
+msgstr ""
+
+#: src/blocks/event-datetime/edit.jsx:115
+msgid "Show start time"
+msgstr ""
+
+#: src/blocks/event-datetime/edit.jsx:123
+msgid "Show end date"
+msgstr ""
+
+#: src/blocks/event-datetime/edit.jsx:131
+msgid "Show end time"
+msgstr ""
+
+#: src/blocks/event-datetime/edit.jsx:139
+msgid "Show timezone"
+msgstr ""
+
+#: src/blocks/event-datetime/edit.jsx:197
+msgid "Date/time separator"
+msgstr ""
+
+#: src/blocks/event-datetime/edit.jsx:198
+msgid "Symbol placed between the date and time."
+msgstr ""
+
+#: src/blocks/event-datetime/edit.jsx:210
+msgid "Range separator"
+msgstr ""
+
+#: src/blocks/event-datetime/edit.jsx:211
+msgid "Symbol placed between start and end."
+msgstr ""
+
+#: src/blocks/event-status/edit.jsx:43
+msgid "Status badge — hidden for scheduled events"
+msgstr ""
+
+#: src/blocks/event-venue/edit.jsx:64
+msgid "Show address"
+msgstr ""
+
+#: src/blocks/events-query-no-results/index.js:25
+msgid "Add a message for when no events are found…"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:118
+msgctxt "events query display layout"
+msgid "List view"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:130
+msgctxt "events query display layout"
+msgid "Grid view"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:149
+msgid "Layout"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:154
+msgid "Columns — Mobile"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:174
+msgid "Columns — Tablet"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:194
+msgid "Columns — Desktop"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:218
+msgid "Query"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:221
+msgid "Inherit query from template"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:229
+msgid "Automatically filters by the current archive term (event type or venue). Use this when placing the block inside a taxonomy template."
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:236
+msgid "Events per page"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:246
+msgid "Show past events"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:254
+msgid "Reverse order"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:262
+msgid "Show pagination"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:271
+msgid "Related events"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:275
+msgid "Off"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:279
+msgid "Same event type"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:286
+msgid "Same venue"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:290
+msgid "Same type or venue"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:302
+msgid "Shows events sharing the current post’s type or venue. Place this block inside a single-event template."
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:316
+msgid "Filter by Event Type"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:205
+msgid "Tuesday"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:206
+msgid "Wednesday"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:207
+msgid "Thursday"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:208
+msgid "Friday"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:213
+msgid "first"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:214
+msgid "second"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:215
+msgid "third"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:216
+msgid "fourth"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:217
+msgid "fifth"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:220
+msgid "January"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:221
+msgid "February"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:222
+msgid "March"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:223
+msgid "April"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:224
+msgid "May"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:225
+msgid "June"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:226
+msgid "July"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:227
+msgid "August"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:228
+msgid "September"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:229
+msgid "October"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:230
+msgid "November"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:231
+msgid "December"
+msgstr ""
+
+#. translators: %s: day name e.g. "Monday"
+#: src/editor/DateTimePanel.jsx:257
+#, js-format
+msgid "Weekly on %s"
+msgstr ""
+
+#. translators: 1: ordinal e.g. "second" 2: day name e.g. "Monday"
+#: src/editor/DateTimePanel.jsx:260
+#, js-format
+msgid "Monthly on the %1$s %2$s"
+msgstr ""
+
+#. translators: 1: month name 2: day number
+#: src/editor/DateTimePanel.jsx:266
+#, js-format
+msgid "Annually on %1$s %2$d"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:271
+msgid "Weekly"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:272
+msgid "Monthly"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:273
+msgid "Annually"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:276
+msgid "Does not repeat"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:277
+msgid "Daily"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:447
+#: src/editor/DateTimePanel.jsx:470
+msgid "Save failed."
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:477
+msgid "Repeats"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:492
+msgid "Ends"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:500
+msgid "On date"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:504
+msgid "After N times"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:528
+msgid "Number of occurrences"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:546
+msgid "Save recurrence"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:551
+msgid "Saved."
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:673
+msgid "Date & Time"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:692
+msgid "Start Time"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:711
+msgid "to"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:718
+msgid "End Time"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:740
+msgid "Timezone"
+msgstr ""
+
+#: src/editor/DateTimePanel.jsx:751
+msgid "All Day"
+msgstr ""
+
+#: src/editor/EventDetailsPanel.jsx:18
+msgid "Scheduled"
+msgstr ""
+
+#: src/editor/EventDetailsPanel.jsx:37
+msgid "Event Details"
+msgstr ""
+
+#: src/editor/EventDetailsPanel.jsx:42
+msgid "Event status"
+msgstr ""
+
+#: src/editor/EventDetailsPanel.jsx:53
+msgid "Cost (display)"
+msgstr ""
+
+#: src/editor/EventDetailsPanel.jsx:55
+msgid "e.g. $10–$25 or Free"
+msgstr ""
+
+#: src/editor/EventDetailsPanel.jsx:61
+msgid "Registration / Ticket URL"
+msgstr ""
+
+#: src/editor/EventDetailsPanel.jsx:72
+msgid "Featured event"
+msgstr ""
+
+#: src/editor/EventDetailsPanel.jsx:73
+msgid "Highlights this event in listings and the calendar."
+msgstr ""
+
+#: src/editor/EventDetailsPanel.jsx:84
+msgid "Hide from listings"
+msgstr ""
+
+#: src/editor/EventDetailsPanel.jsx:85
+msgid "Excludes from calendar/list blocks without trashing."
+msgstr ""
+
+#: src/blocks/add-to-calendar/block.json
+msgctxt "block title"
+msgid "Add to Calendar"
+msgstr ""
+
+#: src/blocks/add-to-calendar/block.json
+msgctxt "block description"
+msgid "Generates add-to-calendar links: Google, Apple, Outlook, and .ics download."
+msgstr ""
+
+#: src/blocks/add-to-calendar/block.json
+#: src/blocks/calendar-view/block.json
+msgctxt "block keyword"
+msgid "calendar"
+msgstr ""
+
+#: src/blocks/add-to-calendar/block.json
+msgctxt "block keyword"
+msgid "ics"
+msgstr ""
+
+#: src/blocks/add-to-calendar/block.json
+msgctxt "block keyword"
+msgid "subscribe"
+msgstr ""
+
+#: src/blocks/calendar-view/block.json
+msgctxt "block title"
+msgid "Event Calendar"
+msgstr ""
+
+#: src/blocks/calendar-view/block.json
+msgctxt "block description"
+msgid "Interactive FullCalendar view. Fetches events from the Blockendar REST API."
+msgstr ""
+
+#: src/blocks/calendar-view/block.json
+#: src/blocks/events-query-no-results/block.json
+#: src/blocks/events-query/block.json
+msgctxt "block keyword"
+msgid "events"
+msgstr ""
+
+#: src/blocks/calendar-view/block.json
+#: src/blocks/event-datetime/block.json
+msgctxt "block keyword"
+msgid "schedule"
+msgstr ""
+
+#: src/blocks/event-cost/block.json
+msgctxt "block title"
+msgid "Event Cost"
+msgstr ""
+
+#: src/blocks/event-cost/block.json
+msgctxt "block description"
+msgid "Displays the event cost and a registration/ticket link button."
+msgstr ""
+
+#: src/blocks/event-cost/block.json
+msgctxt "block keyword"
+msgid "price"
+msgstr ""
+
+#: src/blocks/event-cost/block.json
+msgctxt "block keyword"
+msgid "ticket"
+msgstr ""
+
+#: src/blocks/event-cost/block.json
+msgctxt "block keyword"
+msgid "registration"
+msgstr ""
+
+#: src/blocks/event-countdown/block.json
+msgctxt "block title"
+msgid "Event Countdown"
+msgstr ""
+
+#: src/blocks/event-countdown/block.json
+msgctxt "block description"
+msgid "Live countdown timer to event start. Updates client-side."
+msgstr ""
+
+#: src/blocks/event-countdown/block.json
+msgctxt "block keyword"
+msgid "countdown"
+msgstr ""
+
+#: src/blocks/event-countdown/block.json
+msgctxt "block keyword"
+msgid "timer"
+msgstr ""
+
+#: src/blocks/event-countdown/block.json
+msgctxt "block keyword"
+msgid "clock"
+msgstr ""
+
+#: src/blocks/event-datetime/block.json
+msgctxt "block title"
+msgid "Event Date & Time"
+msgstr ""
+
+#: src/blocks/event-datetime/block.json
+msgctxt "block description"
+msgid "Displays formatted start and end date/time with timezone."
+msgstr ""
+
+#: src/blocks/event-datetime/block.json
+msgctxt "block keyword"
+msgid "date"
+msgstr ""
+
+#: src/blocks/event-datetime/block.json
+msgctxt "block keyword"
+msgid "time"
+msgstr ""
+
+#: src/blocks/event-map/block.json
+msgctxt "block title"
+msgid "Event Map"
+msgstr ""
+
+#: src/blocks/event-map/block.json
+msgctxt "block description"
+msgid "Embeds a map at the venue's coordinates. Provider configured in plugin settings."
+msgstr ""
+
+#: src/blocks/event-map/block.json
+msgctxt "block keyword"
+msgid "map"
+msgstr ""
+
+#: src/blocks/event-map/block.json
+#: src/blocks/event-venue/block.json
+msgctxt "block keyword"
+msgid "location"
+msgstr ""
+
+#: src/blocks/event-map/block.json
+#: src/blocks/event-venue/block.json
+msgctxt "block keyword"
+msgid "venue"
+msgstr ""
+
+#: src/blocks/event-status/block.json
+msgctxt "block title"
+msgid "Event Status Badge"
+msgstr ""
+
+#: src/blocks/event-status/block.json
+msgctxt "block description"
+msgid "Shows a styled status badge (Cancelled, Postponed, Sold Out). Hidden for scheduled events."
+msgstr ""
+
+#: src/blocks/event-status/block.json
+msgctxt "block keyword"
+msgid "status"
+msgstr ""
+
+#: src/blocks/event-status/block.json
+msgctxt "block keyword"
+msgid "badge"
+msgstr ""
+
+#: src/blocks/event-status/block.json
+msgctxt "block keyword"
+msgid "cancelled"
+msgstr ""
+
+#: src/blocks/event-venue/block.json
+msgctxt "block title"
+msgid "Event Venue"
+msgstr ""
+
+#: src/blocks/event-venue/block.json
+msgctxt "block description"
+msgid "Displays venue name, address, and optional map embed."
+msgstr ""
+
+#: src/blocks/event-venue/block.json
+msgctxt "block keyword"
+msgid "address"
+msgstr ""
+
+#: src/blocks/events-query-no-results/block.json
+msgctxt "block title"
+msgid "No Results - Events Query"
+msgstr ""
+
+#: src/blocks/events-query-no-results/block.json
+msgctxt "block description"
+msgid "Displayed when the Events Query block returns no results. Add any blocks here to customise the empty state."
+msgstr ""
+
+#: src/blocks/events-query-no-results/block.json
+msgctxt "block keyword"
+msgid "empty"
+msgstr ""
+
+#: src/blocks/events-query-no-results/block.json
+msgctxt "block keyword"
+msgid "no results"
+msgstr ""
+
+#: src/blocks/events-query/block.json
+msgctxt "block title"
+msgid "Events Query"
+msgstr ""
+
+#: src/blocks/events-query/block.json
+msgctxt "block description"
+msgid "Queries upcoming events and renders each one using the inner block template."
+msgstr ""
+
+#: src/blocks/events-query/block.json
+msgctxt "block keyword"
+msgid "query"
+msgstr ""
+
+#: src/blocks/events-query/block.json
+msgctxt "block keyword"
+msgid "list"
+msgstr ""
+
+#: src/blocks/events-query/block.json
+msgctxt "block keyword"
+msgid "loop"
+msgstr ""

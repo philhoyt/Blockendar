@@ -28,6 +28,7 @@
     "env:stop": "wp-env stop",
     "env:destroy": "wp-env destroy",
     "env:cli": "wp-env run cli wp",
+    "make-pot": "wp-env run cli -- wp i18n make-pot wp-content/plugins/blockendar wp-content/plugins/blockendar/languages/blockendar.pot --slug=blockendar --domain=blockendar --exclude=node_modules,vendor,build,lib,tests,bin --headers='{\"Report-Msgid-Bugs-To\":\"https://github.com/philhoyt/Blockendar/issues\",\"Language-Team\":\"philhoyt <https://github.com/philhoyt/Blockendar>\"}' --allow-root",
     "test:php": "vendor/bin/phpunit",
     "test:js": "wp-scripts test-unit-js"
   },

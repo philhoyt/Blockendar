@@ -49,6 +49,23 @@ npm run plugin-zip   # Build distributable zip
 - **Taxonomies:** `event_type` (hierarchical), `event_tag` (flat), `event_venue` (hierarchical)
 - **DB tables:** `{prefix}blockendar_events` (occurrence index), `{prefix}blockendar_recurrence` (RRULE storage)
 
+## Privacy
+
+Blockendar stores no personal data about site visitors — no names, email
+addresses, or IP addresses, and no cookies.
+
+Two third-party requests to OpenStreetMap are possible:
+
+- **Geocoding (admin, on demand).** The "Look up coordinates" button on the venue
+  edit screen sends the venue address to
+  [Nominatim](https://nominatim.openstreetmap.org) to resolve it to latitude and
+  longitude. It runs from the browser only when clicked; entering coordinates
+  manually sends nothing.
+- **Map tiles (front end).** The Event Map block loads tiles from
+  `tile.openstreetmap.org` in the visitor's browser when a map is displayed.
+
+See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Policy).
+
 ## Changelog
 
 ### 1.0.1
