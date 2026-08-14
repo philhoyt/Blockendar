@@ -85,7 +85,13 @@ class GeneratorExpandTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_daily_count_5_produces_exactly_5_occurrences(): void {
-		$rule  = $this->rule( [ 'frequency' => 'daily', 'count' => 5, 'interval_val' => 1 ] );
+		$rule  = $this->rule(
+			[
+				'frequency'    => 'daily',
+				'count'        => 5,
+				'interval_val' => 1,
+			]
+		);
 		$pairs = $this->gen->expand( $rule, $this->meta() );
 
 		$this->assertCount( 5, $pairs );
@@ -93,7 +99,13 @@ class GeneratorExpandTest extends TestCase {
 
 	public function test_weekly_until_date_occurrences_within_range(): void {
 		$until = ( new \DateTimeImmutable( self::TODAY ) )->modify( '+30 days' )->format( 'Y-m-d' );
-		$rule  = $this->rule( [ 'frequency' => 'weekly', 'until_date' => $until, 'interval_val' => 1 ] );
+		$rule  = $this->rule(
+			[
+				'frequency'    => 'weekly',
+				'until_date'   => $until,
+				'interval_val' => 1,
+			]
+		);
 		$pairs = $this->gen->expand( $rule, $this->meta() );
 
 		// 30 days / 7 days = ~4 occurrences (starting today through until_date).
@@ -106,8 +118,23 @@ class GeneratorExpandTest extends TestCase {
 	}
 
 	public function test_monthly_bymonthday_3_months_correct_count(): void {
-		$rule  = $this->rule( [ 'frequency' => 'monthly', 'bymonthday' => '13', 'count' => 3, 'interval_val' => 1 ] );
-		$pairs = $this->gen->expand( $rule, $this->meta( [ 'start_date' => '2026-03-13', 'end_date' => '2026-03-13' ] ) );
+		$rule  = $this->rule(
+			[
+				'frequency'    => 'monthly',
+				'bymonthday'   => '13',
+				'count'        => 3,
+				'interval_val' => 1,
+			]
+		);
+		$pairs = $this->gen->expand(
+			$rule,
+			$this->meta(
+				[
+					'start_date' => '2026-03-13',
+					'end_date'   => '2026-03-13',
+				]
+			)
+		);
 
 		$this->assertCount( 3, $pairs );
 
@@ -123,11 +150,13 @@ class GeneratorExpandTest extends TestCase {
 
 	public function test_horizon_caps_occurrences_before_until_date(): void {
 		// Until date is far in the future (5 years), horizon is 365 days.
-		$rule  = $this->rule( [
-			'frequency'    => 'daily',
-			'until_date'   => '2031-01-01',
-			'interval_val' => 1,
-		] );
+		$rule  = $this->rule(
+			[
+				'frequency'    => 'daily',
+				'until_date'   => '2031-01-01',
+				'interval_val' => 1,
+			]
+		);
 		$pairs = $this->gen->expand( $rule, $this->meta() );
 
 		// Should not generate 5 years of events — generation stops at the horizon.
@@ -150,13 +179,15 @@ class GeneratorExpandTest extends TestCase {
 
 	public function test_exception_date_skipped(): void {
 		$exception = ( new \DateTimeImmutable( self::TODAY ) )->modify( '+7 days' )->format( 'Y-m-d' );
-		$rule       = $this->rule( [
-			'frequency'    => 'weekly',
-			'count'        => 3,
-			'interval_val' => 1,
-			'exceptions'   => json_encode( [ $exception ] ),
-		] );
-		$pairs = $this->gen->expand( $rule, $this->meta() );
+		$rule      = $this->rule(
+			[
+				'frequency'    => 'weekly',
+				'count'        => 3,
+				'interval_val' => 1,
+				'exceptions'   => json_encode( [ $exception ] ),
+			]
+		);
+		$pairs     = $this->gen->expand( $rule, $this->meta() );
 
 		$start_dates = array_column( $pairs, 'start_date' );
 		$this->assertNotContains( $exception, $start_dates );
@@ -167,12 +198,14 @@ class GeneratorExpandTest extends TestCase {
 		$before    = self::TODAY;
 		$after     = ( new \DateTimeImmutable( self::TODAY ) )->modify( '+14 days' )->format( 'Y-m-d' );
 
-		$rule  = $this->rule( [
-			'frequency'    => 'weekly',
-			'count'        => 3,
-			'interval_val' => 1,
-			'exceptions'   => json_encode( [ $exception ] ),
-		] );
+		$rule  = $this->rule(
+			[
+				'frequency'    => 'weekly',
+				'count'        => 3,
+				'interval_val' => 1,
+				'exceptions'   => json_encode( [ $exception ] ),
+			]
+		);
 		$pairs = $this->gen->expand( $rule, $this->meta() );
 
 		$start_dates = array_column( $pairs, 'start_date' );
@@ -188,13 +221,27 @@ class GeneratorExpandTest extends TestCase {
 		$start = self::TODAY;
 		$end   = ( new \DateTimeImmutable( self::TODAY ) )->modify( '+2 days' )->format( 'Y-m-d' );
 
-		$rule  = $this->rule( [ 'frequency' => 'weekly', 'count' => 2, 'interval_val' => 1 ] );
-		$pairs = $this->gen->expand( $rule, $this->meta( [ 'start_date' => $start, 'end_date' => $end ] ) );
+		$rule  = $this->rule(
+			[
+				'frequency'    => 'weekly',
+				'count'        => 2,
+				'interval_val' => 1,
+			]
+		);
+		$pairs = $this->gen->expand(
+			$rule,
+			$this->meta(
+				[
+					'start_date' => $start,
+					'end_date'   => $end,
+				]
+			)
+		);
 
 		foreach ( $pairs as $pair ) {
-			$start_dt    = new \DateTimeImmutable( $pair['start_date'] );
-			$end_dt      = new \DateTimeImmutable( $pair['end_date'] );
-			$duration    = (int) $start_dt->diff( $end_dt )->days;
+			$start_dt = new \DateTimeImmutable( $pair['start_date'] );
+			$end_dt   = new \DateTimeImmutable( $pair['end_date'] );
+			$duration = (int) $start_dt->diff( $end_dt )->days;
 			$this->assertSame( 2, $duration );
 		}
 	}
@@ -204,13 +251,21 @@ class GeneratorExpandTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_all_day_event_end_stored_as_next_day(): void {
-		$rule  = $this->rule( [ 'frequency' => 'daily', 'count' => 1, 'interval_val' => 1 ] );
+		$rule  = $this->rule(
+			[
+				'frequency'    => 'daily',
+				'count'        => 1,
+				'interval_val' => 1,
+			]
+		);
 		$pairs = $this->gen->expand(
 			$rule,
-			$this->meta( [
-				'all_day'  => true,
-				'end_date' => self::TODAY,
-			] )
+			$this->meta(
+				[
+					'all_day'  => true,
+					'end_date' => self::TODAY,
+				]
+			)
 		);
 
 		$this->assertCount( 1, $pairs );
@@ -224,8 +279,22 @@ class GeneratorExpandTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_invalid_start_date_returns_empty(): void {
-		$rule  = $this->rule( [ 'frequency' => 'daily', 'count' => 5, 'interval_val' => 1 ] );
-		$pairs = $this->gen->expand( $rule, $this->meta( [ 'start_date' => 'not-a-date', 'end_date' => 'not-a-date' ] ) );
+		$rule  = $this->rule(
+			[
+				'frequency'    => 'daily',
+				'count'        => 5,
+				'interval_val' => 1,
+			]
+		);
+		$pairs = $this->gen->expand(
+			$rule,
+			$this->meta(
+				[
+					'start_date' => 'not-a-date',
+					'end_date'   => 'not-a-date',
+				]
+			)
+		);
 
 		$this->assertSame( [], $pairs );
 	}

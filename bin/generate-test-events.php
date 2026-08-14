@@ -36,12 +36,36 @@ WP_CLI::log( '  Image source: ' . ( BLOCKENDAR_UNSPLASH_KEY ? 'Unsplash API' : '
 // ---------------------------------------------------------------------------
 
 $type_defs = [
-	[ 'name' => 'Music',         'slug' => 'music',        'color' => '#7c3aed' ],
-	[ 'name' => 'Community',     'slug' => 'community',    'color' => '#059669' ],
-	[ 'name' => 'Sports',        'slug' => 'sports',       'color' => '#dc2626' ],
-	[ 'name' => 'Arts & Culture','slug' => 'arts-culture', 'color' => '#d97706' ],
-	[ 'name' => 'Food & Drink',  'slug' => 'food-drink',   'color' => '#db2777' ],
-	[ 'name' => 'Tech',          'slug' => 'tech',         'color' => '#2563eb' ],
+	[
+		'name'  => 'Music',
+		'slug'  => 'music',
+		'color' => '#7c3aed',
+	],
+	[
+		'name'  => 'Community',
+		'slug'  => 'community',
+		'color' => '#059669',
+	],
+	[
+		'name'  => 'Sports',
+		'slug'  => 'sports',
+		'color' => '#dc2626',
+	],
+	[
+		'name'  => 'Arts & Culture',
+		'slug'  => 'arts-culture',
+		'color' => '#d97706',
+	],
+	[
+		'name'  => 'Food & Drink',
+		'slug'  => 'food-drink',
+		'color' => '#db2777',
+	],
+	[
+		'name'  => 'Tech',
+		'slug'  => 'tech',
+		'color' => '#2563eb',
+	],
 ];
 
 $type_ids = [];
@@ -67,12 +91,12 @@ $venue_hall = wp_insert_term( 'City Hall', 'event_venue', [ 'slug' => 'city-hall
 if ( is_wp_error( $venue_hall ) && isset( $venue_hall->error_data['term_exists'] ) ) {
 	$venue_hall = [ 'term_id' => $venue_hall->error_data['term_exists'] ];
 }
-update_term_meta( $venue_hall['term_id'], 'blockendar_venue_address',  '1 Main Street' );
-update_term_meta( $venue_hall['term_id'], 'blockendar_venue_city',     'Springfield' );
-update_term_meta( $venue_hall['term_id'], 'blockendar_venue_state',    'IL' );
-update_term_meta( $venue_hall['term_id'], 'blockendar_venue_country',  'US' );
-update_term_meta( $venue_hall['term_id'], 'blockendar_venue_lat',      '39.7817' );
-update_term_meta( $venue_hall['term_id'], 'blockendar_venue_lng',      '-89.6501' );
+update_term_meta( $venue_hall['term_id'], 'blockendar_venue_address', '1 Main Street' );
+update_term_meta( $venue_hall['term_id'], 'blockendar_venue_city', 'Springfield' );
+update_term_meta( $venue_hall['term_id'], 'blockendar_venue_state', 'IL' );
+update_term_meta( $venue_hall['term_id'], 'blockendar_venue_country', 'US' );
+update_term_meta( $venue_hall['term_id'], 'blockendar_venue_lat', '39.7817' );
+update_term_meta( $venue_hall['term_id'], 'blockendar_venue_lng', '-89.6501' );
 update_term_meta( $venue_hall['term_id'], 'blockendar_venue_capacity', 500 );
 
 // Rooftop Bar — physical, no state/country.
@@ -80,10 +104,10 @@ $venue_rooftop = wp_insert_term( 'Rooftop Bar', 'event_venue', [ 'slug' => 'roof
 if ( is_wp_error( $venue_rooftop ) && isset( $venue_rooftop->error_data['term_exists'] ) ) {
 	$venue_rooftop = [ 'term_id' => $venue_rooftop->error_data['term_exists'] ];
 }
-update_term_meta( $venue_rooftop['term_id'], 'blockendar_venue_address',  '55 Sky Ave, Floor 20' );
-update_term_meta( $venue_rooftop['term_id'], 'blockendar_venue_city',     'Springfield' );
-update_term_meta( $venue_rooftop['term_id'], 'blockendar_venue_lat',      '39.7900' );
-update_term_meta( $venue_rooftop['term_id'], 'blockendar_venue_lng',      '-89.6440' );
+update_term_meta( $venue_rooftop['term_id'], 'blockendar_venue_address', '55 Sky Ave, Floor 20' );
+update_term_meta( $venue_rooftop['term_id'], 'blockendar_venue_city', 'Springfield' );
+update_term_meta( $venue_rooftop['term_id'], 'blockendar_venue_lat', '39.7900' );
+update_term_meta( $venue_rooftop['term_id'], 'blockendar_venue_lng', '-89.6440' );
 update_term_meta( $venue_rooftop['term_id'], 'blockendar_venue_capacity', 120 );
 
 // City Park — physical, outdoor, no capacity.
@@ -92,19 +116,19 @@ if ( is_wp_error( $venue_park ) && isset( $venue_park->error_data['term_exists']
 	$venue_park = [ 'term_id' => $venue_park->error_data['term_exists'] ];
 }
 update_term_meta( $venue_park['term_id'], 'blockendar_venue_address', '200 Park Drive' );
-update_term_meta( $venue_park['term_id'], 'blockendar_venue_city',    'Springfield' );
-update_term_meta( $venue_park['term_id'], 'blockendar_venue_lat',     '39.7750' );
-update_term_meta( $venue_park['term_id'], 'blockendar_venue_lng',     '-89.6580' );
+update_term_meta( $venue_park['term_id'], 'blockendar_venue_city', 'Springfield' );
+update_term_meta( $venue_park['term_id'], 'blockendar_venue_lat', '39.7750' );
+update_term_meta( $venue_park['term_id'], 'blockendar_venue_lng', '-89.6580' );
 
 // Community Center — physical, with capacity.
 $venue_center = wp_insert_term( 'Community Center', 'event_venue', [ 'slug' => 'community-center' ] );
 if ( is_wp_error( $venue_center ) && isset( $venue_center->error_data['term_exists'] ) ) {
 	$venue_center = [ 'term_id' => $venue_center->error_data['term_exists'] ];
 }
-update_term_meta( $venue_center['term_id'], 'blockendar_venue_address',  '88 Community Lane' );
-update_term_meta( $venue_center['term_id'], 'blockendar_venue_city',     'Springfield' );
-update_term_meta( $venue_center['term_id'], 'blockendar_venue_lat',      '39.7830' );
-update_term_meta( $venue_center['term_id'], 'blockendar_venue_lng',      '-89.6520' );
+update_term_meta( $venue_center['term_id'], 'blockendar_venue_address', '88 Community Lane' );
+update_term_meta( $venue_center['term_id'], 'blockendar_venue_city', 'Springfield' );
+update_term_meta( $venue_center['term_id'], 'blockendar_venue_lat', '39.7830' );
+update_term_meta( $venue_center['term_id'], 'blockendar_venue_lng', '-89.6520' );
 update_term_meta( $venue_center['term_id'], 'blockendar_venue_capacity', 200 );
 
 // Online — virtual venue, no map data.
@@ -339,9 +363,31 @@ function blockendar_seed_recurrence( int $post_id, array $rule ): void {
 // Day-of-week helpers for recurring rules (RFC 5545 two-letter codes).
 // ---------------------------------------------------------------------------
 
-$dow_to_rfc  = [ 1 => 'MO', 2 => 'TU', 3 => 'WE', 4 => 'TH', 5 => 'FR', 6 => 'SA', 7 => 'SU' ];
-$dow_labels  = [ 'MO' => 'Monday', 'TU' => 'Tuesday', 'WE' => 'Wednesday', 'TH' => 'Thursday', 'FR' => 'Friday', 'SA' => 'Saturday', 'SU' => 'Sunday' ];
-$pos_labels  = [ 1 => '1st', 2 => '2nd', 3 => '3rd', 4 => '4th', 5 => '5th' ];
+$dow_to_rfc = [
+	1 => 'MO',
+	2 => 'TU',
+	3 => 'WE',
+	4 => 'TH',
+	5 => 'FR',
+	6 => 'SA',
+	7 => 'SU',
+];
+$dow_labels = [
+	'MO' => 'Monday',
+	'TU' => 'Tuesday',
+	'WE' => 'Wednesday',
+	'TH' => 'Thursday',
+	'FR' => 'Friday',
+	'SA' => 'Saturday',
+	'SU' => 'Sunday',
+];
+$pos_labels = [
+	1 => '1st',
+	2 => '2nd',
+	3 => '3rd',
+	4 => '4th',
+	5 => '5th',
+];
 
 $today_byday = $dow_to_rfc[ (int) gmdate( 'N' ) ];
 $today_dom   = (int) gmdate( 'j' );
@@ -453,14 +499,14 @@ $events = [
 
 	// All-day single day, with capacity and registration.
 	[
-		'title'         => 'All-Day Maker Workshop',
-		'content'       => '<p>Full-day electronics and coding workshop. Spots are limited.</p>',
-		'start_date'    => blockendar_days( 2 ),
-		'end_date'      => blockendar_days( 2 ),
-		'all_day'       => true,
-		'venue_term_id' => $venue_center['term_id'],
-		'type_term_ids' => [ $type_ids['tech'], $type_ids['community'] ],
-		'capacity'      => '30',
+		'title'            => 'All-Day Maker Workshop',
+		'content'          => '<p>Full-day electronics and coding workshop. Spots are limited.</p>',
+		'start_date'       => blockendar_days( 2 ),
+		'end_date'         => blockendar_days( 2 ),
+		'all_day'          => true,
+		'venue_term_id'    => $venue_center['term_id'],
+		'type_term_ids'    => [ $type_ids['tech'], $type_ids['community'] ],
+		'capacity'         => '30',
 		'registration_url' => 'https://example.com/register',
 	],
 
@@ -498,14 +544,14 @@ $events = [
 
 	// Online / virtual venue, registration URL.
 	[
-		'title'         => 'Online Webinar: Tech Talk',
-		'content'       => '<p>Learn about the latest in web development.</p>',
-		'start_date'    => blockendar_days( 7 ),
-		'end_date'      => blockendar_days( 7 ),
-		'start_time'    => '14:00',
-		'end_time'      => '15:30',
-		'venue_term_id' => $venue_online['term_id'],
-		'type_term_ids' => [ $type_ids['tech'] ],
+		'title'            => 'Online Webinar: Tech Talk',
+		'content'          => '<p>Learn about the latest in web development.</p>',
+		'start_date'       => blockendar_days( 7 ),
+		'end_date'         => blockendar_days( 7 ),
+		'start_time'       => '14:00',
+		'end_time'         => '15:30',
+		'venue_term_id'    => $venue_online['term_id'],
+		'type_term_ids'    => [ $type_ids['tech'] ],
 		'registration_url' => 'https://example.com/webinar',
 	],
 
@@ -523,18 +569,18 @@ $events = [
 
 	// Sports, with capacity and registration.
 	[
-		'title'         => 'Charity 5K Run',
-		'content'       => '<p>All proceeds go to the local food bank. Registration required.</p>',
-		'start_date'    => blockendar_days( 11 ),
-		'end_date'      => blockendar_days( 11 ),
-		'start_time'    => '08:00',
-		'end_time'      => '12:00',
-		'venue_term_id' => $venue_park['term_id'],
-		'type_term_ids' => [ $type_ids['sports'], $type_ids['community'] ],
-		'cost'          => '$20.00',
-		'capacity'      => '500',
+		'title'            => 'Charity 5K Run',
+		'content'          => '<p>All proceeds go to the local food bank. Registration required.</p>',
+		'start_date'       => blockendar_days( 11 ),
+		'end_date'         => blockendar_days( 11 ),
+		'start_time'       => '08:00',
+		'end_time'         => '12:00',
+		'venue_term_id'    => $venue_park['term_id'],
+		'type_term_ids'    => [ $type_ids['sports'], $type_ids['community'] ],
+		'cost'             => '$20.00',
+		'capacity'         => '500',
 		'registration_url' => 'https://example.com/5k-run',
-		'image_query'   => 'charity run 5k race starting line',
+		'image_query'      => 'charity run 5k race starting line',
 	],
 
 	// Arts & Culture, free admission.
@@ -759,123 +805,148 @@ foreach ( $events as $event ) {
 WP_CLI::log( '  Seeding recurring events...' );
 
 // 4a. WEEKLY — every current day of week, until 90 days.
-$open_mic_id = blockendar_seed_event( [
-	'title'         => 'Weekly Open Mic Night',
-	'content'       => '<p>Sign up at the door. All genres welcome.</p>',
-	'start_date'    => gmdate( 'Y-m-d' ),
-	'end_date'      => gmdate( 'Y-m-d' ),
-	'start_time'    => '19:00',
-	'end_time'      => '22:00',
-	'venue_term_id' => $venue_rooftop['term_id'],
-	'type_term_ids' => [ $type_ids['music'] ],
-	'cost'          => '$5.00',
-	'image_query'   => 'open mic night singer microphone',
-] );
+$open_mic_id = blockendar_seed_event(
+	[
+		'title'         => 'Weekly Open Mic Night',
+		'content'       => '<p>Sign up at the door. All genres welcome.</p>',
+		'start_date'    => gmdate( 'Y-m-d' ),
+		'end_date'      => gmdate( 'Y-m-d' ),
+		'start_time'    => '19:00',
+		'end_time'      => '22:00',
+		'venue_term_id' => $venue_rooftop['term_id'],
+		'type_term_ids' => [ $type_ids['music'] ],
+		'cost'          => '$5.00',
+		'image_query'   => 'open mic night singer microphone',
+	]
+);
 
 if ( $open_mic_id ) {
-	blockendar_seed_recurrence( $open_mic_id, [
-		'frequency'    => 'weekly',
-		'interval_val' => 1,
-		'byday'        => $today_byday,
-		'until_date'   => blockendar_days( 90 ),
-	] );
+	blockendar_seed_recurrence(
+		$open_mic_id,
+		[
+			'frequency'    => 'weekly',
+			'interval_val' => 1,
+			'byday'        => $today_byday,
+			'until_date'   => blockendar_days( 90 ),
+		]
+	);
 	WP_CLI::log( "  + [{$open_mic_id}] Weekly Open Mic Night (WEEKLY/{$today_byday}, until +90 days) [img]" );
 	++$created;
 }
 
 // 4b. MONTHLY by day of month — e.g. every 13th, until 180 days.
-$board_id = blockendar_seed_event( [
-	'title'         => 'Monthly Board Meeting',
-	'content'       => '<p>Open to the public. Agenda published one week prior.</p>',
-	'start_date'    => gmdate( 'Y-m-d' ),
-	'end_date'      => gmdate( 'Y-m-d' ),
-	'start_time'    => '17:30',
-	'end_time'      => '19:00',
-	'venue_term_id' => $venue_hall['term_id'],
-	'type_term_ids' => [ $type_ids['community'] ],
-] );
+$board_id = blockendar_seed_event(
+	[
+		'title'         => 'Monthly Board Meeting',
+		'content'       => '<p>Open to the public. Agenda published one week prior.</p>',
+		'start_date'    => gmdate( 'Y-m-d' ),
+		'end_date'      => gmdate( 'Y-m-d' ),
+		'start_time'    => '17:30',
+		'end_time'      => '19:00',
+		'venue_term_id' => $venue_hall['term_id'],
+		'type_term_ids' => [ $type_ids['community'] ],
+	]
+);
 
 if ( $board_id ) {
-	blockendar_seed_recurrence( $board_id, [
-		'frequency'    => 'monthly',
-		'interval_val' => 1,
-		'bymonthday'   => (string) $today_dom,
-		'until_date'   => blockendar_days( 180 ),
-	] );
+	blockendar_seed_recurrence(
+		$board_id,
+		[
+			'frequency'    => 'monthly',
+			'interval_val' => 1,
+			'bymonthday'   => (string) $today_dom,
+			'until_date'   => blockendar_days( 180 ),
+		]
+	);
 	WP_CLI::log( "  + [{$board_id}] Monthly Board Meeting (MONTHLY/day {$today_dom}, until +180 days)" );
 	++$created;
 }
 
 // 4c. MONTHLY by position — e.g. 3rd Thursday of each month, until 180 days.
-$pos_title  = ( $pos_labels[ $today_wpos ] ?? "{$today_wpos}th" ) . ' ' . ( $dow_labels[ $today_byday ] ?? $today_byday );
+$pos_title = ( $pos_labels[ $today_wpos ] ?? "{$today_wpos}th" ) . ' ' . ( $dow_labels[ $today_byday ] ?? $today_byday );
 
-$support_id = blockendar_seed_event( [
-	'title'         => "Community Support Circle ({$pos_title} of each month)",
-	'content'       => '<p>Monthly support group. Confidential and welcoming.</p>',
-	'start_date'    => gmdate( 'Y-m-d' ),
-	'end_date'      => gmdate( 'Y-m-d' ),
-	'start_time'    => '18:00',
-	'end_time'      => '19:30',
-	'venue_term_id' => $venue_center['term_id'],
-	'type_term_ids' => [ $type_ids['community'] ],
-] );
+$support_id = blockendar_seed_event(
+	[
+		'title'         => "Community Support Circle ({$pos_title} of each month)",
+		'content'       => '<p>Monthly support group. Confidential and welcoming.</p>',
+		'start_date'    => gmdate( 'Y-m-d' ),
+		'end_date'      => gmdate( 'Y-m-d' ),
+		'start_time'    => '18:00',
+		'end_time'      => '19:30',
+		'venue_term_id' => $venue_center['term_id'],
+		'type_term_ids' => [ $type_ids['community'] ],
+	]
+);
 
 if ( $support_id ) {
-	blockendar_seed_recurrence( $support_id, [
-		'frequency'    => 'monthly',
-		'interval_val' => 1,
-		'byday'        => $today_byday,
-		'bysetpos'     => (string) $today_wpos,
-		'until_date'   => blockendar_days( 180 ),
-	] );
+	blockendar_seed_recurrence(
+		$support_id,
+		[
+			'frequency'    => 'monthly',
+			'interval_val' => 1,
+			'byday'        => $today_byday,
+			'bysetpos'     => (string) $today_wpos,
+			'until_date'   => blockendar_days( 180 ),
+		]
+	);
 	WP_CLI::log( "  + [{$support_id}] Community Support Circle (MONTHLY/{$pos_title}, until +180 days)" );
 	++$created;
 }
 
 // 4d. DAILY — standup, fixed count of 14 occurrences.
-$standup_id = blockendar_seed_event( [
-	'title'         => 'Daily Tech Standup',
-	'content'       => '<p>15-minute daily sync for the volunteer team.</p>',
-	'start_date'    => gmdate( 'Y-m-d' ),
-	'end_date'      => gmdate( 'Y-m-d' ),
-	'start_time'    => '09:00',
-	'end_time'      => '09:15',
-	'venue_term_id' => $venue_online['term_id'],
-	'type_term_ids' => [ $type_ids['tech'] ],
-] );
+$standup_id = blockendar_seed_event(
+	[
+		'title'         => 'Daily Tech Standup',
+		'content'       => '<p>15-minute daily sync for the volunteer team.</p>',
+		'start_date'    => gmdate( 'Y-m-d' ),
+		'end_date'      => gmdate( 'Y-m-d' ),
+		'start_time'    => '09:00',
+		'end_time'      => '09:15',
+		'venue_term_id' => $venue_online['term_id'],
+		'type_term_ids' => [ $type_ids['tech'] ],
+	]
+);
 
 if ( $standup_id ) {
-	blockendar_seed_recurrence( $standup_id, [
-		'frequency'    => 'daily',
-		'interval_val' => 1,
-		'count'        => 14,
-	] );
+	blockendar_seed_recurrence(
+		$standup_id,
+		[
+			'frequency'    => 'daily',
+			'interval_val' => 1,
+			'count'        => 14,
+		]
+	);
 	WP_CLI::log( "  + [{$standup_id}] Daily Tech Standup (DAILY, 14 occurrences)" );
 	++$created;
 }
 
 // 4e. YEARLY — annual gala, 3 occurrences.
-$annual_id = blockendar_seed_event( [
-	'title'         => 'Annual Charity Gala',
-	'content'       => '<p>Our flagship annual fundraiser. Black tie optional.</p>',
-	'start_date'    => gmdate( 'Y-m-d' ),
-	'end_date'      => gmdate( 'Y-m-d' ),
-	'start_time'    => '18:00',
-	'end_time'      => '22:00',
-	'venue_term_id' => $venue_hall['term_id'],
-	'type_term_ids' => [ $type_ids['community'], $type_ids['arts-culture'] ],
-	'cost'          => '$100.00',
-	'currency'      => 'USD',
-	'featured'      => true,
-	'image_query'   => 'charity gala dinner elegant ballroom',
-] );
+$annual_id = blockendar_seed_event(
+	[
+		'title'         => 'Annual Charity Gala',
+		'content'       => '<p>Our flagship annual fundraiser. Black tie optional.</p>',
+		'start_date'    => gmdate( 'Y-m-d' ),
+		'end_date'      => gmdate( 'Y-m-d' ),
+		'start_time'    => '18:00',
+		'end_time'      => '22:00',
+		'venue_term_id' => $venue_hall['term_id'],
+		'type_term_ids' => [ $type_ids['community'], $type_ids['arts-culture'] ],
+		'cost'          => '$100.00',
+		'currency'      => 'USD',
+		'featured'      => true,
+		'image_query'   => 'charity gala dinner elegant ballroom',
+	]
+);
 
 if ( $annual_id ) {
-	blockendar_seed_recurrence( $annual_id, [
-		'frequency'    => 'yearly',
-		'interval_val' => 1,
-		'count'        => 3,
-	] );
+	blockendar_seed_recurrence(
+		$annual_id,
+		[
+			'frequency'    => 'yearly',
+			'interval_val' => 1,
+			'count'        => 3,
+		]
+	);
 	WP_CLI::log( "  + [{$annual_id}] Annual Charity Gala (YEARLY, 3 occurrences) [img]" );
 	++$created;
 }

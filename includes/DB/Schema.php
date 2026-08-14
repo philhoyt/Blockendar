@@ -128,7 +128,9 @@ class Schema {
 
 		$prefix = $wpdb->prefix;
 
-		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared
+		// Table names cannot be passed as prepare() placeholders, and $wpdb->prefix
+		// is server-controlled, not user input.
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$wpdb->query( "DROP TABLE IF EXISTS {$prefix}blockendar_event_type_terms" );
 		$wpdb->query( "DROP TABLE IF EXISTS {$prefix}blockendar_events" );
 		$wpdb->query( "DROP TABLE IF EXISTS {$prefix}blockendar_recurrence" );

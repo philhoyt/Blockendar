@@ -213,7 +213,9 @@ class EventIndex {
 
 		$where_sql = 'WHERE ' . implode( ' AND ', $where );
 
-		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// $where_sql is assembled from literal fragments above; every user value is a
+		// %s/%d placeholder in $params, so the placeholder count is only knowable at runtime.
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		$count = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$events_table} e
@@ -356,7 +358,9 @@ class EventIndex {
 
 		if ( ! empty( $index_ids ) ) {
 			$placeholders = implode( ', ', array_fill( 0, count( $index_ids ), '%d' ) );
-			// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// $placeholders is a runtime-built list of %d tokens, one per index ID, so the
+			// count is not statically analysable. Every value is still bound via prepare().
+			// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 			$wpdb->query(
 				$wpdb->prepare(
 					"DELETE FROM {$type_terms_table} WHERE event_index_id IN ({$placeholders})",
