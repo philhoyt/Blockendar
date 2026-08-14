@@ -27,6 +27,7 @@ yarn-error.log*
 
 # PHPUnit
 .phpunit.result.cache
+.phpunit.cache/
 
 # wp-env local overrides
 .wp-env.override.json

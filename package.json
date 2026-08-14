@@ -30,6 +30,7 @@
     "env:cli": "wp-env run cli wp",
     "make-pot": "wp-env run cli -- wp i18n make-pot wp-content/plugins/blockendar wp-content/plugins/blockendar/languages/blockendar.pot --slug=blockendar --domain=blockendar --exclude=node_modules,vendor,build,lib,tests,bin --headers='{\"Report-Msgid-Bugs-To\":\"https://github.com/philhoyt/Blockendar/issues\",\"Language-Team\":\"philhoyt <https://github.com/philhoyt/Blockendar>\"}' --allow-root",
     "test:php": "vendor/bin/phpunit",
+    "test:integration": "wp-env run tests-cli --env-cwd=wp-content/plugins/blockendar -- vendor/bin/phpunit -c phpunit-integration.xml",
     "test:js": "wp-scripts test-unit-js",
     "test:e2e": "playwright test"
   },
