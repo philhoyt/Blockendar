@@ -30,3 +30,6 @@ yarn-error.log*
 
 # wp-env local overrides
 .wp-env.override.json
+
+# Local planning/audit notes
+plans/
