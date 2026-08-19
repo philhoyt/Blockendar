@@ -58,9 +58,9 @@ class FilterContext {
 	public static function get_active_filters( string $query_id ): array {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		$type_raw   = $_GET[ self::param_name( 'type', $query_id ) ] ?? '';
-		$venue_raw  = absint( $_GET[ self::param_name( 'venue', $query_id ) ] ?? 0 );
-		$date_start = sanitize_text_field( wp_unslash( $_GET[ self::param_name( 'date_start', $query_id ) ] ?? '' ) );
-		$date_end   = sanitize_text_field( wp_unslash( $_GET[ self::param_name( 'date_end', $query_id ) ] ?? '' ) );
+		$venue_raw  = absint( self::scalar_param( $_GET[ self::param_name( 'venue', $query_id ) ] ?? 0 ) );
+		$date_start = sanitize_text_field( wp_unslash( self::scalar_param( $_GET[ self::param_name( 'date_start', $query_id ) ] ?? '' ) ) );
+		$date_end   = sanitize_text_field( wp_unslash( self::scalar_param( $_GET[ self::param_name( 'date_end', $query_id ) ] ?? '' ) ) );
 		// phpcs:enable
 
 		$start = self::validate_date( $date_start );
@@ -79,6 +79,21 @@ class FilterContext {
 			'date_start' => $start,
 			'date_end'   => $end,
 		];
+	}
+
+	/**
+	 * Discard non-scalar input for params that only ever carry a single value.
+	 *
+	 * A query string can always be forced into array shape — `?blockendar_venue[]=99`
+	 * arrives as an array. absint() coerces an array to 1 rather than rejecting it,
+	 * so without this guard that URL silently filtered by term 1. Only the term-ID
+	 * list legitimately accepts arrays; everything else is scalar or nothing.
+	 *
+	 * @param mixed $value Raw value straight from $_GET.
+	 * @return string|int|float|bool Empty string when the input was not scalar.
+	 */
+	private static function scalar_param( mixed $value ): string|int|float|bool {
+		return is_scalar( $value ) ? $value : '';
 	}
 
 	/**

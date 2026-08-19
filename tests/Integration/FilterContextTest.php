@@ -125,6 +125,36 @@ class FilterContextTest extends WP_UnitTestCase {
 	}
 
 	// -------------------------------------------------------------------------
+	// Array-shaped input on scalar params
+	// -------------------------------------------------------------------------
+
+	public function test_array_venue_param_is_rejected_not_coerced(): void {
+		// absint() turns an array into 1, so without a scalar guard this URL
+		// silently filtered by term 1 instead of being ignored.
+		$_GET = [ 'blockendar_venue' => [ '99' ] ];
+
+		$this->assertNull( FilterContext::get_active_filters( '' )['venue_id'] );
+	}
+
+	public function test_scalar_venue_param_still_works(): void {
+		$_GET = [ 'blockendar_venue' => '99' ];
+
+		$this->assertSame( 99, FilterContext::get_active_filters( '' )['venue_id'] );
+	}
+
+	public function test_array_date_params_are_rejected(): void {
+		$_GET = [
+			'blockendar_date_start' => [ '2026-09-01' ],
+			'blockendar_date_end'   => [ '2026-09-30' ],
+		];
+
+		$filters = FilterContext::get_active_filters( '' );
+
+		$this->assertNull( $filters['date_start'] );
+		$this->assertNull( $filters['date_end'] );
+	}
+
+	// -------------------------------------------------------------------------
 	// Inverted ranges
 	// -------------------------------------------------------------------------
 
