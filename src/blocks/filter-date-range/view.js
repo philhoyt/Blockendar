@@ -120,24 +120,43 @@
 							inputEnd.value || null,
 						].filter( Boolean ),
 						onClose( selectedDates ) {
-							if ( selectedDates.length === 2 ) {
-								const fmt = ( d ) =>
-									d.getFullYear() +
-									'-' +
-									String( d.getMonth() + 1 ).padStart(
-										2,
-										'0'
-									) +
-									'-' +
-									String( d.getDate() ).padStart( 2, '0' );
-								inputStart.value = fmt( selectedDates[ 0 ] );
-								inputEnd.value = fmt( selectedDates[ 1 ] );
-								submit();
-							} else if ( selectedDates.length === 0 ) {
-								inputStart.value = '';
-								inputEnd.value = '';
-								submit();
+							// Compare against what the fields already hold and only
+							// navigate on a real change. Submitting unconditionally
+							// meant that merely opening and closing the picker
+							// reloaded the page, which threw the visitor back to the
+							// top of the results.
+							const fmt = ( d ) =>
+								d.getFullYear() +
+								'-' +
+								String( d.getMonth() + 1 ).padStart( 2, '0' ) +
+								'-' +
+								String( d.getDate() ).padStart( 2, '0' );
+
+							const nextStart =
+								selectedDates.length === 2
+									? fmt( selectedDates[ 0 ] )
+									: '';
+							const nextEnd =
+								selectedDates.length === 2
+									? fmt( selectedDates[ 1 ] )
+									: '';
+
+							// A half-finished range (one date picked) is not a
+							// selection yet — leave the fields untouched.
+							if ( selectedDates.length === 1 ) {
+								return;
 							}
+
+							if (
+								nextStart === inputStart.value &&
+								nextEnd === inputEnd.value
+							) {
+								return;
+							}
+
+							inputStart.value = nextStart;
+							inputEnd.value = nextEnd;
+							submit();
 						},
 					} );
 
