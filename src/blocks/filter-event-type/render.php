@@ -85,7 +85,13 @@ if ( 1 === count( $selected_terms ) ) {
 		count( $selected_terms )
 	);
 } else {
-	$trigger_text = __( 'All types', 'blockendar' );
+	/*
+	 * Falls back in PHP as well as in block.json: instances saved before this
+	 * attribute existed carry no triggerLabel at all, and an empty trigger would
+	 * be worse than a generic one.
+	 */
+	$placeholder  = sanitize_text_field( $attributes['triggerLabel'] ?? '' );
+	$trigger_text = '' !== $placeholder ? $placeholder : __( 'All types', 'blockendar' );
 }
 
 $wrapper_attrs = get_block_wrapper_attributes(

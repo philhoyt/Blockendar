@@ -51,6 +51,10 @@
 		"label": {
 			"type": "string",
 			"default": ""
+		},
+		"triggerLabel": {
+			"type": "string",
+			"default": "All types"
 		}
 	},
 	"render": "file:./render.php",
