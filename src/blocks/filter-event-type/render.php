@@ -60,6 +60,34 @@ if ( null !== $other_filters['date_end'] ) {
 	$hidden_inputs .= '<input type="hidden" name="' . esc_attr( FilterContext::param_name( 'date_end', $query_id ) ) . '" value="' . esc_attr( $other_filters['date_end'] ) . '">';
 }
 
+// Unique per instance: two of these blocks can target the same query, so the
+// param name is not a safe id.
+$panel_id   = wp_unique_id( 'blockendar-type-panel-' );
+$trigger_id = wp_unique_id( 'blockendar-type-trigger-' );
+
+/*
+ * Summary shown on the trigger. One selection names it, several are counted, and
+ * none falls back to the placeholder — the same shape the reference UI uses.
+ */
+$selected_terms = array_values(
+	array_filter(
+		$terms,
+		static fn( $term ) => in_array( $term->term_id, $active_ids, true )
+	)
+);
+
+if ( 1 === count( $selected_terms ) ) {
+	$trigger_text = $selected_terms[0]->name;
+} elseif ( count( $selected_terms ) > 1 ) {
+	$trigger_text = sprintf(
+		/* translators: %d: number of selected event types. */
+		_n( '%d type selected', '%d types selected', count( $selected_terms ), 'blockendar' ),
+		count( $selected_terms )
+	);
+} else {
+	$trigger_text = __( 'All types', 'blockendar' );
+}
+
 $wrapper_attrs = get_block_wrapper_attributes(
 	[
 		'class'                  => 'blockendar-filter-event-type is-style-' . $display_style,
@@ -80,25 +108,26 @@ $wrapper_attrs = get_block_wrapper_attributes(
 		?>
 
 		<?php if ( 'dropdown' === $display_style ) : ?>
-
-			<select name="<?php echo esc_attr( $param_name ); ?>[]" multiple
-				class="blockendar-filter__select"
-				aria-label="<?php esc_attr_e( 'Filter by event type', 'blockendar' ); ?>">
-				<?php foreach ( $terms as $term ) : ?>
-					<?php
-					$selected = in_array( $term->term_id, $active_ids, true ) ? ' selected' : '';
-					$count    = $show_count ? ' (' . (int) $term->count . ')' : '';
-					?>
-					<option value="<?php echo esc_attr( (string) $term->term_id ); ?>"<?php echo $selected; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-						<?php echo esc_html( $term->name . $count ); ?>
-					</option>
-				<?php endforeach; ?>
-			</select>
-			<button type="submit" class="blockendar-filter__submit screen-reader-text">
-				<?php esc_html_e( 'Apply', 'blockendar' ); ?>
+			<?php
+			/*
+			 * type="button" matters: this sits inside the filter <form>, and a bare
+			 * <button> defaults to type="submit", which would reload the page on
+			 * every open.
+			 */
+			?>
+			<button
+				type="button"
+				class="blockendar-filter__trigger"
+				id="<?php echo esc_attr( $trigger_id ); ?>"
+				aria-expanded="false"
+				aria-controls="<?php echo esc_attr( $panel_id ); ?>"
+			>
+				<span class="blockendar-filter__trigger-text"><?php echo esc_html( $trigger_text ); ?></span>
+				<span class="blockendar-filter__trigger-icon" aria-hidden="true"></span>
 			</button>
 
-		<?php else : ?>
+			<div class="blockendar-filter__panel" id="<?php echo esc_attr( $panel_id ); ?>">
+		<?php endif; ?>
 
 			<ul class="blockendar-filter__list" role="group" aria-label="<?php esc_attr_e( 'Filter by event type', 'blockendar' ); ?>">
 				<?php foreach ( $terms as $term ) : ?>
@@ -129,6 +158,8 @@ $wrapper_attrs = get_block_wrapper_attributes(
 				<?php esc_html_e( 'Apply', 'blockendar' ); ?>
 			</button>
 
+		<?php if ( 'dropdown' === $display_style ) : ?>
+			</div>
 		<?php endif; ?>
 
 		<?php if ( ! empty( $active_ids ) ) : ?>
