@@ -44,7 +44,8 @@ if ( is_wp_error( $terms ) || empty( $terms ) ) {
 
 // Build the form action URL using the current paginated link base so that the
 // form works with both pretty and plain WordPress permalink structures.
-$form_action = esc_url( remove_query_arg( [ $param_name, FilterContext::param_name( 'page', $query_id ) ] ) );
+$page_param  = FilterContext::param_name( 'page', $query_id );
+$form_action = esc_url( remove_query_arg( [ $param_name, $page_param ] ) );
 
 // Collect all other active filter params to preserve through this form submission.
 $other_filters = FilterContext::get_active_filters( $query_id );
@@ -160,18 +161,28 @@ $wrapper_attrs = get_block_wrapper_attributes(
 					</li>
 				<?php endforeach; ?>
 			</ul>
-			<button type="submit" class="blockendar-filter__submit">
-				<?php esc_html_e( 'Apply', 'blockendar' ); ?>
-			</button>
+			<?php
+			/*
+			 * Both actions sit together inside the panel, so a visitor who has opened
+			 * the dropdown can commit or discard without hunting for a control
+			 * outside it. Clear is a plain link: it is a navigation to the unfiltered
+			 * URL, works without JavaScript, and needs no handler.
+			 */
+			?>
+			<div class="blockendar-filter__actions">
+				<?php if ( ! empty( $active_ids ) ) : ?>
+					<a href="<?php echo esc_url( remove_query_arg( [ $param_name, $page_param ] ) ); ?>" class="blockendar-filter__clear">
+						<?php esc_html_e( 'Clear', 'blockendar' ); ?>
+					</a>
+				<?php endif; ?>
+
+				<button type="submit" class="blockendar-filter__submit">
+					<?php esc_html_e( 'Apply', 'blockendar' ); ?>
+				</button>
+			</div>
 
 		<?php if ( 'dropdown' === $display_style ) : ?>
 			</div>
-		<?php endif; ?>
-
-		<?php if ( ! empty( $active_ids ) ) : ?>
-			<a href="<?php echo esc_url( remove_query_arg( $param_name ) ); ?>" class="blockendar-filter__clear">
-				<?php esc_html_e( 'Clear', 'blockendar' ); ?>
-			</a>
 		<?php endif; ?>
 	</form>
 </div>
