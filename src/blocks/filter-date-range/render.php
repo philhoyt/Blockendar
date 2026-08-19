@@ -32,8 +32,8 @@ $label_range = sanitize_text_field( $attributes['labelRange'] ?? __( 'Dates', 'b
 $id_start = wp_unique_id( 'blockendar-date-start-' );
 $id_end   = wp_unique_id( 'blockendar-date-end-' );
 $id_group = wp_unique_id( 'blockendar-date-group-' );
-$min_date    = sanitize_text_field( $attributes['minDate'] ?? '' );
-$max_date    = sanitize_text_field( $attributes['maxDate'] ?? '' );
+$min_date = sanitize_text_field( $attributes['minDate'] ?? '' );
+$max_date = sanitize_text_field( $attributes['maxDate'] ?? '' );
 
 $param_start = FilterContext::param_name( 'date_start', $query_id );
 $param_end   = FilterContext::param_name( 'date_end', $query_id );
