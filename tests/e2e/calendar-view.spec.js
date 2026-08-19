@@ -8,31 +8,7 @@
  */
 
 const { test, expect } = require( '@playwright/test' );
-const { execFileSync } = require( 'child_process' );
-
-/**
- * Run a WP-CLI command inside wp-env and return trimmed stdout.
- *
- * @param {string[]} args WP-CLI arguments.
- * @return {string} Command output.
- */
-function wpCli( args ) {
-	const raw = execFileSync(
-		'npx',
-		[ 'wp-env', 'run', 'cli', '--', 'wp', ...args ],
-		{ encoding: 'utf8', cwd: process.cwd() }
-	).replace( /\r/g, '' );
-
-	// wp-env wraps command output in its own status lines ("ℹ Starting …",
-	// "✔ Ran …"); strip them so callers see only what wp itself printed.
-	return raw
-		.split( '\n' )
-		.filter(
-			( line ) => ! /^\s*[ℹ✔✖⚠]/.test( line ) && '' !== line.trim()
-		)
-		.join( '\n' )
-		.trim();
-}
+const { wpCli } = require( './wp-cli' );
 
 let pageId;
 let eventId;

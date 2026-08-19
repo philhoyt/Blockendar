@@ -4,12 +4,14 @@
  * Upgrades the two native <input type="date"> fields to a Flatpickr range
  * picker. Falls back to the native inputs if Flatpickr fails or is unavailable.
  *
+ * Flatpickr is pulled in with a dynamic import() so it ships as its own chunk:
+ * the native inputs are fully usable on their own, so there is no reason to make
+ * every visitor download a date picker before the form works.
+ *
  * On date selection the form auto-submits after a short debounce. The
  * pagination param is stripped so a new date range always starts at page 1.
  * Cross-field validation ensures start ≤ end.
  */
-import flatpickr from 'flatpickr';
-
 ( function () {
 	document
 		.querySelectorAll( '.blockendar-filter-date-range' )
@@ -79,38 +81,56 @@ import flatpickr from 'flatpickr';
 				submitBtn.hidden = true;
 			}
 
-			// Replace the two separate inputs with a single Flatpickr range picker.
-			// We use the start input as the anchor and hide the end input.
-			inputEnd.closest(
-				'.blockendar-filter-date-range__field'
-			).hidden = true;
+			// Replace the two separate inputs with a single Flatpickr range picker,
+			// using the start input as the anchor and hiding the end input.
+			//
+			// The end field is hidden only *after* the picker has loaded and
+			// initialised. Hiding it up front would strand the user with no way to
+			// pick an end date whenever the chunk fails to load, which is exactly
+			// the fallback this block claims to support.
+			import( 'flatpickr' )
+				.then( ( { default: flatpickr } ) => {
+					flatpickr( inputStart, {
+						mode: 'range',
+						dateFormat: 'Y-m-d',
+						minDate: minDate ?? undefined,
+						maxDate: maxDate ?? undefined,
+						defaultDate: [
+							inputStart.value || null,
+							inputEnd.value || null,
+						].filter( Boolean ),
+						onClose( selectedDates ) {
+							if ( selectedDates.length === 2 ) {
+								const fmt = ( d ) =>
+									d.getFullYear() +
+									'-' +
+									String( d.getMonth() + 1 ).padStart(
+										2,
+										'0'
+									) +
+									'-' +
+									String( d.getDate() ).padStart( 2, '0' );
+								inputStart.value = fmt( selectedDates[ 0 ] );
+								inputEnd.value = fmt( selectedDates[ 1 ] );
+								submit();
+							} else if ( selectedDates.length === 0 ) {
+								inputStart.value = '';
+								inputEnd.value = '';
+								submit();
+							}
+						},
+					} );
 
-			flatpickr( inputStart, {
-				mode: 'range',
-				dateFormat: 'Y-m-d',
-				minDate: minDate ?? undefined,
-				maxDate: maxDate ?? undefined,
-				defaultDate: [
-					inputStart.value || null,
-					inputEnd.value || null,
-				].filter( Boolean ),
-				onClose( selectedDates ) {
-					if ( selectedDates.length === 2 ) {
-						const fmt = ( d ) =>
-							d.getFullYear() +
-							'-' +
-							String( d.getMonth() + 1 ).padStart( 2, '0' ) +
-							'-' +
-							String( d.getDate() ).padStart( 2, '0' );
-						inputStart.value = fmt( selectedDates[ 0 ] );
-						inputEnd.value = fmt( selectedDates[ 1 ] );
-						submit();
-					} else if ( selectedDates.length === 0 ) {
-						inputStart.value = '';
-						inputEnd.value = '';
-						submit();
+					inputEnd
+						.closest( '.blockendar-filter-date-range__field' )
+						?.setAttribute( 'hidden', '' );
+				} )
+				.catch( () => {
+					// Picker unavailable: restore the Apply button so the two
+					// native date inputs remain a working, submittable form.
+					if ( submitBtn ) {
+						submitBtn.hidden = false;
 					}
-				},
-			} );
+				} );
 		} );
 } )();

@@ -38,12 +38,12 @@
 }
 
 .blockendar-filter-date-range .flatpickr-day.inRange {
-	background: var( --wp--preset--color--primary, #3858e9 );
+	background: var(--wp--preset--color--primary, #3858e9);
 	opacity: 0.15;
 }
 
 .blockendar-filter-date-range .flatpickr-day.startRange,
 .blockendar-filter-date-range .flatpickr-day.endRange {
-	background: var( --wp--preset--color--primary, #3858e9 );
-	border-color: var( --wp--preset--color--primary, #3858e9 );
+	background: var(--wp--preset--color--primary, #3858e9);
+	border-color: var(--wp--preset--color--primary, #3858e9);
 }

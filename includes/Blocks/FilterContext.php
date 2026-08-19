@@ -57,18 +57,56 @@ class FilterContext {
 	 */
 	public static function get_active_filters( string $query_id ): array {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended
-		$type_raw   = sanitize_text_field( wp_unslash( $_GET[ self::param_name( 'type', $query_id ) ] ?? '' ) );
+		$type_raw   = $_GET[ self::param_name( 'type', $query_id ) ] ?? '';
 		$venue_raw  = absint( $_GET[ self::param_name( 'venue', $query_id ) ] ?? 0 );
 		$date_start = sanitize_text_field( wp_unslash( $_GET[ self::param_name( 'date_start', $query_id ) ] ?? '' ) );
 		$date_end   = sanitize_text_field( wp_unslash( $_GET[ self::param_name( 'date_end', $query_id ) ] ?? '' ) );
 		// phpcs:enable
 
 		return [
-			'type_ids'   => array_values( array_filter( array_map( 'absint', explode( ',', $type_raw ) ) ) ),
+			'type_ids'   => self::parse_id_list( $type_raw ),
 			'venue_id'   => $venue_raw ?: null,
 			'date_start' => self::validate_date( $date_start ),
 			'date_end'   => self::validate_date( $date_end ),
 		];
+	}
+
+	/**
+	 * Normalise a term-ID list that may arrive in either supported shape.
+	 *
+	 * The filter blocks emit two different shapes for the same value, and both
+	 * are legitimate:
+	 *
+	 * - `blockendar_type[]=12&blockendar_type[]=34` — checkbox inputs in
+	 *   filter-event-type, which need the `[]` suffix so that multi-select still
+	 *   works with JavaScript disabled. PHP delivers this as an array.
+	 * - `blockendar_type=12,34` — the comma-separated form that filter-venue and
+	 *   filter-date-range preserve in their hidden inputs, and that view.js builds.
+	 *
+	 * Passing an array to sanitize_text_field() returns an empty string, so
+	 * reading the raw value with it silently discarded every array submission.
+	 * Flatten first, then split on commas, then cast — which accepts both shapes
+	 * and any mixture of them.
+	 *
+	 * @param mixed $raw Raw value straight from $_GET.
+	 * @return int[] Unique positive term IDs.
+	 */
+	private static function parse_id_list( mixed $raw ): array {
+		$parts = [];
+
+		foreach ( (array) $raw as $chunk ) {
+			if ( is_array( $chunk ) ) {
+				continue;
+			}
+
+			$clean = sanitize_text_field( wp_unslash( (string) $chunk ) );
+
+			foreach ( explode( ',', $clean ) as $piece ) {
+				$parts[] = absint( $piece );
+			}
+		}
+
+		return array_values( array_unique( array_filter( $parts ) ) );
 	}
 
 	/**
