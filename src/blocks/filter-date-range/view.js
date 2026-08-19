@@ -88,11 +88,21 @@
 			// initialised. Hiding it up front would strand the user with no way to
 			// pick an end date whenever the chunk fails to load, which is exactly
 			// the fallback this block claims to support.
-			import( 'flatpickr' )
-				.then( ( { default: flatpickr } ) => {
+			Promise.all( [
+				import( 'flatpickr' ),
+				// Flatpickr's own stylesheet. Without it the calendar renders as a
+				// giant unstyled block at the end of <body>, because the library
+				// relies on this CSS for its positioning and sizing.
+				import( 'flatpickr/dist/flatpickr.css' ),
+			] )
+				.then( ( [ { default: flatpickr } ] ) => {
 					flatpickr( inputStart, {
 						mode: 'range',
 						dateFormat: 'Y-m-d',
+						// Mount inside the block rather than document.body so the
+						// calendar sits with its input, and so the theme overrides in
+						// style.css — which are scoped to this wrapper — actually apply.
+						appendTo: el,
 						minDate: minDate ?? undefined,
 						maxDate: maxDate ?? undefined,
 						defaultDate: [

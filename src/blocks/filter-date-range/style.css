@@ -1,5 +1,9 @@
 .blockendar-filter-date-range {
 	container-type: inline-size;
+
+	/* Positioning context for the Flatpickr calendar, which is mounted
+	   inside this wrapper via the appendTo option. */
+	position: relative;
 }
 
 .blockendar-filter-date-range__fields {
