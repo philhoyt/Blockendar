@@ -27,8 +27,6 @@ import '../shared/filter-popover.css';
 				return;
 			}
 
-			const submitBtn = el.querySelector( '.blockendar-filter__submit' );
-
 			// Dropdown style: upgrade the trigger/panel pair and stop here. The
 			// Apply button inside the panel is the way to commit a multi-select.
 			if ( initFilterPopover( el ) ) {
@@ -36,6 +34,8 @@ import '../shared/filter-popover.css';
 			}
 
 			// List style: the box itself is the control, so Apply is redundant.
+			const submitBtn = el.querySelector( '.blockendar-filter__submit' );
+
 			if ( submitBtn ) {
 				submitBtn.hidden = true;
 			}

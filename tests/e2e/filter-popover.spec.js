@@ -133,11 +133,13 @@ test( 'aria-expanded tracks the panel, and the trigger controls it', async ( {
 	await trigger.click();
 	await expect( trigger ).toHaveAttribute( 'aria-expanded', 'true' );
 
-	// Focus lands inside the panel rather than being left on the trigger.
-	const focusInPanel = await page.evaluate(
-		() => !! document.activeElement.closest( '.blockendar-filter__panel' )
-	);
-	expect( focusInPanel ).toBe( true );
+	// Focus lands on the first control in the panel rather than being left on the
+	// trigger, so a keyboard user is placed where the choices are.
+	await expect(
+		page
+			.locator( '.blockendar-filter__panel input[type="checkbox"]' )
+			.first()
+	).toBeFocused();
 } );
 
 test( 'opening and closing the popover never navigates', async ( { page } ) => {

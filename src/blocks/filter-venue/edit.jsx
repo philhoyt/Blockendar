@@ -11,7 +11,7 @@ import {
 import { __ } from '@wordpress/i18n';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { displayStyle, showEmpty, showVirtual, label } = attributes;
+	const { displayStyle, showEmpty, showVirtual, label , triggerLabel } = attributes;
 	const blockProps = useBlockProps( {
 		className: 'blockendar-filter-venue',
 	} );
@@ -28,6 +28,17 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 						value={ label }
 						onChange={ ( val ) => setAttributes( { label: val } ) }
+					/>
+					<TextControl
+						label={ __( 'Trigger placeholder', 'blockendar' ) }
+						help={ __(
+							'Shown on the dropdown trigger when no venue is selected.',
+							'blockendar'
+						) }
+						value={ triggerLabel }
+						onChange={ ( val ) =>
+							setAttributes( { triggerLabel: val } )
+						}
 					/>
 					<SelectControl
 						label={ __( 'Display style', 'blockendar' ) }
