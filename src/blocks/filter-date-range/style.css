@@ -12,6 +12,14 @@
 	flex-wrap: wrap;
 }
 
+/* The class below sets display:flex, which outranks the user-agent
+   sheet's [hidden] rule, so the attribute has to be honoured
+   explicitly. JavaScript sets it on the end field once both dates
+   collapse into one range input. */
+.blockendar-filter-date-range__field[hidden] {
+	display: none;
+}
+
 .blockendar-filter-date-range__field {
 	display: flex;
 	flex-direction: column;
@@ -50,4 +58,13 @@
 .blockendar-filter-date-range .flatpickr-day.endRange {
 	background: var(--wp--preset--color--primary, #3858e9);
 	border-color: var(--wp--preset--color--primary, #3858e9);
+}
+
+/* The fieldset exists to associate the group label with both inputs; it should
+   not introduce the browser's default border, padding or margin. */
+.blockendar-filter-date-range__group {
+	border: 0;
+	margin: 0;
+	padding: 0;
+	min-width: 0;
 }

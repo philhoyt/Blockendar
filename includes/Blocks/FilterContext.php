@@ -63,11 +63,21 @@ class FilterContext {
 		$date_end   = sanitize_text_field( wp_unslash( $_GET[ self::param_name( 'date_end', $query_id ) ] ?? '' ) );
 		// phpcs:enable
 
+		$start = self::validate_date( $date_start );
+		$end   = self::validate_date( $date_end );
+
+		// A backwards range is a slip, not a request for nothing. Swapping the two
+		// gives the user the span they clearly meant; passing it through would send
+		// start > end to the index and render an unexplained "no events found".
+		if ( null !== $start && null !== $end && $start > $end ) {
+			[ $start, $end ] = [ $end, $start ];
+		}
+
 		return [
 			'type_ids'   => self::parse_id_list( $type_raw ),
 			'venue_id'   => $venue_raw ?: null,
-			'date_start' => self::validate_date( $date_start ),
-			'date_end'   => self::validate_date( $date_end ),
+			'date_start' => $start,
+			'date_end'   => $end,
 		];
 	}
 

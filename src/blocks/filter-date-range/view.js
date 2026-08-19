@@ -10,7 +10,8 @@
  *
  * On date selection the form auto-submits after a short debounce. The
  * pagination param is stripped so a new date range always starts at page 1.
- * Cross-field validation ensures start ≤ end.
+ * An inverted range is normalised server-side in FilterContext, so the two
+ * fields do not need to police each other here.
  */
 ( function () {
 	document
@@ -34,6 +35,12 @@
 			}
 
 			const submitBtn = el.querySelector( '.blockendar-filter__submit' );
+			const startLabel = inputStart
+				.closest( '.blockendar-filter-date-range__field' )
+				?.querySelector( 'label' );
+			const endField = inputEnd.closest(
+				'.blockendar-filter-date-range__field'
+			);
 
 			let debounceTimer = null;
 
@@ -131,13 +138,19 @@
 						},
 					} );
 
-					inputEnd
-						.closest( '.blockendar-filter-date-range__field' )
-						?.setAttribute( 'hidden', '' );
+					// One input now covers both ends of the range, so "From" no
+					// longer describes it. The replacement text comes from PHP
+					// because view scripts carry no translation context of their own.
+					if ( startLabel && el.dataset.labelRange ) {
+						startLabel.textContent = el.dataset.labelRange;
+					}
+
+					endField?.setAttribute( 'hidden', '' );
 				} )
 				.catch( () => {
-					// Picker unavailable: restore the Apply button so the two
-					// native date inputs remain a working, submittable form.
+					// Picker unavailable: both native date inputs stay visible with
+					// their original From/To labels, so restore the Apply button and
+					// leave the form working as plain HTML.
 					if ( submitBtn ) {
 						submitBtn.hidden = false;
 					}

@@ -22,6 +22,16 @@ $query_id    = (string) ( $block->context['blockendar/queryId'] ?? '' );
 $label       = sanitize_text_field( $attributes['label'] ?? '' );
 $label_start = sanitize_text_field( $attributes['labelStart'] ?? __( 'From', 'blockendar' ) );
 $label_end   = sanitize_text_field( $attributes['labelEnd'] ?? __( 'To', 'blockendar' ) );
+// Shown in place of the start label once JavaScript collapses the two fields
+// into a single range picker, where "From" would no longer describe the input.
+$label_range = sanitize_text_field( $attributes['labelRange'] ?? __( 'Dates', 'blockendar' ) );
+
+// Field ids must be unique per instance: the param names are shared by every
+// date-range block that targets the same query, so using them directly would
+// emit duplicate ids and break label association when a page has two.
+$id_start = wp_unique_id( 'blockendar-date-start-' );
+$id_end   = wp_unique_id( 'blockendar-date-end-' );
+$id_group = wp_unique_id( 'blockendar-date-group-' );
 $min_date    = sanitize_text_field( $attributes['minDate'] ?? '' );
 $max_date    = sanitize_text_field( $attributes['maxDate'] ?? '' );
 
@@ -51,6 +61,7 @@ $wrapper_attrs = get_block_wrapper_attributes(
 	[
 		'class'                  => 'blockendar-filter-date-range' . ( $has_dates ? ' has-active-dates' : '' ),
 		'data-blockendar-filter' => 'date-range',
+		'data-label-range'       => $label_range,
 		'data-param-start'       => $param_start,
 		'data-param-end'         => $param_end,
 		'data-min-date'          => $min_date,
@@ -59,24 +70,27 @@ $wrapper_attrs = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<?php if ( '' !== $label ) : ?>
-		<p class="blockendar-filter__label"><?php echo esc_html( $label ); ?></p>
-	<?php endif; ?>
-
 	<form method="get" action="<?php echo $form_action; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>">
 		<?php
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo $hidden_inputs;
 		?>
 
+		<fieldset class="blockendar-filter-date-range__group">
+		<?php if ( '' !== $label ) : ?>
+			<legend class="blockendar-filter__label" id="<?php echo esc_attr( $id_group ); ?>">
+				<?php echo esc_html( $label ); ?>
+			</legend>
+		<?php endif; ?>
+
 		<div class="blockendar-filter-date-range__fields">
 			<div class="blockendar-filter-date-range__field">
-				<label for="<?php echo esc_attr( $param_start ); ?>" class="blockendar-filter-date-range__label">
+				<label for="<?php echo esc_attr( $id_start ); ?>" class="blockendar-filter-date-range__label">
 					<?php echo esc_html( $label_start ); ?>
 				</label>
 				<input
 					type="date"
-					id="<?php echo esc_attr( $param_start ); ?>"
+					id="<?php echo esc_attr( $id_start ); ?>"
 					name="<?php echo esc_attr( $param_start ); ?>"
 					class="blockendar-filter-date-range__input"
 					value="<?php echo esc_attr( $active_start ); ?>"
@@ -86,12 +100,12 @@ $wrapper_attrs = get_block_wrapper_attributes(
 			</div>
 
 			<div class="blockendar-filter-date-range__field">
-				<label for="<?php echo esc_attr( $param_end ); ?>" class="blockendar-filter-date-range__label">
+				<label for="<?php echo esc_attr( $id_end ); ?>" class="blockendar-filter-date-range__label">
 					<?php echo esc_html( $label_end ); ?>
 				</label>
 				<input
 					type="date"
-					id="<?php echo esc_attr( $param_end ); ?>"
+					id="<?php echo esc_attr( $id_end ); ?>"
 					name="<?php echo esc_attr( $param_end ); ?>"
 					class="blockendar-filter-date-range__input"
 					value="<?php echo esc_attr( $active_end ); ?>"
@@ -100,6 +114,7 @@ $wrapper_attrs = get_block_wrapper_attributes(
 				>
 			</div>
 		</div>
+		</fieldset>
 
 		<button type="submit" class="blockendar-filter__submit">
 			<?php esc_html_e( 'Apply dates', 'blockendar' ); ?>

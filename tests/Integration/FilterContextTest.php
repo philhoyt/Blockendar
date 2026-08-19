@@ -125,6 +125,60 @@ class FilterContextTest extends WP_UnitTestCase {
 	}
 
 	// -------------------------------------------------------------------------
+	// Inverted ranges
+	// -------------------------------------------------------------------------
+
+	public function test_backwards_range_is_swapped_rather_than_returning_nothing(): void {
+		$_GET = [
+			'blockendar_date_start' => '2027-12-31',
+			'blockendar_date_end'   => '2026-01-01',
+		];
+
+		$filters = FilterContext::get_active_filters( '' );
+
+		$this->assertSame( '2026-01-01', $filters['date_start'] );
+		$this->assertSame( '2027-12-31', $filters['date_end'] );
+	}
+
+	public function test_correctly_ordered_range_is_left_alone(): void {
+		$_GET = [
+			'blockendar_date_start' => '2026-01-01',
+			'blockendar_date_end'   => '2027-12-31',
+		];
+
+		$filters = FilterContext::get_active_filters( '' );
+
+		$this->assertSame( '2026-01-01', $filters['date_start'] );
+		$this->assertSame( '2027-12-31', $filters['date_end'] );
+	}
+
+	public function test_equal_dates_are_left_alone(): void {
+		$_GET = [
+			'blockendar_date_start' => '2026-05-05',
+			'blockendar_date_end'   => '2026-05-05',
+		];
+
+		$filters = FilterContext::get_active_filters( '' );
+
+		$this->assertSame( '2026-05-05', $filters['date_start'] );
+		$this->assertSame( '2026-05-05', $filters['date_end'] );
+	}
+
+	public function test_swap_needs_both_dates_to_be_valid(): void {
+		// Only one usable bound: there is nothing to swap against, and the invalid
+		// half must still be discarded rather than promoted into the other slot.
+		$_GET = [
+			'blockendar_date_start' => '2027-12-31',
+			'blockendar_date_end'   => 'nonsense',
+		];
+
+		$filters = FilterContext::get_active_filters( '' );
+
+		$this->assertSame( '2027-12-31', $filters['date_start'] );
+		$this->assertNull( $filters['date_end'] );
+	}
+
+	// -------------------------------------------------------------------------
 	// Param naming and query-ID isolation
 	// -------------------------------------------------------------------------
 
