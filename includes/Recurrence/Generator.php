@@ -36,8 +36,34 @@ class Generator {
 
 	private EventIndex $index;
 
+	/**
+	 * Injected clock. Null means "read the wall clock".
+	 *
+	 * Only the generation horizon depends on the current date; pinning it lets the
+	 * horizon be tested at a fixed instant instead of drifting with real time.
+	 *
+	 * @var \DateTimeImmutable|null
+	 */
+	private ?\DateTimeImmutable $now = null;
+
 	public function __construct() {
 		$this->index = new EventIndex();
+	}
+
+	/**
+	 * Pin the clock used to anchor the generation horizon.
+	 *
+	 * @param \DateTimeImmutable $now Instant to treat as "today" (UTC midnight).
+	 */
+	public function set_now( \DateTimeImmutable $now ): void {
+		$this->now = $now;
+	}
+
+	/**
+	 * Current date used to anchor the horizon, as UTC midnight.
+	 */
+	private function now(): \DateTimeImmutable {
+		return $this->now ?? new \DateTimeImmutable( 'today', new \DateTimeZone( 'UTC' ) );
 	}
 
 	/**
@@ -140,8 +166,7 @@ class Generator {
 	 */
 	private function expand_dates( Rule $rule, array $meta ): array {
 		$horizon_days = (int) get_option( 'blockendar_horizon_days', self::DEFAULT_HORIZON_DAYS );
-		$horizon      = new \DateTimeImmutable( 'today', new \DateTimeZone( 'UTC' ) );
-		$horizon      = $horizon->modify( "+{$horizon_days} days" )->setTime( 23, 59, 59 );
+		$horizon      = $this->now()->modify( "+{$horizon_days} days" )->setTime( 23, 59, 59 );
 
 		$event_start = \DateTimeImmutable::createFromFormat( 'Y-m-d', $meta['start_date'] );
 		$event_end   = \DateTimeImmutable::createFromFormat( 'Y-m-d', $meta['end_date'] );

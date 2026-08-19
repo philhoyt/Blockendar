@@ -159,6 +159,9 @@ class IndexBuilder {
 		$wpdb->query( "TRUNCATE TABLE {$events_table}" );
 		// phpcs:enable
 
+		// TRUNCATE bypasses EventIndex, so invalidate the read cache here too.
+		$this->index->flush_cache();
+
 		$rebuilt = 0;
 		$skipped = 0;
 

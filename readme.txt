@@ -36,6 +36,24 @@ Blockendar is a fully block-native events plugin for WordPress. Every part of th
 5. Navigate to **Events** in the admin menu to create your first event.
 6. Add the **Calendar View** or **Events Query** block to any page or post.
 
+== Privacy ==
+
+Blockendar stores no personal data about your site's visitors. It records no
+names, email addresses, or IP addresses, and it sets no cookies.
+
+The plugin contacts one third-party service, and only when you ask it to: on the
+venue edit screen, the optional "Look up coordinates" button sends the venue
+address you typed to OpenStreetMap's Nominatim geocoding service
+(https://nominatim.openstreetmap.org) to convert it into latitude and longitude.
+This request is made from your browser, happens only when you click the button,
+and sends only the venue address. Nothing is transmitted if you enter coordinates
+by hand or leave the field alone. See the OpenStreetMap privacy policy at
+https://osmfoundation.org/wiki/Privacy_Policy.
+
+Maps on the front end are rendered by Leaflet, which is bundled with the plugin,
+but map tiles are fetched from OpenStreetMap's tile servers by the visitor's
+browser when a map block is displayed.
+
 == Frequently Asked Questions ==
 
 = Does this work with classic themes? =

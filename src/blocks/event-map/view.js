@@ -31,37 +31,41 @@ const escapeHtml = ( str ) =>
 			} )[ c ]
 	);
 
-document.querySelectorAll( '.blockendar-event-map[data-pins]' ).forEach( ( el ) => {
-	let pins;
-	try {
-		pins = JSON.parse( el.dataset.pins );
-	} catch {
-		return;
-	}
-
-	if ( ! pins.length ) return;
-
-	const zoom = parseInt( el.dataset.zoom ?? '14', 10 );
-	const map = L.map( el, { scrollWheelZoom: false } );
-
-	L.tileLayer( 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-		attribution:
-			'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-		maxZoom: 19,
-	} ).addTo( map );
-
-	const markers = pins.map( ( pin ) => {
-		const marker = L.marker( [ pin.lat, pin.lng ] ).addTo( map );
-		if ( pin.name ) {
-			marker.bindPopup( escapeHtml( pin.name ) );
+document
+	.querySelectorAll( '.blockendar-event-map[data-pins]' )
+	.forEach( ( el ) => {
+		let pins;
+		try {
+			pins = JSON.parse( el.dataset.pins );
+		} catch {
+			return;
 		}
-		return marker;
-	} );
 
-	if ( pins.length === 1 ) {
-		map.setView( [ pins[ 0 ].lat, pins[ 0 ].lng ], zoom );
-	} else {
-		const group = L.featureGroup( markers );
-		map.fitBounds( group.getBounds(), { padding: [ 40, 40 ] } );
-	}
-} );
+		if ( ! pins.length ) {
+			return;
+		}
+
+		const zoom = parseInt( el.dataset.zoom ?? '14', 10 );
+		const map = L.map( el, { scrollWheelZoom: false } );
+
+		L.tileLayer( 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution:
+				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+			maxZoom: 19,
+		} ).addTo( map );
+
+		const markers = pins.map( ( pin ) => {
+			const marker = L.marker( [ pin.lat, pin.lng ] ).addTo( map );
+			if ( pin.name ) {
+				marker.bindPopup( escapeHtml( pin.name ) );
+			}
+			return marker;
+		} );
+
+		if ( pins.length === 1 ) {
+			map.setView( [ pins[ 0 ].lat, pins[ 0 ].lng ], zoom );
+		} else {
+			const group = L.featureGroup( markers );
+			map.fitBounds( group.getBounds(), { padding: [ 40, 40 ] } );
+		}
+	} );

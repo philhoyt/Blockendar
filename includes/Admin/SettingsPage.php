@@ -118,21 +118,27 @@ class SettingsPage {
 		$raw_tz        = wp_timezone_string();
 		$site_timezone = '' !== $raw_tz ? $raw_tz : 'UTC';
 
-		wp_localize_script(
+		// wp_add_inline_script() rather than wp_localize_script(): localisation casts
+		// every scalar to a string, which would turn the booleans in defaults() into
+		// "1"/"" before the settings UI reads them, and it is the wrong tool for a
+		// REST nonce.
+		$settings_data = [
+			'restUrl'            => esc_url_raw( rest_url() ),
+			'nonce'              => wp_create_nonce( 'wp_rest' ),
+			'optionName'         => self::OPTION_NAME,
+			'defaults'           => self::defaults(),
+			'statsUrl'           => esc_url_raw( rest_url( 'blockendar/v1/settings/stats' ) ),
+			'rebuildUrl'         => esc_url_raw( rest_url( 'blockendar/v1/index/rebuild' ) ),
+			'importUrl'          => esc_url_raw( rest_url( 'blockendar/v1/import/tribe' ) ),
+			'version'            => BLOCKENDAR_VERSION,
+			'siteTimezone'       => $site_timezone,
+			'generalSettingsUrl' => esc_url( admin_url( 'options-general.php' ) ),
+		];
+
+		wp_add_inline_script(
 			'blockendar-settings',
-			'blockendarSettings',
-			[
-				'restUrl'            => esc_url_raw( rest_url() ),
-				'nonce'              => wp_create_nonce( 'wp_rest' ),
-				'optionName'         => self::OPTION_NAME,
-				'defaults'           => self::defaults(),
-				'statsUrl'           => esc_url_raw( rest_url( 'blockendar/v1/settings/stats' ) ),
-				'rebuildUrl'         => esc_url_raw( rest_url( 'blockendar/v1/index/rebuild' ) ),
-				'importUrl'          => esc_url_raw( rest_url( 'blockendar/v1/import/tribe' ) ),
-				'version'            => BLOCKENDAR_VERSION,
-				'siteTimezone'       => $site_timezone,
-				'generalSettingsUrl' => esc_url( admin_url( 'options-general.php' ) ),
-			]
+			'window.blockendarSettings = ' . wp_json_encode( $settings_data ) . ';',
+			'before'
 		);
 	}
 

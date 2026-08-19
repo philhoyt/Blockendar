@@ -1,7 +1,6 @@
 /**
  * event-countdown — editor component.
  */
-import './style.css';
 import { registerBlockType } from '@wordpress/blocks';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
@@ -17,7 +16,12 @@ import { __ } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
 import metadata from './block.json';
 
-const LABELS = { d: 'days', h: 'hours', m: 'minutes', s: 'seconds' };
+const LABELS = {
+	d: __( 'days', 'blockendar' ),
+	h: __( 'hours', 'blockendar' ),
+	m: __( 'minutes', 'blockendar' ),
+	s: __( 'seconds', 'blockendar' ),
+};
 const DEMO = { d: '05', h: '12', m: '30', s: '45' };
 
 function Edit( { attributes, setAttributes } ) {

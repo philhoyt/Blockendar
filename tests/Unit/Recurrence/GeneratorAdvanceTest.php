@@ -75,7 +75,13 @@ class GeneratorAdvanceTest extends TestCase {
 		// Cursor on a Monday (2026-03-09), byday=MO, cursor IS on that day.
 		// Next occurrence should be Monday 7 days later.
 		$cursor = $this->date( '2026-03-09' ); // Monday
-		$rule   = $this->rule( [ 'frequency' => 'weekly', 'byday' => 'MO', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'weekly',
+				'byday'        => 'MO',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->advance_weekly_public( $cursor, $rule );
 
@@ -86,7 +92,13 @@ class GeneratorAdvanceTest extends TestCase {
 	public function test_weekly_cursor_before_target_day_same_week(): void {
 		// Cursor on Monday (2026-03-09), byday=WE — Wednesday is in the same week.
 		$cursor = $this->date( '2026-03-09' ); // Monday
-		$rule   = $this->rule( [ 'frequency' => 'weekly', 'byday' => 'WE', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'weekly',
+				'byday'        => 'WE',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->advance_weekly_public( $cursor, $rule );
 
@@ -96,7 +108,13 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_weekly_multi_day_mo_fr_cursor_on_monday_gives_friday(): void {
 		$cursor = $this->date( '2026-03-09' ); // Monday
-		$rule   = $this->rule( [ 'frequency' => 'weekly', 'byday' => 'MO,FR', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'weekly',
+				'byday'        => 'MO,FR',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->advance_weekly_public( $cursor, $rule );
 
@@ -106,7 +124,13 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_weekly_multi_day_mo_fr_cursor_on_friday_gives_next_monday(): void {
 		$cursor = $this->date( '2026-03-13' ); // Friday
-		$rule   = $this->rule( [ 'frequency' => 'weekly', 'byday' => 'MO,FR', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'weekly',
+				'byday'        => 'MO,FR',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->advance_weekly_public( $cursor, $rule );
 
@@ -116,7 +140,13 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_weekly_biweekly_single_byday_advances_14_days(): void {
 		$cursor = $this->date( '2026-03-09' ); // Monday
-		$rule   = $this->rule( [ 'frequency' => 'weekly', 'byday' => 'MO', 'interval_val' => 2 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'weekly',
+				'byday'        => 'MO',
+				'interval_val' => 2,
+			]
+		);
 
 		$next = $this->gen->advance_weekly_public( $cursor, $rule );
 
@@ -126,7 +156,13 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_weekly_sunday_byday_correct(): void {
 		$cursor = $this->date( '2026-03-09' ); // Monday
-		$rule   = $this->rule( [ 'frequency' => 'weekly', 'byday' => 'SU', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'weekly',
+				'byday'        => 'SU',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->advance_weekly_public( $cursor, $rule );
 
@@ -141,7 +177,13 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_monthly_bymonthday_cursor_before_target_same_month(): void {
 		$cursor = $this->date( '2026-03-05' );
-		$rule   = $this->rule( [ 'frequency' => 'monthly', 'bymonthday' => '15', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'monthly',
+				'bymonthday'   => '15',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->advance_monthly_public( $cursor, $rule );
 
@@ -151,7 +193,13 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_monthly_bymonthday_cursor_after_target_wraps_to_next_month(): void {
 		$cursor = $this->date( '2026-03-20' );
-		$rule   = $this->rule( [ 'frequency' => 'monthly', 'bymonthday' => '15', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'monthly',
+				'bymonthday'   => '15',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->advance_monthly_public( $cursor, $rule );
 
@@ -163,7 +211,13 @@ class GeneratorAdvanceTest extends TestCase {
 		// PHP's DateTimeImmutable does not throw for '2026-02-31' — it overflows to March 3.
 		// The generator returns a DateTimeImmutable (not null) in this case.
 		$cursor = $this->date( '2026-01-31' );
-		$rule   = $this->rule( [ 'frequency' => 'monthly', 'bymonthday' => '31', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'monthly',
+				'bymonthday'   => '31',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->advance_monthly_public( $cursor, $rule );
 
@@ -175,7 +229,13 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_monthly_bymonthday_two_days_cursor_between_picks_second(): void {
 		$cursor = $this->date( '2026-03-10' );
-		$rule   = $this->rule( [ 'frequency' => 'monthly', 'bymonthday' => '1,15', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'monthly',
+				'bymonthday'   => '1,15',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->advance_monthly_public( $cursor, $rule );
 
@@ -185,7 +245,13 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_monthly_bymonthday_two_days_cursor_after_both_wraps_to_first_next_month(): void {
 		$cursor = $this->date( '2026-03-20' );
-		$rule   = $this->rule( [ 'frequency' => 'monthly', 'bymonthday' => '1,15', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'monthly',
+				'bymonthday'   => '1,15',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->advance_monthly_public( $cursor, $rule );
 
@@ -195,7 +261,12 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_monthly_default_no_bymonthday_same_day_next_month(): void {
 		$cursor = $this->date( '2026-03-15' );
-		$rule   = $this->rule( [ 'frequency' => 'monthly', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'monthly',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->advance_monthly_public( $cursor, $rule );
 
@@ -209,7 +280,14 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_nth_weekday_second_thursday(): void {
 		$cursor = $this->date( '2026-03-01' );
-		$rule   = $this->rule( [ 'frequency' => 'monthly', 'byday' => 'TH', 'bysetpos' => '2', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'monthly',
+				'byday'        => 'TH',
+				'bysetpos'     => '2',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->nth_weekday_public( $cursor, $rule, 1 );
 
@@ -223,7 +301,14 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_nth_weekday_first_monday(): void {
 		$cursor = $this->date( '2026-03-01' );
-		$rule   = $this->rule( [ 'frequency' => 'monthly', 'byday' => 'MO', 'bysetpos' => '1', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'monthly',
+				'byday'        => 'MO',
+				'bysetpos'     => '1',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->nth_weekday_public( $cursor, $rule, 1 );
 
@@ -234,7 +319,14 @@ class GeneratorAdvanceTest extends TestCase {
 
 	public function test_nth_weekday_last_friday(): void {
 		$cursor = $this->date( '2026-03-01' );
-		$rule   = $this->rule( [ 'frequency' => 'monthly', 'byday' => 'FR', 'bysetpos' => '-1', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'monthly',
+				'byday'        => 'FR',
+				'bysetpos'     => '-1',
+				'interval_val' => 1,
+			]
+		);
 
 		$next = $this->gen->nth_weekday_public( $cursor, $rule, 1 );
 
@@ -247,7 +339,14 @@ class GeneratorAdvanceTest extends TestCase {
 	public function test_nth_weekday_fifth_tuesday_month_without_five_returns_null(): void {
 		// April 2026 has only 4 Tuesdays — "fifth Tuesday" should return null.
 		$cursor = $this->date( '2026-03-01' );
-		$rule   = $this->rule( [ 'frequency' => 'monthly', 'byday' => 'TU', 'bysetpos' => '5', 'interval_val' => 1 ] );
+		$rule   = $this->rule(
+			[
+				'frequency'    => 'monthly',
+				'byday'        => 'TU',
+				'bysetpos'     => '5',
+				'interval_val' => 1,
+			]
+		);
 
 		// PHP "fifth Tuesday of April 2026" silently overflows to May — the generator
 		// currently returns that value rather than null for positive setpos.

@@ -7,6 +7,8 @@
 	<file>uninstall.php</file>
 	<file>includes/</file>
 	<file>src/blocks/</file>
+	<file>bin/</file>
+	<file>tests/</file>
 
 	<arg name="extensions" value="php"/>
 
@@ -101,10 +103,10 @@
 		<exclude-pattern>src/blocks/*/render.php</exclude-pattern>
 	</rule>
 
-	<!-- get_block_wrapper_attributes() already returns safe HTML; no extra escaping needed -->
-	<rule ref="WordPress.Security.EscapeOutput.OutputNotEscaped">
-		<exclude-pattern>src/blocks/*/render.php</exclude-pattern>
-	</rule>
+	<!-- NOTE: escaping is NOT excluded here. Individual safe outputs
+	     (get_block_wrapper_attributes(), render_block(), paginate_links())
+	     carry line-level phpcs:ignore annotations with justifications, so the
+	     sniff still guards every other output in these files. -->
 
 	<!-- ======================================================
 	     Database
@@ -118,14 +120,10 @@
 	<rule ref="WordPress.DB.SlowDBQuery">
 		<exclude-pattern>includes/</exclude-pattern>
 	</rule>
-	<!-- Schema DDL and dynamic queries in DB/ use table names and runtime-built
-	     WHERE clauses that PHPCS can't statically analyse for placeholder counts. -->
-	<rule ref="WordPress.DB.PreparedSQL">
-		<exclude-pattern>includes/DB/</exclude-pattern>
-	</rule>
-	<rule ref="WordPress.DB.PreparedSQLPlaceholders">
-		<exclude-pattern>includes/DB/</exclude-pattern>
-	</rule>
+	<!-- NOTE: SQL preparation is NOT excluded here. Queries that interpolate
+	     table names (which cannot be parameterised) or build placeholder lists
+	     at runtime carry line-level phpcs:ignore annotations, so the sniff still
+	     guards every other query in the DB layer. -->
 
 	<!-- ======================================================
 	     Alternatives
@@ -144,6 +142,37 @@
 				<element value="blockendar"/>
 			</property>
 		</properties>
+	</rule>
+
+	<!-- ======================================================
+	     Test suite
+	     ====================================================== -->
+	<!-- Tests co-locate small stub/fixture classes with the TestCase by design. -->
+	<rule ref="Generic.Files.OneObjectStructurePerFile">
+		<exclude-pattern>tests/</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.ClassComment.Missing">
+		<exclude-pattern>tests/</exclude-pattern>
+	</rule>
+	<!-- Unit tests run under Brain Monkey with no WordPress loaded, so the WP
+	     wrapper functions genuinely are not available. -->
+	<rule ref="WordPress.WP.AlternativeFunctions.json_encode_json_encode">
+		<exclude-pattern>tests/</exclude-pattern>
+	</rule>
+
+	<!-- ======================================================
+	     Developer scripts
+	     ====================================================== -->
+	<!-- bin/ holds local seeding/maintenance scripts run from WP-CLI. They are
+	     excluded from the distributed zip via the "files" array in package.json. -->
+	<rule ref="WordPress.WP.GlobalVariablesOverride">
+		<exclude-pattern>bin/</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.AlternativeFunctions.unlink_unlink">
+		<exclude-pattern>bin/</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.DB.DirectDatabaseQuery">
+		<exclude-pattern>bin/</exclude-pattern>
 	</rule>
 
 	<!-- ======================================================

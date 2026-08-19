@@ -4,18 +4,79 @@
  * Renders a FullCalendar instance hydrated from the blockendar/v1/calendar endpoint.
  * Mounted into every .wp-block-blockendar-calendar-view element on the page.
  * Configuration is read from data-* attributes set by render.php.
+ *
+ * FullCalendar and its view plugins are loaded with dynamic import() so webpack
+ * emits them as separate chunks: the entry script stays small, and a calendar
+ * configured for month view alone never downloads the timeGrid or list code.
  */
-import { createRoot, useRef, useEffect } from '@wordpress/element';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import listPlugin from '@fullcalendar/list';
-import interactionPlugin from '@fullcalendar/interaction';
+import { createRoot, useRef, useEffect, useState } from '@wordpress/element';
 
 const MOBILE_MQ = '(max-width: 767px)';
+const MOBILE_VIEW = 'listNextMonth';
+const DEFAULT_VIEWS = [ 'dayGridMonth', 'timeGridWeek', 'listNextMonth' ];
+
+/**
+ * Map a FullCalendar view name to the plugin package that provides it.
+ *
+ * @param {string} view View name, e.g. 'dayGridMonth' or 'listNextMonth'.
+ * @return {string|null} Plugin key, or null when the view is unrecognised.
+ */
+function pluginForView( view ) {
+	if ( view.startsWith( 'dayGrid' ) ) {
+		return 'dayGrid';
+	}
+	if ( view.startsWith( 'timeGrid' ) ) {
+		return 'timeGrid';
+	}
+	if ( view.startsWith( 'list' ) ) {
+		return 'list';
+	}
+	return null;
+}
+
+/**
+ * Dynamically load FullCalendar plus only the plugins the given views require.
+ *
+ * @param {string[]} views View names that must be renderable.
+ * @return {Promise<{Calendar: Object, plugins: Object[]}>} Loaded module refs.
+ */
+async function loadCalendar( views ) {
+	const needed = new Set();
+
+	views.forEach( ( view ) => {
+		const plugin = pluginForView( view );
+		if ( plugin ) {
+			needed.add( plugin );
+		}
+	} );
+
+	// The mobile breakpoint always switches to a list view, so its plugin is
+	// required regardless of which views the editor enabled.
+	needed.add( pluginForView( MOBILE_VIEW ) );
+
+	const [ { default: Calendar }, ...plugins ] = await Promise.all( [
+		import( '@fullcalendar/react' ),
+		...[ ...needed ].map( ( plugin ) => {
+			if ( 'dayGrid' === plugin ) {
+				return import( '@fullcalendar/daygrid' );
+			}
+			if ( 'timeGrid' === plugin ) {
+				return import( '@fullcalendar/timegrid' );
+			}
+			return import( '@fullcalendar/list' );
+		} ),
+	] );
+
+	return {
+		Calendar,
+		plugins: plugins.map( ( mod ) => mod.default ),
+	};
+}
 
 function BlockendarCalendar( { dataset } ) {
 	const calendarRef = useRef( null );
+	const [ loaded, setLoaded ] = useState( null );
+
 	const restUrl = dataset.restUrl ?? '/wp-json/blockendar/v1';
 	const venueIds = dataset.venueIds ? JSON.parse( dataset.venueIds ) : [];
 	const typeIds = dataset.typeIds ? JSON.parse( dataset.typeIds ) : [];
@@ -25,7 +86,7 @@ function BlockendarCalendar( { dataset } ) {
 	const timezone = dataset.timezone ?? 'UTC';
 	const enabledViews = dataset.enabledViews
 		? JSON.parse( dataset.enabledViews )
-		: [ 'dayGridMonth', 'timeGridWeek', 'listNextMonth' ];
+		: DEFAULT_VIEWS;
 
 	const viewButtons = enabledViews.join( ',' );
 
@@ -39,14 +100,35 @@ function BlockendarCalendar( { dataset } ) {
 	};
 
 	const isMobile = () => window.matchMedia( MOBILE_MQ ).matches;
-	const mobileView = 'listNextMonth';
+
+	useEffect( () => {
+		let cancelled = false;
+
+		loadCalendar( [ ...enabledViews, defaultView ] )
+			.then( ( result ) => {
+				if ( ! cancelled ) {
+					setLoaded( result );
+				}
+			} )
+			.catch( () => {
+				// Leave the container empty rather than throwing; the calendar is
+				// progressive enhancement over a plain block wrapper.
+			} );
+
+		return () => {
+			cancelled = true;
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [] );
 
 	useEffect( () => {
 		const mq = window.matchMedia( MOBILE_MQ );
 		const onChange = ( e ) => {
 			const api = calendarRef.current?.getApi();
-			if ( ! api ) return;
-			api.changeView( e.matches ? mobileView : defaultView );
+			if ( ! api ) {
+				return;
+			}
+			api.changeView( e.matches ? MOBILE_VIEW : defaultView );
 		};
 		mq.addEventListener( 'change', onChange );
 		return () => mq.removeEventListener( 'change', onChange );
@@ -82,17 +164,18 @@ function BlockendarCalendar( { dataset } ) {
 			.catch( failureCallback );
 	};
 
+	if ( ! loaded ) {
+		return null;
+	}
+
+	const { Calendar, plugins } = loaded;
+
 	return (
-		<FullCalendar
+		<Calendar
 			ref={ calendarRef }
-			plugins={ [
-				dayGridPlugin,
-				timeGridPlugin,
-				listPlugin,
-				interactionPlugin,
-			] }
+			plugins={ plugins }
 			timeZone={ timezone }
-			initialView={ isMobile() ? mobileView : defaultView }
+			initialView={ isMobile() ? MOBILE_VIEW : defaultView }
 			firstDay={ firstDay }
 			views={ customViews }
 			headerToolbar={ {
