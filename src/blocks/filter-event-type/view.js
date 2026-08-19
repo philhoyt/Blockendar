@@ -1,11 +1,22 @@
 /**
  * filter-event-type — frontend view script.
  *
- * Progressive enhancement for the event type filter:
- * - Auto-submits the form when a checkbox changes (no Apply button needed).
- * - Strips the pagination param before submitting so filter changes reset to page 1.
- * - Hides the Apply button when JS is available.
+ * Progressive enhancement for the event type filter.
+ *
+ * Two shapes, depending on the display style the editor chose:
+ *
+ * - Dropdown style renders a trigger and a panel, which become a popover. Because
+ *   several types can be ticked at once, the panel keeps its Apply button and does
+ *   not auto-submit — otherwise the first tick would navigate and close the panel
+ *   before a second could be made.
+ * - List style keeps the original behaviour: ticking a box submits immediately and
+ *   the Apply button is hidden as redundant.
+ *
+ * Either way the pagination param is stripped so a filter change returns to page 1.
  */
+import { initFilterPopover } from '../shared/filter-popover';
+import '../shared/filter-popover.css';
+
 ( function () {
 	document
 		.querySelectorAll( '.blockendar-filter-event-type' )
@@ -18,7 +29,13 @@
 
 			const submitBtn = el.querySelector( '.blockendar-filter__submit' );
 
-			// Hide the submit button — checkboxes auto-submit.
+			// Dropdown style: upgrade the trigger/panel pair and stop here. The
+			// Apply button inside the panel is the way to commit a multi-select.
+			if ( initFilterPopover( el ) ) {
+				return;
+			}
+
+			// List style: the box itself is the control, so Apply is redundant.
 			if ( submitBtn ) {
 				submitBtn.hidden = true;
 			}
