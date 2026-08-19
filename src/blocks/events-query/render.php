@@ -38,9 +38,23 @@ $page_param      = FilterContext::param_name( 'page', $query_id );
 // phpcs:disable WordPress.Security.NonceVerification.Recommended
 $current_page = max( 1, absint( wp_unslash( $_GET[ $page_param ] ?? 1 ) ) );
 // phpcs:enable
-$total_pages         = 1;
-$layout              = $attributes['displayLayout'] ?? [ 'type' => 'list' ];
-$is_grid             = 'grid' === ( $layout['type'] ?? 'list' );
+$total_pages = 1;
+$layout      = $attributes['displayLayout'] ?? [ 'type' => 'list' ];
+$layout_type = (string) ( $layout['type'] ?? 'list' );
+
+/*
+ * A view switcher on the page overrides the editor's layout for this request
+ * only. The value is already restricted to the allow-list by FilterContext, so
+ * anything it returns is a safe key; an unrecognised mode falls through to list,
+ * which is the layout every mode degrades to.
+ */
+$requested_view = FilterContext::get_view( $query_id );
+
+if ( null !== $requested_view ) {
+	$layout_type = $requested_view;
+}
+
+$is_grid             = 'grid' === $layout_type;
 $column_count        = max( 2, min( 6, (int) ( $layout['columnCount'] ?? 3 ) ) );
 $column_count_tablet = max( 1, min( 4, (int) ( $layout['columnCountTablet'] ?? 2 ) ) );
 $column_count_mobile = max( 1, min( 3, (int) ( $layout['columnCountMobile'] ?? 1 ) ) );
