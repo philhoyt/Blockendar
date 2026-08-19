@@ -78,7 +78,46 @@ class FilterContext {
 			'venue_id'   => $venue_raw ?: null,
 			'date_start' => $start,
 			'date_end'   => $end,
+			'view'       => self::get_view( $query_id ),
 		];
+	}
+
+	/**
+	 * The layout modes a view switcher may select.
+	 *
+	 * Returned through a filter so a theme can register additional modes, but the
+	 * result is still treated as an allow-list: whatever comes back is normalised
+	 * with sanitize_key() and a value outside it is discarded rather than reaching
+	 * a class attribute. events-query renders any mode it does not implement as a
+	 * list.
+	 *
+	 * @return string[] Allowed mode keys.
+	 */
+	public static function view_modes(): array {
+		$modes = [ 'list', 'grid' ];
+
+		/**
+		 * Filter the layout modes a view switcher may select.
+		 *
+		 * @param string[] $modes Allowed mode keys.
+		 */
+		$modes = (array) apply_filters( 'blockendar_filter_view_modes', $modes );
+
+		$modes = array_map( 'sanitize_key', array_filter( $modes, 'is_scalar' ) );
+
+		return array_values( array_unique( array_filter( $modes ) ) );
+	}
+
+	/**
+	 * Resolve the requested view mode for a query, or null when none applies.
+	 *
+	 * @param string $query_id Query ID from the blockendar/queryId block context.
+	 */
+	public static function get_view( string $query_id ): ?string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$raw = sanitize_key( (string) self::scalar_param( $_GET[ self::param_name( 'view', $query_id ) ] ?? '' ) );
+
+		return in_array( $raw, self::view_modes(), true ) ? $raw : null;
 	}
 
 	/**
@@ -164,6 +203,7 @@ class FilterContext {
 			self::param_name( 'date_start', $query_id ),
 			self::param_name( 'date_end', $query_id ),
 			self::param_name( 'page', $query_id ),
+			self::param_name( 'view', $query_id ),
 		];
 
 		return esc_url( remove_query_arg( $remove ) );
