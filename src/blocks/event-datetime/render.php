@@ -71,7 +71,7 @@ $same_day = $start_date === $end_date;
 		</time>
 	<?php elseif ( $show_end_time && ! $all_day && $same_day && $end_time && $end_time !== $start_time ) : ?>
 		<span class="blockendar-event-datetime__sep" aria-hidden="true"> <?php echo esc_html( $range_sep ); ?> </span>
-		<time class="blockendar-event-datetime__end" datetime="<?php echo esc_attr( "$end_date T$end_time" ); ?>">
+		<time class="blockendar-event-datetime__end" datetime="<?php echo esc_attr( "{$end_date}T{$end_time}" ); ?>">
 			<?php echo esc_html( $fmt_time( $end_time, $end_date ) ); ?>
 		</time>
 	<?php endif; ?>

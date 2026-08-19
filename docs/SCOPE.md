@@ -226,7 +226,32 @@ CREATE TABLE {prefix}blockendar_recurrence (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-### 3.3 Index Rebuild Strategy
+### 3.3 Known Performance Improvement Opportunities
+
+These are not blockers for v1 but are noted here for future development.
+
+**`featured` and `hide_from_listings` filters use `wp_postmeta` subqueries**
+
+`EventIndex::get_events_in_range()` currently handles the `featured` and `hide_hidden` filters via correlated subqueries against `wp_postmeta`:
+
+```sql
+AND p.ID IN (SELECT post_id FROM wp_postmeta WHERE meta_key = 'blockendar_featured' AND meta_value = '1')
+AND p.ID NOT IN (SELECT post_id FROM wp_postmeta WHERE meta_key = 'blockendar_hide_from_listings' AND meta_value = '1')
+```
+
+`wp_postmeta` is indexed on `(meta_key, meta_value)` so these are reasonable at current scale, but they don't benefit from the datetime index the way the rest of the query does.
+
+**Fix:** Denormalize `featured` (`TINYINT`) and `hide_from_listings` (`TINYINT`) directly into `{prefix}blockendar_events`, the same way `venue_term_id` and `status` are already stored there. Add indexed columns for both. `IndexBuilder` already rebuilds all rows on save, so keeping them in sync is straightforward. Requires a `DB_VERSION` bump, a `Schema::maybe_upgrade()` migration, and a Rebuild Index run after deploy.
+
+**`type_term_ids` filter uses `JSON_CONTAINS()` — no index support**
+
+The event type filter uses `JSON_CONTAINS(e.type_term_ids, %s, '$')` on a JSON column. MySQL cannot use a B-tree index on JSON array contents, so this falls back to a filtered row scan (after the datetime range narrows the result set). Fine at current scale.
+
+**Future fix if profiling shows it as a bottleneck:** Replace the JSON column with a `{prefix}blockendar_event_types` junction table (`index_row_id`, `type_term_id`) with an index on `type_term_id`, allowing a proper JOIN instead of a JSON scan.
+
+---
+
+### 3.4 Index Rebuild Strategy
 
 The `blockendar_events` table is a derived projection. It must be kept in sync:
 

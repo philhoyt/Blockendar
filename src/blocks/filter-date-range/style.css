@@ -1,0 +1,70 @@
+.blockendar-filter-date-range {
+	container-type: inline-size;
+
+	/* Positioning context for the Flatpickr calendar, which is mounted
+	   inside this wrapper via the appendTo option. */
+	position: relative;
+}
+
+.blockendar-filter-date-range__fields {
+	display: flex;
+	gap: 0.75em;
+	flex-wrap: wrap;
+}
+
+/* The class below sets display:flex, which outranks the user-agent
+   sheet's [hidden] rule, so the attribute has to be honoured
+   explicitly. JavaScript sets it on the end field once both dates
+   collapse into one range input. */
+.blockendar-filter-date-range__field[hidden] {
+	display: none;
+}
+
+.blockendar-filter-date-range__field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25em;
+	flex: 1;
+	min-width: 8em;
+}
+
+.blockendar-filter-date-range__label {
+	font-size: 0.85em;
+	font-weight: 600;
+}
+
+.blockendar-filter-date-range__input {
+	width: 100%;
+}
+
+/* When Flatpickr is active, the end-date field is hidden and the start
+   input spans the full width. */
+.blockendar-filter-date-range__fields .blockendar-filter-date-range__field:first-child:last-child {
+	flex: unset;
+	width: 100%;
+}
+
+/* Flatpickr theme overrides — scoped to our blocks */
+.blockendar-filter-date-range .flatpickr-calendar {
+	font-family: inherit;
+}
+
+.blockendar-filter-date-range .flatpickr-day.inRange {
+	background: var(--wp--preset--color--primary, #3858e9);
+	opacity: 0.15;
+}
+
+.blockendar-filter-date-range .flatpickr-day.startRange,
+.blockendar-filter-date-range .flatpickr-day.endRange {
+	background: var(--wp--preset--color--primary, #3858e9);
+	border-color: var(--wp--preset--color--primary, #3858e9);
+}
+
+/* The fieldset exists to associate the group label with both inputs; it should
+   not introduce the browser's default border, padding or margin. */
+.blockendar-filter-date-range__group {
+	border: 0;
+	margin: 0;
+	padding: 0;
+	min-width: 0;
+}
