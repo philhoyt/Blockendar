@@ -106,10 +106,13 @@
 					flatpickr( inputStart, {
 						mode: 'range',
 						dateFormat: 'Y-m-d',
-						// Mount inside the block rather than document.body so the
-						// calendar sits with its input, and so the theme overrides in
-						// style.css — which are scoped to this wrapper — actually apply.
-						appendTo: el,
+						// static:true renders the calendar inside a wrapper next to
+						// the input instead of floating it against page coordinates.
+						// appendTo alone only moves the containing node and leaves the
+						// absolute positioning intact, which put the calendar hundreds
+						// of pixels below the field. The wrapper still sits inside the
+						// block, so the scoped Flatpickr overrides in style.css apply.
+						static: true,
 						minDate: minDate ?? undefined,
 						maxDate: maxDate ?? undefined,
 						defaultDate: [
