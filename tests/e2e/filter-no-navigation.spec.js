@@ -52,6 +52,17 @@ test.afterAll( () => {
  * @param {import('@playwright/test').Page} page Playwright page.
  * @return {Promise<number>} The settled scroll position.
  */
+async function openDatePopover( page ) {
+	await page
+		.locator( '.blockendar-filter-date-range .blockendar-filter__trigger' )
+		.click();
+	await expect(
+		page.locator(
+			'.blockendar-filter-date-range .blockendar-filter__panel'
+		)
+	).toBeVisible();
+}
+
 async function scrollFilterIntoView( page ) {
 	await page
 		.locator( '.blockendar-filter-date-range' )
@@ -71,6 +82,7 @@ test( 'opening and closing the date picker leaves the page where it was', async 
 	);
 
 	await page.goto( `/?p=${ pageId }` );
+	await openDatePopover( page );
 	await expect(
 		page.locator( '.blockendar-filter-date-range__field' ).nth( 1 )
 	).toBeHidden( { timeout: 15000 } );
@@ -108,6 +120,7 @@ test( 'a half-finished range does not clear the fields or navigate', async ( {
 	);
 
 	await page.goto( `/?p=${ pageId }` );
+	await openDatePopover( page );
 	await expect(
 		page.locator( '.blockendar-filter-date-range__field' ).nth( 1 )
 	).toBeHidden( { timeout: 15000 } );
@@ -137,6 +150,7 @@ test( 'choosing a complete range still applies the filter', async ( {
 	page,
 } ) => {
 	await page.goto( `/?p=${ pageId }` );
+	await openDatePopover( page );
 	await expect(
 		page.locator( '.blockendar-filter-date-range__field' ).nth( 1 )
 	).toBeHidden( { timeout: 15000 } );

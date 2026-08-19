@@ -15,6 +15,16 @@ const { wpCli, wpCliId } = require( './wp-cli' );
 
 let pageId;
 
+/**
+ * Open the date filter's popover, which now wraps the fields.
+ *
+ * @param {import('@playwright/test').Page} page Playwright page.
+ */
+async function openDatePopover( page ) {
+	await page.locator( '.blockendar-filter__trigger' ).click();
+	await expect( page.locator( '.blockendar-filter__panel' ) ).toBeVisible();
+}
+
 test.beforeAll( () => {
 	pageId = wpCliId( [
 		'post',
@@ -81,6 +91,7 @@ test( 'the picker collapses the two fields into one labelled range input', async
 	page,
 } ) => {
 	await page.goto( `/?p=${ pageId }` );
+	await openDatePopover( page );
 
 	const endField = page
 		.locator( '.blockendar-filter-date-range__field' )
@@ -98,6 +109,7 @@ test( 'the calendar mounts inside the block and is not a full-page blob', async 
 	page,
 } ) => {
 	await page.goto( `/?p=${ pageId }` );
+	await openDatePopover( page );
 	await expect(
 		page.locator( '.blockendar-filter-date-range__field' ).nth( 1 )
 	).toBeHidden( { timeout: 15000 } );
@@ -110,12 +122,21 @@ test( 'the calendar mounts inside the block and is not a full-page blob', async 
 	const cal = page.locator( '.flatpickr-calendar' ).first();
 	await expect( cal ).toBeVisible();
 
-	// Mounted in the block, not document.body — this is what lets the block's
-	// own Flatpickr theme overrides apply.
-	const parentClass = await cal.evaluate(
-		( n ) => n.parentElement.className
+	// Mounted inside the block rather than at document.body — this is what lets
+	// the block's own Flatpickr theme overrides apply. Checked by ancestry, not
+	// by direct parent: static mode wraps the input in .flatpickr-wrapper and
+	// puts the calendar there, so the immediate parent is Flatpickr's own node.
+	const insideBlock = await cal.evaluate(
+		( n ) => !! n.closest( '.blockendar-filter-date-range' )
 	);
-	expect( parentClass ).toContain( 'blockendar-filter-date-range' );
+	expect( insideBlock ).toBe( true );
+
+	const insidePanel = await cal.evaluate(
+		( n ) => !! n.closest( '.blockendar-filter__panel' )
+	);
+	expect( insidePanel, 'the calendar belongs inside the popover panel' ).toBe(
+		true
+	);
 
 	// With its stylesheet missing the calendar rendered many hundreds of pixels
 	// tall; a styled month grid is far smaller.

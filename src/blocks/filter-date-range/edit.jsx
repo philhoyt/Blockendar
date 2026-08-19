@@ -7,7 +7,7 @@ import { __ } from '@wordpress/i18n';
 
 export default function Edit( { attributes, setAttributes } ) {
 	const { label, labelStart, labelEnd,
-		labelRange, minDate, maxDate } = attributes;
+		labelRange, minDate, maxDate , triggerLabel } = attributes;
 	const blockProps = useBlockProps( {
 		className: 'blockendar-filter-date-range',
 	} );
@@ -37,6 +37,17 @@ export default function Edit( { attributes, setAttributes } ) {
 						value={ labelEnd }
 						onChange={ ( val ) =>
 							setAttributes( { labelEnd: val } )
+						}
+					/>
+					<TextControl
+						label={ __( 'Trigger placeholder', 'blockendar' ) }
+						help={ __(
+							'Shown on the trigger when no dates are chosen.',
+							'blockendar'
+						) }
+						value={ triggerLabel }
+						onChange={ ( val ) =>
+							setAttributes( { triggerLabel: val } )
 						}
 					/>
 					<TextControl

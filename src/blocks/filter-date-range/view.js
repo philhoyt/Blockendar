@@ -4,6 +4,11 @@
  * Upgrades the two native <input type="date"> fields to a Flatpickr range
  * picker. Falls back to the native inputs if Flatpickr fails or is unavailable.
  *
+ * The two fields live inside a popover panel. Flatpickr is only initialised the
+ * first time that panel opens: static:true measures the input to place the
+ * calendar, and an element inside a display:none panel has no dimensions to
+ * measure, so initialising on load would mis-position it.
+ *
  * Flatpickr is pulled in with a dynamic import() so it ships as its own chunk:
  * the native inputs are fully usable on their own, so there is no reason to make
  * every visitor download a date picker before the form works.
@@ -13,6 +18,9 @@
  * An inverted range is normalised server-side in FilterContext, so the two
  * fields do not need to police each other here.
  */
+import { initFilterPopover } from '../shared/filter-popover';
+import '../shared/filter-popover.css';
+
 ( function () {
 	document
 		.querySelectorAll( '.blockendar-filter-date-range' )
@@ -34,7 +42,6 @@
 				return;
 			}
 
-			const submitBtn = el.querySelector( '.blockendar-filter__submit' );
 			const startLabel = inputStart
 				.closest( '.blockendar-filter-date-range__field' )
 				?.querySelector( 'label' );
@@ -83,99 +90,104 @@
 				}, 300 );
 			};
 
-			// Hide the submit button — picker auto-submits.
-			if ( submitBtn ) {
-				submitBtn.hidden = true;
-			}
+			// The Apply button stays available: the picker auto-submits once a
+			// full range is chosen, but the button is the no-JS path and the way
+			// to commit if the picker never loads.
 
-			// Replace the two separate inputs with a single Flatpickr range picker,
-			// using the start input as the anchor and hiding the end input.
-			//
-			// The end field is hidden only *after* the picker has loaded and
-			// initialised. Hiding it up front would strand the user with no way to
-			// pick an end date whenever the chunk fails to load, which is exactly
-			// the fallback this block claims to support.
-			Promise.all( [
-				import( 'flatpickr' ),
-				// Flatpickr's own stylesheet. Without it the calendar renders as a
-				// giant unstyled block at the end of <body>, because the library
-				// relies on this CSS for its positioning and sizing.
-				import( 'flatpickr/dist/flatpickr.css' ),
-			] )
-				.then( ( [ { default: flatpickr } ] ) => {
-					flatpickr( inputStart, {
-						mode: 'range',
-						dateFormat: 'Y-m-d',
-						// static:true renders the calendar inside a wrapper next to
-						// the input instead of floating it against page coordinates.
-						// appendTo alone only moves the containing node and leaves the
-						// absolute positioning intact, which put the calendar hundreds
-						// of pixels below the field. The wrapper still sits inside the
-						// block, so the scoped Flatpickr overrides in style.css apply.
-						static: true,
-						minDate: minDate ?? undefined,
-						maxDate: maxDate ?? undefined,
-						defaultDate: [
-							inputStart.value || null,
-							inputEnd.value || null,
-						].filter( Boolean ),
-						onClose( selectedDates ) {
-							// Compare against what the fields already hold and only
-							// navigate on a real change. Submitting unconditionally
-							// meant that merely opening and closing the picker
-							// reloaded the page, which threw the visitor back to the
-							// top of the results.
-							const fmt = ( d ) =>
-								d.getFullYear() +
-								'-' +
-								String( d.getMonth() + 1 ).padStart( 2, '0' ) +
-								'-' +
-								String( d.getDate() ).padStart( 2, '0' );
+			/**
+			 * Build the Flatpickr instance. Called on first open rather than on
+			 * load, because static:true measures the anchor input to place the
+			 * calendar and an input inside a display:none panel has no dimensions.
+			 *
+			 * @return {Promise<void>} Resolves once the picker is mounted.
+			 */
+			const buildPicker = () =>
+				Promise.all( [
+					import( 'flatpickr' ),
+					// Flatpickr's own stylesheet. Without it the calendar renders
+					// as a full-size unstyled block, because the library relies on
+					// this CSS for its positioning and sizing.
+					import( 'flatpickr/dist/flatpickr.css' ),
+				] )
+					.then( ( [ { default: flatpickr } ] ) => {
+						flatpickr( inputStart, {
+							mode: 'range',
+							dateFormat: 'Y-m-d',
+							// Renders the calendar in a wrapper next to the input
+							// rather than floating it against page coordinates.
+							static: true,
+							minDate: minDate ?? undefined,
+							maxDate: maxDate ?? undefined,
+							defaultDate: [
+								inputStart.value || null,
+								inputEnd.value || null,
+							].filter( Boolean ),
+							onClose( selectedDates ) {
+								// Only navigate on a real change. Submitting on
+								// every close meant that opening and dismissing the
+								// picker reloaded the page.
+								const fmt = ( d ) =>
+									d.getFullYear() +
+									'-' +
+									String( d.getMonth() + 1 ).padStart(
+										2,
+										'0'
+									) +
+									'-' +
+									String( d.getDate() ).padStart( 2, '0' );
 
-							const nextStart =
-								selectedDates.length === 2
-									? fmt( selectedDates[ 0 ] )
-									: '';
-							const nextEnd =
-								selectedDates.length === 2
-									? fmt( selectedDates[ 1 ] )
-									: '';
+								const nextStart =
+									selectedDates.length === 2
+										? fmt( selectedDates[ 0 ] )
+										: '';
+								const nextEnd =
+									selectedDates.length === 2
+										? fmt( selectedDates[ 1 ] )
+										: '';
 
-							// A half-finished range (one date picked) is not a
-							// selection yet — leave the fields untouched.
-							if ( selectedDates.length === 1 ) {
-								return;
-							}
+								// One date picked is not a range yet.
+								if ( selectedDates.length === 1 ) {
+									return;
+								}
 
-							if (
-								nextStart === inputStart.value &&
-								nextEnd === inputEnd.value
-							) {
-								return;
-							}
+								if (
+									nextStart === inputStart.value &&
+									nextEnd === inputEnd.value
+								) {
+									return;
+								}
 
-							inputStart.value = nextStart;
-							inputEnd.value = nextEnd;
-							submit();
-						},
+								inputStart.value = nextStart;
+								inputEnd.value = nextEnd;
+								submit();
+							},
+						} );
+
+						// One input now covers both ends of the range, so "From"
+						// no longer describes it. The replacement text comes from
+						// PHP because view scripts carry no translation context.
+						if ( startLabel && el.dataset.labelRange ) {
+							startLabel.textContent = el.dataset.labelRange;
+						}
+
+						endField?.setAttribute( 'hidden', '' );
+					} )
+					.catch( () => {
+						// Picker unavailable: both native date inputs stay visible
+						// with their From/To labels and the form still submits.
 					} );
 
-					// One input now covers both ends of the range, so "From" no
-					// longer describes it. The replacement text comes from PHP
-					// because view scripts carry no translation context of their own.
-					if ( startLabel && el.dataset.labelRange ) {
-						startLabel.textContent = el.dataset.labelRange;
+			let pickerBuilt = false;
+
+			initFilterPopover( el, {
+				onOpen: () => {
+					if ( pickerBuilt ) {
+						return;
 					}
 
-					endField?.setAttribute( 'hidden', '' );
-				} )
-				.catch( () => {
-					// Picker unavailable: both native date inputs stay visible with
-					// their original From/To labels, so restore the Apply button and
-					// leave the form working as plain HTML.
-					if ( submitBtn ) {
-						submitBtn.hidden = false;
-					}
-				} );
+					pickerBuilt = true;
+					buildPicker();
+				},
+			} );
 		} );
 } )();
