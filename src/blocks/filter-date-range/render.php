@@ -106,6 +106,12 @@ $wrapper_attrs = get_block_wrapper_attributes(
 );
 ?>
 <div <?php echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+	<?php if ( '' !== $label ) : ?>
+		<p class="blockendar-filter__label" id="<?php echo esc_attr( $id_group ); ?>">
+			<?php echo esc_html( $label ); ?>
+		</p>
+	<?php endif; ?>
+
 	<form method="get" action="<?php echo $form_action; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>">
 		<?php
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -130,12 +136,18 @@ $wrapper_attrs = get_block_wrapper_attributes(
 		</button>
 
 		<div class="blockendar-filter__panel" id="<?php echo esc_attr( $panel_id ); ?>">
-		<fieldset class="blockendar-filter-date-range__group">
-		<?php if ( '' !== $label ) : ?>
-			<legend class="blockendar-filter__label" id="<?php echo esc_attr( $id_group ); ?>">
-				<?php echo esc_html( $label ); ?>
-			</legend>
-		<?php endif; ?>
+		<?php
+		/*
+		 * The visible label sits outside the popover, as it does in the other two
+		 * filters — a legend inside the panel would only appear once the panel was
+		 * open, leaving the closed control unlabelled. The fieldset keeps the
+		 * grouping semantics and points at that paragraph instead.
+		 */
+		?>
+		<fieldset
+			class="blockendar-filter-date-range__group"
+			<?php echo '' !== $label ? 'aria-labelledby="' . esc_attr( $id_group ) . '"' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		>
 
 		<div class="blockendar-filter-date-range__fields">
 			<div class="blockendar-filter-date-range__field">

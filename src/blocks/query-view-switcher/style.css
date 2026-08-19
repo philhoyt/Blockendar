@@ -5,16 +5,20 @@
 
 .blockendar-view-switcher__button {
 	align-items: center;
-	border: 1px solid currentcolor;
+	background: var(--blockendar-surface, #fff);
+	border: 1px solid var(--blockendar-line, currentcolor);
+	border-radius: var(--blockendar-radius, 2px);
+	color: inherit;
 	cursor: pointer;
 	display: inline-flex;
 	gap: 0.4em;
-	padding: 0.4em 0.6em;
+	padding: var(--blockendar-control-padding, 0.7em 0.9em);
 	text-decoration: none;
 }
 
 .blockendar-view-switcher__button.is-active {
-	background: currentcolor;
+	background: var(--blockendar-accent, currentcolor);
+	border-color: var(--blockendar-accent, currentcolor);
 }
 
 .blockendar-view-switcher__button.is-active
@@ -25,8 +29,8 @@
 	color: var(--wp--preset--color--base, #fff);
 }
 
-/* Icons are drawn with borders rather than shipped as SVG files, so they inherit
-   the theme's colour without a fill attribute to keep in sync. */
+/* Icons are drawn with borders rather than shipped as SVG files, so they
+   inherit the theme's colour with no fill attribute to keep in sync. */
 .blockendar-view-switcher__icon {
 	block-size: 0.9em;
 	inline-size: 0.9em;

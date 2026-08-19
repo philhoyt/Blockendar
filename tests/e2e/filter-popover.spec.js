@@ -62,10 +62,26 @@ test( 'the dropdown style renders a single-row trigger, not a listbox', async ( 
 	const trigger = page.locator( '.blockendar-filter__trigger' );
 	await expect( trigger ).toBeVisible();
 
-	const box = await trigger.boundingBox();
-	expect( box.height, `trigger was ${ box.height }px tall` ).toBeLessThan(
-		60
-	);
+	/*
+	 * Measured against its own line-height rather than a fixed pixel budget. The
+	 * point is that this is one row of text plus padding, not the multi-row
+	 * listbox a <select multiple> renders. A hard-coded threshold breaks as soon
+	 * as the control's padding changes — which is exactly what happened when base
+	 * styling was added.
+	 */
+	const { height, lineHeight } = await trigger.evaluate( ( node ) => {
+		const styles = getComputedStyle( node );
+
+		return {
+			height: node.getBoundingClientRect().height,
+			lineHeight: parseFloat( styles.lineHeight ) || 16,
+		};
+	} );
+
+	expect(
+		height,
+		`trigger was ${ height }px against a ${ lineHeight }px line`
+	).toBeLessThan( lineHeight * 3 );
 } );
 
 test( 'the panel opens flush beneath the trigger at its width', async ( {

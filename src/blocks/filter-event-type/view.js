@@ -16,6 +16,7 @@
  */
 import { initFilterPopover } from '../shared/filter-popover';
 import '../shared/filter-popover.css';
+import '../shared/filter-controls.css';
 
 ( function () {
 	document

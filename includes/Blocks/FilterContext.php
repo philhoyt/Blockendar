@@ -56,11 +56,20 @@ class FilterContext {
 	 * }
 	 */
 	public static function get_active_filters( string $query_id ): array {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		/*
+		 * NonceVerification: these are public read-only filters in a GET request;
+		 * there is no state change to protect.
+		 *
+		 * ValidatedSanitizedInput: every value below is sanitised — absint(),
+		 * sanitize_text_field() or, for the term list, parse_id_list() — but each
+		 * passes through scalar_param() first, and the sniff cannot follow a
+		 * helper between the superglobal and its sanitiser.
+		 */
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
 		$type_raw   = $_GET[ self::param_name( 'type', $query_id ) ] ?? '';
-		$venue_raw  = absint( self::scalar_param( $_GET[ self::param_name( 'venue', $query_id ) ] ?? 0 ) );
-		$date_start = sanitize_text_field( wp_unslash( self::scalar_param( $_GET[ self::param_name( 'date_start', $query_id ) ] ?? '' ) ) );
-		$date_end   = sanitize_text_field( wp_unslash( self::scalar_param( $_GET[ self::param_name( 'date_end', $query_id ) ] ?? '' ) ) );
+		$venue_raw  = absint( self::scalar_param( wp_unslash( $_GET[ self::param_name( 'venue', $query_id ) ] ?? 0 ) ) );
+		$date_start = sanitize_text_field( self::scalar_param( wp_unslash( $_GET[ self::param_name( 'date_start', $query_id ) ] ?? '' ) ) );
+		$date_end   = sanitize_text_field( self::scalar_param( wp_unslash( $_GET[ self::param_name( 'date_end', $query_id ) ] ?? '' ) ) );
 		// phpcs:enable
 
 		$start = self::validate_date( $date_start );
@@ -114,8 +123,8 @@ class FilterContext {
 	 * @param string $query_id Query ID from the blockendar/queryId block context.
 	 */
 	public static function get_view( string $query_id ): ?string {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$raw = sanitize_key( (string) self::scalar_param( $_GET[ self::param_name( 'view', $query_id ) ] ?? '' ) );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput -- read-only GET filter; sanitize_key() applies, via the scalar guard the sniff cannot follow.
+		$raw = sanitize_key( (string) self::scalar_param( wp_unslash( $_GET[ self::param_name( 'view', $query_id ) ] ?? '' ) ) );
 
 		return in_array( $raw, self::view_modes(), true ) ? $raw : null;
 	}

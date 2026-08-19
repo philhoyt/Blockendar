@@ -1,10 +1,11 @@
 /**
  * Shared popover presentation for the filter blocks.
  *
- * Every rule is scoped to .is-enhanced, which JavaScript adds when it wires the
- * trigger to the panel. Without that class the panel keeps its normal flow
- * position and stays visible, so a visitor whose JavaScript never runs still has
- * a working control rather than one hidden by CSS that arrived regardless.
+ * Every rule is scoped to .is-enhanced, which JavaScript adds when it wires
+ * the trigger to the panel. Without that class the panel keeps its normal
+ * flow position and stays visible, so a visitor whose JavaScript never runs
+ * still has a working control rather than one hidden by CSS that arrived
+ * regardless.
  */
 
 .blockendar-filter__trigger {
