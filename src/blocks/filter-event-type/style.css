@@ -1,0 +1,60 @@
+.blockendar-filter-event-type {
+	container-type: inline-size;
+}
+
+.blockendar-filter__label {
+	font-weight: 600;
+	margin-block-end: 0.5em;
+}
+
+.blockendar-filter__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.35em;
+}
+
+.blockendar-filter__checkbox-label {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	cursor: pointer;
+}
+
+.blockendar-filter__count {
+	color: currentColor;
+	opacity: 0.6;
+	font-size: 0.85em;
+}
+
+.blockendar-filter__item.is-active > .blockendar-filter__checkbox-label {
+	font-weight: 600;
+}
+
+.blockendar-filter__select {
+	width: 100%;
+}
+
+.blockendar-filter__submit {
+	margin-block-start: 0.75em;
+}
+
+.blockendar-filter__clear {
+	display: inline-block;
+	margin-block-start: 0.5em;
+	font-size: 0.85em;
+	opacity: 0.7;
+}
+
+.blockendar-filter__placeholder {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	padding: 0.75em 1em;
+	background: #f0f0f1;
+	border-radius: 2px;
+	font-size: 0.85em;
+	color: #3c434a;
+}

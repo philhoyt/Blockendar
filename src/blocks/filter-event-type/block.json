@@ -1,0 +1,29 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockendar/filter-event-type",
+	"version": "0.9.5",
+	"title": "Filter by Event Type",
+	"category": "blockendar",
+	"icon": "tag",
+	"description": "Lets visitors filter an Events Query block by event type.",
+	"keywords": [ "events", "filter", "type", "category" ],
+	"textdomain": "blockendar",
+	"parent": [ "blockendar/query-filters" ],
+	"supports": {
+		"html": false,
+		"spacing": { "margin": true, "padding": true },
+		"typography": { "fontSize": true, "lineHeight": true }
+	},
+	"usesContext": [ "blockendar/queryId" ],
+	"attributes": {
+		"displayStyle":    { "type": "string",  "default": "list", "enum": [ "list", "dropdown" ] },
+		"showCount":       { "type": "boolean", "default": false },
+		"showEmptyTerms":  { "type": "boolean", "default": false },
+		"label":           { "type": "string",  "default": "" }
+	},
+	"render":       "file:./render.php",
+	"editorScript": "file:./index.js",
+	"viewScript":   "file:./view.js",
+	"style":        "file:./style-index.css"
+}

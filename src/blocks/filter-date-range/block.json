@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockendar/filter-date-range",
+	"version": "0.9.5",
+	"title": "Filter by Date Range",
+	"category": "blockendar",
+	"icon": "calendar",
+	"description": "Lets visitors filter an Events Query block by a date range using an interactive date picker.",
+	"keywords": [ "events", "filter", "date", "range", "calendar" ],
+	"textdomain": "blockendar",
+	"parent": [ "blockendar/query-filters" ],
+	"supports": {
+		"html": false,
+		"spacing": { "margin": true, "padding": true },
+		"typography": { "fontSize": true, "lineHeight": true }
+	},
+	"usesContext": [ "blockendar/queryId" ],
+	"attributes": {
+		"labelStart": { "type": "string",  "default": "From" },
+		"labelEnd":   { "type": "string",  "default": "To" },
+		"minDate":    { "type": "string",  "default": "" },
+		"maxDate":    { "type": "string",  "default": "" },
+		"label":      { "type": "string",  "default": "" }
+	},
+	"render":       "file:./render.php",
+	"editorScript": "file:./index.js",
+	"viewScript":   "file:./view.js",
+	"style":        "file:./style-index.css"
+}

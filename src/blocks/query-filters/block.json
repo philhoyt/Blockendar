@@ -1,0 +1,36 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockendar/query-filters",
+	"version": "0.9.5",
+	"title": "Events Query Filters",
+	"category": "blockendar",
+	"icon": "filter",
+	"description": "Wraps filter blocks and an Events Query block, providing a shared query ID so filters target the correct query.",
+	"keywords": [ "events", "filter", "query", "search" ],
+	"textdomain": "blockendar",
+	"supports": {
+		"html": false,
+		"align": [ "wide", "full" ],
+		"spacing": {
+			"padding": true,
+			"margin": true,
+			"blockGap": true,
+			"__experimentalDefaultControls": {
+				"blockGap": true
+			}
+		},
+		"color": {
+			"background": true,
+			"text": true
+		}
+	},
+	"attributes": {
+		"queryId": { "type": "string", "default": "" }
+	},
+	"providesContext": {
+		"blockendar/queryId": "queryId"
+	},
+	"render":       "file:./render.php",
+	"editorScript": "file:./index.js"
+}

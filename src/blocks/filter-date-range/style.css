@@ -1,0 +1,49 @@
+.blockendar-filter-date-range {
+	container-type: inline-size;
+}
+
+.blockendar-filter-date-range__fields {
+	display: flex;
+	gap: 0.75em;
+	flex-wrap: wrap;
+}
+
+.blockendar-filter-date-range__field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25em;
+	flex: 1;
+	min-width: 8em;
+}
+
+.blockendar-filter-date-range__label {
+	font-size: 0.85em;
+	font-weight: 600;
+}
+
+.blockendar-filter-date-range__input {
+	width: 100%;
+}
+
+/* When Flatpickr is active, the end-date field is hidden and the start
+   input spans the full width. */
+.blockendar-filter-date-range__fields .blockendar-filter-date-range__field:first-child:last-child {
+	flex: unset;
+	width: 100%;
+}
+
+/* Flatpickr theme overrides — scoped to our blocks */
+.blockendar-filter-date-range .flatpickr-calendar {
+	font-family: inherit;
+}
+
+.blockendar-filter-date-range .flatpickr-day.inRange {
+	background: var( --wp--preset--color--primary, #3858e9 );
+	opacity: 0.15;
+}
+
+.blockendar-filter-date-range .flatpickr-day.startRange,
+.blockendar-filter-date-range .flatpickr-day.endRange {
+	background: var( --wp--preset--color--primary, #3858e9 );
+	border-color: var( --wp--preset--color--primary, #3858e9 );
+}
