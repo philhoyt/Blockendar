@@ -29,26 +29,22 @@
 	color: var(--wp--preset--color--base, #fff);
 }
 
-/* Icons are drawn with borders rather than shipped as SVG files, so they
-   inherit the theme's colour with no fill attribute to keep in sync. */
+/* Icons are inline SVG filled with currentColor, so they follow the theme's
+   text colour and stay crisp at whatever size the control ends up. */
 .blockendar-view-switcher__icon {
-	block-size: 0.9em;
-	inline-size: 0.9em;
-	position: relative;
+	block-size: 1.1em;
+	display: inline-flex;
+	flex: none;
+	inline-size: 1.1em;
 }
 
-.blockendar-view-switcher__button[data-view="list"]
-.blockendar-view-switcher__icon {
-	border-block: 2px solid currentcolor;
-	border-block-end-width: 2px;
+.blockendar-view-switcher__icon svg {
+	block-size: 100%;
+	inline-size: 100%;
 }
 
-.blockendar-view-switcher__button[data-view="grid"]
-.blockendar-view-switcher__icon {
-	border: 2px solid currentcolor;
-}
-
-.blockendar-view-switcher__button.is-active
-.blockendar-view-switcher__icon {
-	border-color: var(--wp--preset--color--base, #fff);
+/* The active button's background is the accent colour, so its icon inverts
+   alongside the label to stay legible. */
+.blockendar-view-switcher__button.is-active .blockendar-view-switcher__icon {
+	color: var(--wp--preset--color--base, #fff);
 }

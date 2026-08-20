@@ -164,6 +164,83 @@ test( 'switching view resets pagination', async ( { page } ) => {
 	).not.toContain( 'blockendar_page' );
 } );
 
+test( 'switching view swaps the layout without reloading the page', async ( {
+	page,
+} ) => {
+	await page.goto( `/?p=${ pageId }` );
+
+	// Anything set on window is wiped by a real navigation, so its survival is
+	// direct proof the swap happened in place.
+	await page.evaluate( () => {
+		window.__blockendarNoReloadSentinel = true;
+	} );
+
+	await page
+		.locator( '.blockendar-view-switcher__button[data-view="grid"]' )
+		.click();
+
+	await expect( page.locator( '.blockendar-events-query' ) ).toHaveClass(
+		/is-grid-view/
+	);
+	expect( page.url() ).toContain( 'blockendar_view=grid' );
+
+	const survived = await page.evaluate(
+		() => window.__blockendarNoReloadSentinel === true
+	);
+
+	expect( survived, 'a full page load would have cleared it' ).toBe( true );
+} );
+
+test( 'the back button restores the previous view', async ( { page } ) => {
+	await page.goto( `/?p=${ pageId }` );
+
+	await page
+		.locator( '.blockendar-view-switcher__button[data-view="grid"]' )
+		.click();
+	await expect( page.locator( '.blockendar-events-query' ) ).toHaveClass(
+		/is-grid-view/
+	);
+
+	await page.goBack();
+
+	await expect( page.locator( '.blockendar-events-query' ) ).toHaveClass(
+		/is-list-view/
+	);
+	await expect(
+		page.locator( '.blockendar-view-switcher__button[data-view="list"]' )
+	).toHaveAttribute( 'aria-current', 'true' );
+} );
+
+test( 'the grid column count is available while a list is showing', async ( {
+	page,
+} ) => {
+	await page.goto( `/?p=${ pageId }` );
+
+	// Switching to grid on the client only swaps a class. If these custom
+	// properties were emitted for grid alone, the first switch would silently
+	// fall back to the stylesheet default instead of the editor's choice.
+	const style = await page
+		.locator( '.blockendar-events-query' )
+		.getAttribute( 'style' );
+
+	expect( style ).toContain( '--blockendar-columns:' );
+} );
+
+test( 'each mode renders a real icon', async ( { page } ) => {
+	await page.goto( `/?p=${ pageId }` );
+
+	await expect(
+		page.locator(
+			'.blockendar-view-switcher__button[data-view="list"] .blockendar-view-switcher__icon svg rect'
+		)
+	).toHaveCount( 3 );
+	await expect(
+		page.locator(
+			'.blockendar-view-switcher__button[data-view="grid"] .blockendar-view-switcher__icon svg rect'
+		)
+	).toHaveCount( 4 );
+} );
+
 test.describe( 'without JavaScript', () => {
 	test.use( { javaScriptEnabled: false } );
 

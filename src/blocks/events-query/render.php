@@ -229,16 +229,24 @@ if ( empty( $events ) ) {
 }
 
 $wrapper_attrs = [
-	'class' => 'blockendar-events-query is-' . ( $is_grid ? 'grid' : 'list' ) . '-view',
+	'class'         => 'blockendar-events-query is-' . ( $is_grid ? 'grid' : 'list' ) . '-view',
+
+	// Lets a view switcher on the page find the query it belongs to. Empty is a
+	// legitimate value: only the Query Filters block provides an ID, and a
+	// switcher outside one matches on the same empty string.
+	'data-query-id' => $query_id,
 ];
-if ( $is_grid ) {
-	$wrapper_attrs['style'] = '--blockendar-columns:' . $column_count . ';'
-		. '--blockendar-columns-tablet:' . $column_count_tablet . ';'
-		. '--blockendar-columns-mobile:' . $column_count_mobile . ';'
-		. $block_gap_style;
-} elseif ( $block_gap_style ) {
-	$wrapper_attrs['style'] = $block_gap_style;
-}
+
+/*
+ * The column custom properties are emitted for both layouts, not just grid.
+ * Switching view on the client swaps this element's class and nothing else, so
+ * the grid values have to be present while a list is showing — otherwise the
+ * first switch to grid would fall back to the CSS default column count.
+ */
+$wrapper_attrs['style'] = '--blockendar-columns:' . $column_count . ';'
+	. '--blockendar-columns-tablet:' . $column_count_tablet . ';'
+	. '--blockendar-columns-mobile:' . $column_count_mobile . ';'
+	. $block_gap_style;
 // Stamp ?occurrence_date= onto CPT permalinks while inner blocks render so that
 // core/post-title (and any other link) navigates to the correct occurrence.
 add_filter( 'post_type_link', 'blockendar_occurrence_permalink_filter', 10, 2 );
