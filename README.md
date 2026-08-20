@@ -19,7 +19,7 @@ A block-native WordPress events plugin.
 
 | | Minimum | Tested up to |
 |---|---|---|
-| WordPress | 6.8 | 7.0 |
+| WordPress | 6.8 | 7.1 |
 | PHP | 8.1 | 8.1 |
 
 ## Installation
@@ -67,6 +67,25 @@ Two third-party requests to OpenStreetMap are possible:
 See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Policy).
 
 ## Changelog
+
+### 1.1.0
+- Added: Events View Switcher block — visitors can switch the event list between list and grid layouts. The choice travels in the URL, and the control works without JavaScript.
+- Added: filter blocks for event type, venue and date range, each as a dropdown with its choices in a panel.
+- Added: base styling for all filter controls, taking colour from the theme.
+- Added: a translation template (`languages/blockendar.pot`).
+- Changed: the Event Type and Venue filters now default to their dropdown style. Blocks where the style was never chosen explicitly will switch from a list to a dropdown on upgrade.
+- Changed: the Date Range filter shows a calendar directly in its dropdown, and dates apply on Apply rather than as you click.
+- Changed: the Event Type and Venue filters list only terms that have upcoming events.
+- Changed: the Events Query block previews real events in the editor instead of grey placeholder bars.
+- Fixed: the Event Type filter never actually filtered anything
+- Fixed: filter blocks collapsed to zero width inside a Row block
+- Fixed: the date picker opened far below its field, and closing it reloaded the page
+- Fixed: a backwards date range showed "no events found" instead of the range you meant
+- Fixed: the filter blocks' own stylesheets were never loaded on the front end
+- Fixed: an invalid datetime attribute on single-day events with an end time
+- Fixed: filter parameters given as arrays in a URL could select the wrong term
+- Performance: calendar front-end script 263 KB → 5 KB, and event queries are now cached
+- Tested up to WordPress 7.1
 
 ### 1.0.1
 - Fixed: event titles containing `&` were displayed as `&amp;` in the Calendar View block

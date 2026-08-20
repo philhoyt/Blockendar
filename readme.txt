@@ -2,8 +2,8 @@
 Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
-Tested up to: 7.0
-Stable tag: 1.0.1
+Tested up to: 7.1
+Stable tag: 1.1.0
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -84,6 +84,25 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 1.1.0 =
+* Added: Events View Switcher block — visitors can switch the event list between list and grid layouts. The choice travels in the URL, and the control works without JavaScript.
+* Added: filter blocks for event type, venue and date range, each as a dropdown with its choices in a panel.
+* Added: base styling for all filter controls. Themes cannot be relied on to style bare inputs, so the plugin now supplies its own structure while still taking colour from the theme.
+* Added: a translation template (languages/blockendar.pot) so the plugin can be translated.
+* Changed: the Event Type and Venue filters now default to their dropdown style. Blocks where the style was never chosen explicitly will switch from a list to a dropdown on upgrade.
+* Changed: the Date Range filter now shows a calendar directly in its dropdown instead of two fields that opened one, and dates apply when you press Apply rather than as you click.
+* Changed: the Event Type and Venue filters now list only terms that have upcoming events, instead of every term that has ever been used.
+* Changed: the Events Query block previews real events in the editor instead of grey placeholder bars.
+* Fixed: the Event Type filter never actually filtered anything.
+* Fixed: filter blocks collapsed to zero width when placed inside a Row block.
+* Fixed: the date picker opened far below its field, and closing it reloaded the page and jumped back to the top.
+* Fixed: a backwards date range showed "no events found" instead of the range you meant.
+* Fixed: the filter blocks' own stylesheets were never loaded on the front end.
+* Fixed: an invalid datetime attribute on single-day events with an end time.
+* Fixed: filter parameters given as arrays in a URL could select the wrong term.
+* Performance: the calendar's front-end script dropped from 263 KB to 5 KB by loading its parts on demand, and event queries are now cached.
+* Tested up to WordPress 7.1.
 
 = 1.0.1 =
 * Fixed: event titles containing & were displayed as &amp; in the Calendar View block.
@@ -186,6 +205,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+The Event Type and Venue filters now default to their dropdown style. Any of those blocks where you never chose a style explicitly will change from a list to a dropdown — set it back to List in the block settings if you prefer. Those two filters also now list only terms that have upcoming events.
 
 = 1.0.1 =
 No upgrade steps required.

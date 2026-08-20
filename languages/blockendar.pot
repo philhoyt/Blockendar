@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Blockendar - Events and Calendars 1.0.1\n"
+"Project-Id-Version: Blockendar - Events and Calendars 1.1.0\n"
 "Report-Msgid-Bugs-To: https://github.com/philhoyt/Blockendar/issues\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: philhoyt <https://github.com/philhoyt/Blockendar>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-14T19:45:35+00:00\n"
+"POT-Creation-Date: 2026-08-20T14:51:48+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: blockendar\n"
@@ -143,7 +143,7 @@ msgid "Search Events"
 msgstr ""
 
 #: includes/CPT/EventPostType.php:44
-#: src/blocks/events-query/render.php:183
+#: src/blocks/events-query/render.php:226
 #: src/blocks/events-query-no-results/index.js:24
 msgid "No events found."
 msgstr ""
@@ -546,16 +546,111 @@ msgstr ""
 msgid "Join stream"
 msgstr ""
 
-#: src/blocks/events-query/render.php:242
+#: src/blocks/events-query/render.php:285
 msgid "Previous"
 msgstr ""
 
-#: src/blocks/events-query/render.php:243
+#: src/blocks/events-query/render.php:286
 msgid "Next"
 msgstr ""
 
-#: src/blocks/events-query/render.php:248
+#: src/blocks/events-query/render.php:291
 msgid "Events navigation"
+msgstr ""
+
+#: src/blocks/filter-date-range/render.php:23
+msgid "From"
+msgstr ""
+
+#: src/blocks/filter-date-range/render.php:24
+msgid "To"
+msgstr ""
+
+#: src/blocks/filter-date-range/render.php:52
+msgid "All dates"
+msgstr ""
+
+#. translators: 1: range start date, 2: range end date.
+#: src/blocks/filter-date-range/render.php:59
+#, php-format
+msgid "%1$s – %2$s"
+msgstr ""
+
+#. translators: %s: range start date.
+#: src/blocks/filter-date-range/render.php:66
+#, php-format
+msgid "From %s"
+msgstr ""
+
+#. translators: %s: range end date.
+#: src/blocks/filter-date-range/render.php:72
+#, php-format
+msgid "Until %s"
+msgstr ""
+
+#: src/blocks/filter-date-range/render.php:192
+msgid "Clear dates"
+msgstr ""
+
+#: src/blocks/filter-date-range/render.php:197
+msgid "Apply dates"
+msgstr ""
+
+#. translators: %d: number of selected event types.
+#: src/blocks/filter-event-type/render.php:110
+#, php-format
+msgid "%d type selected"
+msgid_plural "%d types selected"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/blocks/filter-event-type/render.php:120
+msgid "All types"
+msgstr ""
+
+#: src/blocks/filter-event-type/render.php:164
+msgid "Filter by event type"
+msgstr ""
+
+#: src/blocks/filter-event-type/render.php:200
+#: src/blocks/filter-venue/render.php:185
+#: src/admin/sections/ImportSection.jsx:170
+#: src/admin/sections/RestApiSection.jsx:88
+msgid "Clear"
+msgstr ""
+
+#: src/blocks/filter-event-type/render.php:205
+#: src/blocks/filter-venue/render.php:190
+msgid "Apply"
+msgstr ""
+
+#: src/blocks/filter-venue/render.php:118
+#: src/blocks/filter-venue/render.php:166
+msgid "All venues"
+msgstr ""
+
+#: src/blocks/filter-venue/render.php:161
+msgid "Filter by venue"
+msgstr ""
+
+#: src/blocks/query-view-switcher/render.php:45
+#: src/blocks/query-view-switcher/edit.jsx:55
+msgid "List view"
+msgstr ""
+
+#: src/blocks/query-view-switcher/render.php:46
+#: src/blocks/query-view-switcher/edit.jsx:66
+msgid "Grid view"
+msgstr ""
+
+#: src/blocks/query-view-switcher/render.php:58
+msgid "Change the event layout"
+msgstr ""
+
+#. translators: %s: view mode key, used when a theme registers a mode the plugin has no label for.
+#: src/blocks/query-view-switcher/render.php:73
+#, php-format
+msgid "%s view"
 msgstr ""
 
 #: src/admin/sections/CalendarSection.jsx:8
@@ -611,6 +706,7 @@ msgstr ""
 
 #: src/admin/sections/CalendarSection.jsx:32
 #: src/blocks/calendar-view/edit.jsx:186
+#: src/blocks/query-view-switcher/edit.jsx:19
 msgid "Default view"
 msgstr ""
 
@@ -774,11 +870,6 @@ msgstr ""
 
 #: src/admin/sections/ImportSection.jsx:154
 msgid "Import Events"
-msgstr ""
-
-#: src/admin/sections/ImportSection.jsx:170
-#: src/admin/sections/RestApiSection.jsx:88
-msgid "Clear"
 msgstr ""
 
 #: src/admin/sections/ImportSection.jsx:203
@@ -973,6 +1064,7 @@ msgid "Day"
 msgstr ""
 
 #: src/blocks/calendar-view/edit.jsx:20
+#: src/blocks/query-view-switcher/edit.jsx:26
 msgid "List"
 msgstr ""
 
@@ -1157,86 +1249,246 @@ msgstr ""
 msgid "Add a message for when no events are found…"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:118
+#: src/blocks/events-query/edit.jsx:187
 msgctxt "events query display layout"
 msgid "List view"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:130
+#: src/blocks/events-query/edit.jsx:199
 msgctxt "events query display layout"
 msgid "Grid view"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:149
+#: src/blocks/events-query/edit.jsx:218
 msgid "Layout"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:154
+#: src/blocks/events-query/edit.jsx:223
 msgid "Columns — Mobile"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:174
+#: src/blocks/events-query/edit.jsx:243
 msgid "Columns — Tablet"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:194
+#: src/blocks/events-query/edit.jsx:263
 msgid "Columns — Desktop"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:218
+#: src/blocks/events-query/edit.jsx:287
 msgid "Query"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:221
+#: src/blocks/events-query/edit.jsx:290
 msgid "Inherit query from template"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:229
+#: src/blocks/events-query/edit.jsx:298
 msgid "Automatically filters by the current archive term (event type or venue). Use this when placing the block inside a taxonomy template."
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:236
+#: src/blocks/events-query/edit.jsx:305
 msgid "Events per page"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:246
+#: src/blocks/events-query/edit.jsx:315
 msgid "Show past events"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:254
+#: src/blocks/events-query/edit.jsx:323
 msgid "Reverse order"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:262
+#: src/blocks/events-query/edit.jsx:331
 msgid "Show pagination"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:271
+#: src/blocks/events-query/edit.jsx:340
 msgid "Related events"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:275
+#: src/blocks/events-query/edit.jsx:344
 msgid "Off"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:279
+#: src/blocks/events-query/edit.jsx:348
 msgid "Same event type"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:286
+#: src/blocks/events-query/edit.jsx:355
 msgid "Same venue"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:290
+#: src/blocks/events-query/edit.jsx:359
 msgid "Same type or venue"
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:302
+#: src/blocks/events-query/edit.jsx:371
 msgid "Shows events sharing the current post’s type or venue. Place this block inside a single-event template."
 msgstr ""
 
-#: src/blocks/events-query/edit.jsx:316
+#: src/blocks/events-query/edit.jsx:385
+#: src/blocks/filter-event-type/edit.jsx:88
 msgid "Filter by Event Type"
+msgstr ""
+
+#: src/blocks/events-query/edit.jsx:451
+msgid "No published events yet. The layout above is a template — it will repeat for each event once you publish some."
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:18
+#: src/blocks/filter-event-type/edit.jsx:23
+#: src/blocks/filter-venue/edit.jsx:22
+msgid "Filter Settings"
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:20
+#: src/blocks/filter-event-type/edit.jsx:25
+#: src/blocks/filter-venue/edit.jsx:24
+msgid "Label"
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:21
+#: src/blocks/filter-event-type/edit.jsx:26
+#: src/blocks/filter-venue/edit.jsx:25
+msgid "Optional heading above the filter."
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:29
+msgid "Start date label"
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:36
+msgid "End date label"
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:43
+#: src/blocks/filter-event-type/edit.jsx:34
+#: src/blocks/filter-venue/edit.jsx:33
+msgid "Trigger placeholder"
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:44
+msgid "Shown on the trigger when no dates are chosen."
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:54
+msgid "Minimum date (Y-m-d)"
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:55
+msgid "Prevent selection before this date. Leave blank for no limit."
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:66
+msgid "Maximum date (Y-m-d)"
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:67
+msgid "Prevent selection after this date. Leave blank for no limit."
+msgstr ""
+
+#: src/blocks/filter-date-range/edit.jsx:86
+msgid "Filter by Date Range"
+msgstr ""
+
+#: src/blocks/filter-event-type/edit.jsx:35
+msgid "Shown on the dropdown trigger when nothing is selected."
+msgstr ""
+
+#: src/blocks/filter-event-type/edit.jsx:45
+#: src/blocks/filter-venue/edit.jsx:44
+msgid "Display style"
+msgstr ""
+
+#: src/blocks/filter-event-type/edit.jsx:49
+msgid "List (checkboxes)"
+msgstr ""
+
+#: src/blocks/filter-event-type/edit.jsx:53
+#: src/blocks/filter-venue/edit.jsx:55
+msgid "Dropdown"
+msgstr ""
+
+#: src/blocks/filter-event-type/edit.jsx:62
+msgid "Show event counts"
+msgstr ""
+
+#: src/blocks/filter-event-type/edit.jsx:63
+msgid "Displays the number of events per type. Adds a query per term — use only with small term lists."
+msgstr ""
+
+#: src/blocks/filter-event-type/edit.jsx:73
+msgid "Show empty terms"
+msgstr ""
+
+#: src/blocks/filter-event-type/edit.jsx:92
+#: src/blocks/filter-venue/edit.jsx:90
+msgid "dropdown"
+msgstr ""
+
+#: src/blocks/filter-event-type/edit.jsx:93
+msgid "checkboxes"
+msgstr ""
+
+#: src/blocks/filter-venue/edit.jsx:34
+msgid "Shown on the dropdown trigger when no venue is selected."
+msgstr ""
+
+#: src/blocks/filter-venue/edit.jsx:48
+msgid "List (radio buttons)"
+msgstr ""
+
+#: src/blocks/filter-venue/edit.jsx:64
+msgid "Show empty venues"
+msgstr ""
+
+#: src/blocks/filter-venue/edit.jsx:71
+msgid "Show virtual venues"
+msgstr ""
+
+#: src/blocks/filter-venue/edit.jsx:86
+msgid "Filter by Venue"
+msgstr ""
+
+#: src/blocks/filter-venue/edit.jsx:91
+msgid "radio buttons"
+msgstr ""
+
+#: src/blocks/query-filters/edit.jsx:32
+msgid "Filter Group"
+msgstr ""
+
+#: src/blocks/query-filters/edit.jsx:34
+msgid "Query ID"
+msgstr ""
+
+#: src/blocks/query-filters/edit.jsx:35
+msgid "Leave blank for a single filter group. Set a unique ID (e.g. \"sidebar\") only when you have multiple Events Query + Filter groups on the same page."
+msgstr ""
+
+#: src/blocks/query-filters/edit.jsx:50
+msgid "All filter blocks and the Events Query block inside this group must share this Query ID."
+msgstr ""
+
+#: src/blocks/query-view-switcher/edit.jsx:17
+msgid "View Switcher"
+msgstr ""
+
+#: src/blocks/query-view-switcher/edit.jsx:20
+msgid "The layout used until a visitor chooses another. Selecting it leaves no parameter in the URL."
+msgstr ""
+
+#: src/blocks/query-view-switcher/edit.jsx:27
+msgid "Grid"
+msgstr ""
+
+#: src/blocks/query-view-switcher/edit.jsx:34
+msgid "Show labels"
+msgstr ""
+
+#: src/blocks/query-view-switcher/edit.jsx:35
+msgid "Shows text beside each icon. When off the icons carry an accessible label instead."
 msgstr ""
 
 #: src/editor/DateTimePanel.jsx:205
@@ -1470,6 +1722,7 @@ msgstr ""
 
 #: src/blocks/add-to-calendar/block.json
 #: src/blocks/calendar-view/block.json
+#: src/blocks/filter-date-range/block.json
 msgctxt "block keyword"
 msgid "calendar"
 msgstr ""
@@ -1497,6 +1750,11 @@ msgstr ""
 #: src/blocks/calendar-view/block.json
 #: src/blocks/events-query-no-results/block.json
 #: src/blocks/events-query/block.json
+#: src/blocks/filter-date-range/block.json
+#: src/blocks/filter-event-type/block.json
+#: src/blocks/filter-venue/block.json
+#: src/blocks/query-filters/block.json
+#: src/blocks/query-view-switcher/block.json
 msgctxt "block keyword"
 msgid "events"
 msgstr ""
@@ -1568,6 +1826,7 @@ msgid "Displays formatted start and end date/time with timezone."
 msgstr ""
 
 #: src/blocks/event-datetime/block.json
+#: src/blocks/filter-date-range/block.json
 msgctxt "block keyword"
 msgid "date"
 msgstr ""
@@ -1594,12 +1853,14 @@ msgstr ""
 
 #: src/blocks/event-map/block.json
 #: src/blocks/event-venue/block.json
+#: src/blocks/filter-venue/block.json
 msgctxt "block keyword"
 msgid "location"
 msgstr ""
 
 #: src/blocks/event-map/block.json
 #: src/blocks/event-venue/block.json
+#: src/blocks/filter-venue/block.json
 msgctxt "block keyword"
 msgid "venue"
 msgstr ""
@@ -1675,11 +1936,13 @@ msgid "Queries upcoming events and renders each one using the inner block templa
 msgstr ""
 
 #: src/blocks/events-query/block.json
+#: src/blocks/query-filters/block.json
 msgctxt "block keyword"
 msgid "query"
 msgstr ""
 
 #: src/blocks/events-query/block.json
+#: src/blocks/query-view-switcher/block.json
 msgctxt "block keyword"
 msgid "list"
 msgstr ""
@@ -1687,4 +1950,97 @@ msgstr ""
 #: src/blocks/events-query/block.json
 msgctxt "block keyword"
 msgid "loop"
+msgstr ""
+
+#: src/blocks/filter-date-range/block.json
+msgctxt "block title"
+msgid "Filter by Date Range"
+msgstr ""
+
+#: src/blocks/filter-date-range/block.json
+msgctxt "block description"
+msgid "Lets visitors filter an Events Query block by a date range using an interactive date picker."
+msgstr ""
+
+#: src/blocks/filter-date-range/block.json
+#: src/blocks/filter-event-type/block.json
+#: src/blocks/filter-venue/block.json
+#: src/blocks/query-filters/block.json
+msgctxt "block keyword"
+msgid "filter"
+msgstr ""
+
+#: src/blocks/filter-date-range/block.json
+msgctxt "block keyword"
+msgid "range"
+msgstr ""
+
+#: src/blocks/filter-event-type/block.json
+msgctxt "block title"
+msgid "Filter by Event Type"
+msgstr ""
+
+#: src/blocks/filter-event-type/block.json
+msgctxt "block description"
+msgid "Lets visitors filter an Events Query block by event type."
+msgstr ""
+
+#: src/blocks/filter-event-type/block.json
+msgctxt "block keyword"
+msgid "type"
+msgstr ""
+
+#: src/blocks/filter-event-type/block.json
+msgctxt "block keyword"
+msgid "category"
+msgstr ""
+
+#: src/blocks/filter-venue/block.json
+msgctxt "block title"
+msgid "Filter by Venue"
+msgstr ""
+
+#: src/blocks/filter-venue/block.json
+msgctxt "block description"
+msgid "Lets visitors filter an Events Query block by venue."
+msgstr ""
+
+#: src/blocks/query-filters/block.json
+msgctxt "block title"
+msgid "Events Query Filters"
+msgstr ""
+
+#: src/blocks/query-filters/block.json
+msgctxt "block description"
+msgid "Wraps filter blocks and an Events Query block, providing a shared query ID so filters target the correct query."
+msgstr ""
+
+#: src/blocks/query-filters/block.json
+msgctxt "block keyword"
+msgid "search"
+msgstr ""
+
+#: src/blocks/query-view-switcher/block.json
+msgctxt "block title"
+msgid "Events View Switcher"
+msgstr ""
+
+#: src/blocks/query-view-switcher/block.json
+msgctxt "block description"
+msgid "Lets visitors switch the Events Query block between list and grid layouts."
+msgstr ""
+
+#: src/blocks/query-view-switcher/block.json
+msgctxt "block keyword"
+msgid "view"
+msgstr ""
+
+#: src/blocks/query-view-switcher/block.json
+msgctxt "block keyword"
+msgid "layout"
+msgstr ""
+
+#: src/blocks/query-view-switcher/block.json
+msgctxt "block keyword"
+msgid "grid"
 msgstr ""

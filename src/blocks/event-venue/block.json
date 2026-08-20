@@ -2,17 +2,29 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "blockendar/event-venue",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"title": "Event Venue",
 	"category": "blockendar",
 	"icon": "location",
 	"description": "Displays venue name, address, and optional map embed.",
-	"keywords": [ "venue", "location", "address" ],
+	"keywords": [
+		"venue",
+		"location",
+		"address"
+	],
 	"textdomain": "blockendar",
-	"usesContext": [ "postId", "postType" ],
-	"supports": { "html": false },
+	"usesContext": [
+		"postId",
+		"postType"
+	],
+	"supports": {
+		"html": false
+	},
 	"attributes": {
-		"showAddress": { "type": "boolean", "default": true }
+		"showAddress": {
+			"type": "boolean",
+			"default": true
+		}
 	},
 	"render": "file:./render.php",
 	"editorScript": "file:./index.js"

@@ -2,12 +2,16 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "blockendar/add-to-calendar",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"title": "Add to Calendar",
 	"category": "blockendar",
 	"icon": "calendar",
 	"description": "Generates add-to-calendar links: Google, Apple, Outlook, and .ics download.",
-	"keywords": [ "calendar", "ics", "subscribe" ],
+	"keywords": [
+		"calendar",
+		"ics",
+		"subscribe"
+	],
 	"textdomain": "blockendar",
 	"usesContext": [
 		"postId",

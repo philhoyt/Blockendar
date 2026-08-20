@@ -2,12 +2,18 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "blockendar/events-query-no-results",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"title": "No Results - Events Query",
 	"category": "blockendar",
 	"description": "Displayed when the Events Query block returns no results. Add any blocks here to customise the empty state.",
-	"keywords": [ "empty", "no results", "events" ],
-	"ancestor": [ "blockendar/events-query" ],
+	"keywords": [
+		"empty",
+		"no results",
+		"events"
+	],
+	"ancestor": [
+		"blockendar/events-query"
+	],
 	"textdomain": "blockendar",
 	"supports": {
 		"html": false,

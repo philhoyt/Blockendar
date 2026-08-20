@@ -1,6 +1,6 @@
 {
   "name": "blockendar",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Block-native WordPress events plugin",
   "license": "GPL-2.0-or-later",
   "private": true,
@@ -10,6 +10,7 @@
     "includes",
     "lib",
     "templates",
+    "languages",
     "blockendar.php",
     "uninstall.php",
     "readme.txt",

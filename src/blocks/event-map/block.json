@@ -2,22 +2,37 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "blockendar/event-map",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"title": "Event Map",
 	"category": "blockendar",
 	"icon": "location-alt",
 	"description": "Embeds a map at the venue's coordinates. Provider configured in plugin settings.",
-	"keywords": [ "map", "location", "venue" ],
+	"keywords": [
+		"map",
+		"location",
+		"venue"
+	],
 	"textdomain": "blockendar",
-	"usesContext": [ "postId", "postType" ],
-	"supports": { "html": false },
+	"usesContext": [
+		"postId",
+		"postType"
+	],
+	"supports": {
+		"html": false
+	},
 	"attributes": {
-		"height": { "type": "integer", "default": 400 },
-		"zoom":   { "type": "integer", "default": 14 }
+		"height": {
+			"type": "integer",
+			"default": 400
+		},
+		"zoom": {
+			"type": "integer",
+			"default": 14
+		}
 	},
 	"style": "file:./style-index.css",
 	"render": "file:./render.php",
 	"editorScript": "file:./index.js",
-	"viewScript":   "file:./view.js",
-	"viewStyle":    "file:./view.css"
+	"viewScript": "file:./view.js",
+	"viewStyle": "file:./view.css"
 }
