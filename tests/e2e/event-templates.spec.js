@@ -50,13 +50,19 @@ test.beforeAll( () => {
 	createEvent( 'Template Event A', `${ year }-10-05` );
 	createEvent( 'Template Event B', `${ year }-10-12` );
 
-	// List shows the title, grid shows the date — deliberately disjoint so each
-	// layout is identifiable from its content alone.
+	/*
+	 * List shows the title, grid shows the date — deliberately disjoint so each
+	 * layout is identifiable from its content alone.
+	 *
+	 * The list container carries no layout attribute on purpose: it equals the
+	 * block's default, so that is exactly how the editor serialises it. Writing
+	 * it out explicitly hid a bug where the server dropped the template.
+	 */
 	const split =
 		'<!-- wp:blockendar/query-filters -->' +
 		'<!-- wp:blockendar/query-view-switcher /-->' +
 		'<!-- wp:blockendar/events-query -->' +
-		'<!-- wp:blockendar/event-template {"layout":"list"} -->' +
+		'<!-- wp:blockendar/event-template -->' +
 		'<!-- wp:post-title {"isLink":true,"level":3} /-->' +
 		'<!-- /wp:blockendar/event-template -->' +
 		'<!-- wp:blockendar/event-template {"layout":"grid"} -->' +
@@ -80,7 +86,7 @@ test.beforeAll( () => {
 		'<!-- wp:blockendar/query-filters -->' +
 		'<!-- wp:blockendar/query-view-switcher /-->' +
 		'<!-- wp:blockendar/events-query -->' +
-		'<!-- wp:blockendar/event-template {"layout":"list"} -->' +
+		'<!-- wp:blockendar/event-template -->' +
 		'<!-- wp:post-title {"isLink":true,"level":3} /-->' +
 		'<!-- /wp:blockendar/event-template -->' +
 		'<!-- /wp:blockendar/events-query -->' +

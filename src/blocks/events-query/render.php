@@ -226,7 +226,14 @@ foreach ( $block->parsed_block['innerBlocks'] as $inner ) {
 	}
 
 	if ( 'blockendar/event-template' === $inner['blockName'] ) {
-		$template_layout = sanitize_key( $inner['attrs']['layout'] ?? '' );
+		/*
+		 * Falls back to the block's default rather than an empty string: an
+		 * attribute equal to its default is omitted when a block is serialised,
+		 * so the list template arrives here with no attrs at all. Treating that
+		 * as unknown dropped it and left the remaining template rendering every
+		 * layout — which looked like the split had not been applied.
+		 */
+		$template_layout = sanitize_key( $inner['attrs']['layout'] ?? 'list' );
 
 		if ( in_array( $template_layout, FilterContext::view_modes(), true ) ) {
 			$layout_templates[ $template_layout ] = $inner['innerBlocks'];

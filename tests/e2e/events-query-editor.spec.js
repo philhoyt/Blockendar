@@ -219,3 +219,102 @@ test( 'splitting the template leaves the editor in a valid state', async ( {
 
 	expect( pageErrors, pageErrors.join( '\n' ) ).toEqual( [] );
 } );
+
+test( 'each layout gets its own template that the toolbar switches between', async ( {
+	page,
+} ) => {
+	test.setTimeout( 120000 );
+
+	await loginAsAdmin( page );
+	const canvas = await openEditor( page, postId );
+	await expect(
+		canvas.locator( '.blockendar-events-query' ).first()
+	).toBeVisible( { timeout: 30000 } );
+
+	const queryId = await page.evaluate( () => {
+		const query = window.wp.data
+			.select( 'core/block-editor' )
+			.getBlocks()
+			.find( ( block ) => block.name === 'blockendar/events-query' );
+
+		window.wp.data
+			.dispatch( 'core/block-editor' )
+			.selectBlock( query.clientId );
+
+		return query.clientId;
+	} );
+
+	await page
+		.locator( 'button.components-button', {
+			hasText: 'Use a separate template per layout',
+		} )
+		.click();
+
+	// The two containers must claim different layouts, or the server sees one
+	// template and renders every event through it.
+	const layouts = await page.evaluate( ( id ) => {
+		return window.wp.data
+			.select( 'core/block-editor' )
+			.getBlock( id )
+			.innerBlocks.filter(
+				( block ) => block.name === 'blockendar/event-template'
+			)
+			.map( ( block ) => block.attributes.layout );
+	}, queryId );
+
+	expect( layouts ).toEqual( [ 'list', 'grid' ] );
+
+	// Editing one template must not touch the other.
+	await page.evaluate( ( id ) => {
+		const grid = window.wp.data
+			.select( 'core/block-editor' )
+			.getBlock( id )
+			.innerBlocks.find(
+				( block ) =>
+					block.name === 'blockendar/event-template' &&
+					block.attributes.layout === 'grid'
+			);
+
+		window.wp.data
+			.dispatch( 'core/block-editor' )
+			.insertBlock(
+				window.wp.blocks.createBlock( 'blockendar/event-cost' ),
+				0,
+				grid.clientId,
+				false
+			);
+	}, queryId );
+
+	const counts = await page.evaluate( ( id ) => {
+		const templates = window.wp.data
+			.select( 'core/block-editor' )
+			.getBlock( id )
+			.innerBlocks.filter(
+				( block ) => block.name === 'blockendar/event-template'
+			);
+
+		return templates.map( ( block ) => block.innerBlocks.length );
+	}, queryId );
+
+	expect(
+		counts[ 0 ],
+		'adding a block to the grid template changed the list template'
+	).not.toBe( counts[ 1 ] );
+
+	// Only the layout selected in the toolbar is shown.
+	await expect(
+		canvas.locator( '.blockendar-event-template.is-inactive-layout' )
+	).toHaveCount( 1 );
+
+	await page.evaluate( ( id ) => {
+		window.wp.data
+			.dispatch( 'core/block-editor' )
+			.updateBlockAttributes( id, {
+				displayLayout: { type: 'grid' },
+			} );
+	}, queryId );
+
+	await expect(
+		canvas.locator( '.blockendar-event-template.is-inactive-layout' )
+	).toHaveCount( 1 );
+} );
