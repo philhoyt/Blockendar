@@ -10,6 +10,7 @@ const { test, expect } = require( '@playwright/test' );
 const { wpCli, wpCliId } = require( './wp-cli' );
 
 let pageId;
+let mismatchPageId;
 const created = [];
 
 /**
@@ -58,6 +59,19 @@ test.beforeAll( () => {
 		'--porcelain',
 	] );
 	created.push( pageId );
+
+	// The query is set to grid while the switcher still says its default is
+	// list: the two were authored separately and could drift apart.
+	mismatchPageId = wpCliId( [
+		'post',
+		'create',
+		'--post_type=page',
+		'--post_title=E2E Switcher Mismatch Page',
+		'--post_status=publish',
+		'--post_content=<!-- wp:blockendar/query-filters --><!-- wp:blockendar/query-view-switcher {"defaultView":"list"} /--><!-- wp:blockendar/events-query {"displayLayout":{"type":"grid"}} --><!-- wp:post-title {"isLink":true,"level":3} /--><!-- /wp:blockendar/events-query --><!-- /wp:blockendar/query-filters -->',
+		'--porcelain',
+	] );
+	created.push( mismatchPageId );
 } );
 
 test.afterAll( () => {
@@ -239,6 +253,38 @@ test( 'each mode renders a real icon', async ( { page } ) => {
 			'.blockendar-view-switcher__button[data-view="grid"] .blockendar-view-switcher__icon svg rect'
 		)
 	).toHaveCount( 4 );
+} );
+
+test( 'the switcher adopts the layout the query actually rendered', async ( {
+	page,
+} ) => {
+	await page.goto( `/?p=${ mismatchPageId }` );
+
+	await expect( page.locator( '.blockendar-events-query' ) ).toHaveClass(
+		/is-grid-view/
+	);
+
+	// Highlighting list against a grid of results is the visible symptom.
+	await expect(
+		page.locator( '.blockendar-view-switcher__button[data-view="grid"]' )
+	).toHaveAttribute( 'aria-current', 'true' );
+
+	// And the other link has to carry the parameter, or it would claim to show
+	// list while landing on a URL the server renders as grid.
+	await expect(
+		page.locator( '.blockendar-view-switcher__button[data-view="list"]' )
+	).toHaveAttribute( 'href', /blockendar_view=list/ );
+} );
+
+test( 'an explicit choice is never second-guessed', async ( { page } ) => {
+	await page.goto( `/?p=${ mismatchPageId }&blockendar_view=list` );
+
+	await expect( page.locator( '.blockendar-events-query' ) ).toHaveClass(
+		/is-list-view/
+	);
+	await expect(
+		page.locator( '.blockendar-view-switcher__button[data-view="list"]' )
+	).toHaveAttribute( 'aria-current', 'true' );
 } );
 
 test.describe( 'without JavaScript', () => {

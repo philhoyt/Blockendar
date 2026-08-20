@@ -175,5 +175,64 @@ function onClick( event ) {
 	window.history.pushState( {}, '', button.href );
 }
 
+/**
+ * Adopt the layout the server actually rendered as this switcher's default.
+ *
+ * The switcher's default and the query's own layout are separate values, and
+ * content saved before they were kept in sync can disagree — the results render
+ * as a grid while the control highlights list, and "list" then links to a URL
+ * that renders a grid.
+ *
+ * Only applies when the visitor has not chosen a view: an explicit parameter is
+ * always their choice, never something to second-guess.
+ *
+ * @param {HTMLElement}   switcher The switcher wrapper.
+ * @param {HTMLElement[]} queries  Queries it controls.
+ */
+function reconcileDefault( switcher, queries ) {
+	const param = switcher.dataset.viewParam;
+	const url = new URL( window.location.href );
+
+	if ( ! param || url.searchParams.has( param ) || ! queries.length ) {
+		return;
+	}
+
+	const modes = modesFor( switcher );
+	const rendered = modes.find( ( mode ) =>
+		queries[ 0 ].classList.contains( `is-${ mode }-view` )
+	);
+
+	if ( ! rendered || rendered === switcher.dataset.defaultView ) {
+		return;
+	}
+
+	switcher.dataset.defaultView = rendered;
+
+	// Recompute the links so selecting the default still leaves a clean URL.
+	const base = new URL( window.location.href );
+
+	base.searchParams.delete( param );
+
+	if ( switcher.dataset.pageParam ) {
+		base.searchParams.delete( switcher.dataset.pageParam );
+	}
+
+	switcher.querySelectorAll( BUTTON ).forEach( ( button ) => {
+		const target = new URL( base );
+
+		if ( button.dataset.view !== rendered ) {
+			target.searchParams.set( param, button.dataset.view );
+		}
+
+		button.href = target.toString();
+	} );
+
+	applyView( switcher, queries, rendered );
+}
+
+document.querySelectorAll( SWITCHER ).forEach( ( switcher ) => {
+	reconcileDefault( switcher, queriesFor( switcher ) );
+} );
+
 document.addEventListener( 'click', onClick );
 window.addEventListener( 'popstate', syncFromUrl );
