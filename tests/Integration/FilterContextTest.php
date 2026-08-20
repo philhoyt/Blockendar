@@ -125,6 +125,36 @@ class FilterContextTest extends WP_UnitTestCase {
 	}
 
 	// -------------------------------------------------------------------------
+	// Array-shaped input on scalar params
+	// -------------------------------------------------------------------------
+
+	public function test_array_venue_param_is_rejected_not_coerced(): void {
+		// absint() turns an array into 1, so without a scalar guard this URL
+		// silently filtered by term 1 instead of being ignored.
+		$_GET = [ 'blockendar_venue' => [ '99' ] ];
+
+		$this->assertNull( FilterContext::get_active_filters( '' )['venue_id'] );
+	}
+
+	public function test_scalar_venue_param_still_works(): void {
+		$_GET = [ 'blockendar_venue' => '99' ];
+
+		$this->assertSame( 99, FilterContext::get_active_filters( '' )['venue_id'] );
+	}
+
+	public function test_array_date_params_are_rejected(): void {
+		$_GET = [
+			'blockendar_date_start' => [ '2026-09-01' ],
+			'blockendar_date_end'   => [ '2026-09-30' ],
+		];
+
+		$filters = FilterContext::get_active_filters( '' );
+
+		$this->assertNull( $filters['date_start'] );
+		$this->assertNull( $filters['date_end'] );
+	}
+
+	// -------------------------------------------------------------------------
 	// Inverted ranges
 	// -------------------------------------------------------------------------
 
@@ -176,6 +206,89 @@ class FilterContextTest extends WP_UnitTestCase {
 
 		$this->assertSame( '2027-12-31', $filters['date_start'] );
 		$this->assertNull( $filters['date_end'] );
+	}
+
+	// -------------------------------------------------------------------------
+	// View mode
+	// -------------------------------------------------------------------------
+
+	/**
+	 * @dataProvider view_provider
+	 *
+	 * @param mixed       $raw      Raw $_GET value.
+	 * @param string|null $expected Expected resolved view.
+	 */
+	public function test_view_is_restricted_to_the_allow_list( mixed $raw, ?string $expected ): void {
+		$_GET = [ 'blockendar_view' => $raw ];
+
+		$this->assertSame( $expected, FilterContext::get_view( '' ) );
+	}
+
+	public function view_provider(): array {
+		return [
+			'list'            => [ 'list', 'list' ],
+			'grid'            => [ 'grid', 'grid' ],
+			'unknown mode'    => [ 'masonry', null ],
+			'empty'           => [ '', null ],
+			'array shape'     => [ [ 'grid' ], null ],
+			'markup payload'  => [ '<script>alert(1)</script>', null ],
+			'class injection' => [ 'grid" onload="alert(1)', null ],
+			'path traversal'  => [ '../../etc/passwd', null ],
+		];
+	}
+
+	public function test_view_appears_in_the_active_filter_payload(): void {
+		$_GET = [ 'blockendar_view' => 'grid' ];
+
+		$this->assertSame( 'grid', FilterContext::get_active_filters( '' )['view'] );
+	}
+
+	public function test_view_is_not_treated_as_an_active_filter(): void {
+		// Choosing a layout does not narrow the results, so it must not light up
+		// the "filters are active" state or a Clear control would appear for it.
+		$_GET = [ 'blockendar_view' => 'grid' ];
+
+		$this->assertFalse( FilterContext::has_active_filters( '' ) );
+	}
+
+	public function test_a_theme_can_register_an_extra_view_mode(): void {
+		$add = static fn( array $modes ): array => [ ...$modes, 'masonry' ];
+		add_filter( 'blockendar_filter_view_modes', $add );
+
+		$_GET = [ 'blockendar_view' => 'masonry' ];
+		$this->assertSame( 'masonry', FilterContext::get_view( '' ) );
+
+		remove_filter( 'blockendar_filter_view_modes', $add );
+	}
+
+	public function test_a_filtered_mode_cannot_smuggle_markup_into_the_output(): void {
+		/*
+		 * sanitize_key() is applied to the registered modes as well as to the
+		 * request, so a mangled mode matches its own mangled form rather than
+		 * being rejected outright. That is fine — what matters is that nothing
+		 * capable of breaking out of a class attribute survives the round trip.
+		 */
+		$add = static fn( array $modes ): array => [ ...$modes, 'grid" onload="alert(1)' ];
+		add_filter( 'blockendar_filter_view_modes', $add );
+
+		$_GET     = [ 'blockendar_view' => 'grid" onload="alert(1)' ];
+		$resolved = FilterContext::get_view( '' );
+
+		$this->assertSame( 'gridonloadalert1', $resolved );
+		$this->assertSame(
+			$resolved,
+			sanitize_key( (string) $resolved ),
+			'the resolved mode must already be a safe key'
+		);
+
+		remove_filter( 'blockendar_filter_view_modes', $add );
+	}
+
+	public function test_clearing_filters_drops_the_view_param(): void {
+		$this->assertStringNotContainsString(
+			'blockendar_view',
+			FilterContext::clear_filters_url( '' )
+		);
 	}
 
 	// -------------------------------------------------------------------------

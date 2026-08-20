@@ -1,0 +1,207 @@
+/**
+ * Base appearance for the filter controls.
+ *
+ * Deliberately separate from filter-popover.css. Everything there is gated
+ * behind .is-enhanced because it governs popover mechanics, which must not
+ * apply before JavaScript runs. Everything here is appearance, and applies in
+ * every display style — list filters need styled controls just as much as
+ * dropdown ones do.
+ *
+ * Themes cannot be relied on to style bare inputs, so the plugin supplies
+ * enough structure to look deliberate on its own. Colour still comes from the
+ * theme: each value resolves a theme preset first and only falls back to a
+ * neutral when the theme offers nothing.
+ */
+
+.blockendar-filter-event-type,
+.blockendar-filter-venue,
+.blockendar-filter-date-range,
+.blockendar-view-switcher {
+	--blockendar-ink: var(--wp--preset--color--contrast, #1e1e1e);
+	--blockendar-surface: var(--wp--preset--color--base, #fff);
+	--blockendar-accent: var(--wp--preset--color--primary, #1e1e1e);
+	--blockendar-line: color-mix(in srgb, var(--blockendar-ink) 25%, transparent);
+	--blockendar-hover: color-mix(in srgb, var(--blockendar-ink) 6%, transparent);
+	--blockendar-control-padding: 0.7em 0.9em;
+	--blockendar-radius: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Behaviour inside a layout
+   -------------------------------------------------------------------------- */
+
+/*
+ * These blocks are routinely dropped into a Row. A flex parent resolves
+ * flex-basis: auto against the child's intrinsic size, and these carried
+ * container-type: inline-size — which applies size containment and reports
+ * that intrinsic size as zero, collapsing every filter to nothing. The
+ * container-type was removed (no @container query used it); this gives them a
+ * real basis so they share the row instead of fighting for it.
+ */
+.blockendar-filter-event-type,
+.blockendar-filter-venue,
+.blockendar-filter-date-range {
+	flex: 1 1 12rem;
+	min-inline-size: 0;
+}
+
+/* The switcher is icon-sized; it should not stretch to fill a share of the
+   row. */
+.blockendar-view-switcher {
+	flex: 0 0 auto;
+}
+
+/* A narrow column must truncate the trigger label rather than overflow it. */
+.blockendar-filter__trigger-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Choice lists
+   -------------------------------------------------------------------------- */
+
+.blockendar-filter__list {
+	display: flex;
+	flex-direction: column;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.blockendar-filter__checkbox-label,
+.blockendar-filter__radio-label {
+	align-items: center;
+	cursor: pointer;
+	display: flex;
+	gap: 0.6em;
+	padding: 0.4em 0.2em;
+}
+
+.blockendar-filter__count {
+	color: inherit;
+	font-size: 0.85em;
+	margin-inline-start: auto;
+	opacity: 0.6;
+}
+
+/* --------------------------------------------------------------------------
+   Boxed controls
+   -------------------------------------------------------------------------- */
+
+.blockendar-filter__trigger,
+.blockendar-filter-date-range__input,
+.blockendar-filter__submit {
+	background: var(--blockendar-surface);
+	border: 1px solid var(--blockendar-line);
+	border-radius: var(--blockendar-radius);
+	color: inherit;
+	font: inherit;
+	line-height: 1.3;
+	padding: var(--blockendar-control-padding);
+}
+
+.blockendar-filter-date-range__input {
+	inline-size: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Date fields
+   -------------------------------------------------------------------------- */
+
+.blockendar-filter-date-range__fields {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75em;
+}
+
+.blockendar-filter-date-range__field {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 0.3em;
+	min-inline-size: 8em;
+}
+
+.blockendar-filter-date-range__label,
+.blockendar-filter__label {
+	font-size: 0.9em;
+	font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   Actions
+   -------------------------------------------------------------------------- */
+
+.blockendar-filter__actions {
+	align-items: center;
+	display: flex;
+	gap: 1em;
+	justify-content: space-between;
+	margin-block-start: 0.9em;
+}
+
+.blockendar-filter__submit {
+	background: var(--blockendar-accent);
+	border-color: var(--blockendar-accent);
+	color: var(--blockendar-surface);
+	cursor: pointer;
+	font-weight: 600;
+	margin-inline-start: auto;
+}
+
+.blockendar-filter__clear {
+	color: inherit;
+	font-size: 0.9em;
+	text-underline-offset: 0.2em;
+}
+
+/* --------------------------------------------------------------------------
+   States — after the base rules they refine
+   -------------------------------------------------------------------------- */
+
+.blockendar-filter__checkbox-label:hover,
+.blockendar-filter__radio-label:hover {
+	background: var(--blockendar-hover);
+}
+
+/* A visible focus ring on every control, because a theme may remove the
+   default without supplying a replacement. */
+.blockendar-filter__trigger:focus-visible,
+.blockendar-filter-date-range__input:focus-visible,
+.blockendar-filter__submit:focus-visible,
+.blockendar-filter__clear:focus-visible {
+	outline: 2px solid var(--blockendar-accent);
+	outline-offset: 2px;
+}
+
+.blockendar-filter__item.is-active > .blockendar-filter__checkbox-label,
+.blockendar-filter__item.is-active > .blockendar-filter__radio-label {
+	font-weight: 600;
+}
+
+.blockendar-filter__trigger:hover,
+.blockendar-filter-date-range__input:hover {
+	border-color: var(--blockendar-ink);
+}
+
+.blockendar-filter__trigger[aria-expanded="true"] {
+	border-color: var(--blockendar-ink);
+}
+
+.blockendar-filter__submit:hover {
+	opacity: 0.85;
+}
+
+
+/*
+ * The choice inputs keep their own native focus ring rather than the label
+ * drawing one. Opening the panel moves focus to the first input, and a
+ * :focus-within outline on the label made that read as a heavy selected
+ * state for mouse users the instant the panel appeared.
+ */
+.blockendar-filter__list input:focus-visible {
+	outline: 2px solid var(--blockendar-accent);
+	outline-offset: 1px;
+}

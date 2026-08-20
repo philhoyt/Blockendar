@@ -1,0 +1,65 @@
+/**
+ * Shared popover presentation for the filter blocks.
+ *
+ * Every rule is scoped to .is-enhanced, which JavaScript adds when it wires
+ * the trigger to the panel. Without that class the panel keeps its normal
+ * flow position and stays visible, so a visitor whose JavaScript never runs
+ * still has a working control rather than one hidden by CSS that arrived
+ * regardless.
+ */
+
+.blockendar-filter__trigger {
+	display: none;
+}
+
+.is-enhanced .blockendar-filter__trigger {
+	align-items: center;
+	cursor: pointer;
+	display: flex;
+	gap: 0.5em;
+	justify-content: space-between;
+	inline-size: 100%;
+	text-align: start;
+}
+
+.is-enhanced .blockendar-filter__trigger-icon {
+	border-inline: 0.35em solid transparent;
+	border-block-start: 0.4em solid currentcolor;
+	block-size: 0;
+	flex: none;
+	inline-size: 0;
+	transition: transform 0.15s ease;
+}
+
+.is-enhanced.is-open .blockendar-filter__trigger-icon {
+	transform: rotate(180deg);
+}
+
+.is-enhanced .blockendar-filter__panel {
+	display: none;
+}
+
+.is-enhanced.is-open .blockendar-filter__panel {
+	background: var(--wp--preset--color--base, #fff);
+
+	/* Padding and border must sit inside the declared width, or the panel ends up
+	   wider than the trigger it is anchored to. */
+	box-sizing: border-box;
+	border: 1px solid currentcolor;
+	display: block;
+	inset-block-start: 100%;
+	inset-inline-start: 0;
+	inline-size: 100%;
+	margin-block-start: 0.25em;
+	max-block-size: 60vh;
+	overflow-y: auto;
+	padding: 0.75em;
+	position: absolute;
+	z-index: 20;
+}
+
+/* The panel is positioned against the block, so the block is the containing
+   element for it. */
+.is-enhanced {
+	position: relative;
+}

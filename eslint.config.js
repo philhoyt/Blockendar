@@ -18,6 +18,20 @@ module.exports = [
 	...wpScriptsConfig,
 
 	{
+		// E2E specs run in Node, but the callbacks passed to page.evaluate() run in
+		// the browser under test. Without these the linter flags browser globals
+		// that are perfectly valid inside those callbacks.
+		files: [ 'tests/e2e/**/*.js' ],
+		languageOptions: {
+			globals: {
+				document: 'readonly',
+				getComputedStyle: 'readonly',
+				window: 'readonly',
+			},
+		},
+	},
+
+	{
 		settings: {
 			// @wordpress/* packages are provided by WordPress at runtime and
 			// externalised by the build, so they are not resolvable on disk.

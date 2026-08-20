@@ -6,8 +6,8 @@ import { PanelBody, TextControl } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { label, labelStart, labelEnd,
-		labelRange, minDate, maxDate } = attributes;
+	const { label, labelStart, labelEnd, minDate, maxDate, triggerLabel } =
+		attributes;
 	const blockProps = useBlockProps( {
 		className: 'blockendar-filter-date-range',
 	} );
@@ -40,14 +40,14 @@ export default function Edit( { attributes, setAttributes } ) {
 						}
 					/>
 					<TextControl
-						label={ __( 'Range label', 'blockendar' ) }
+						label={ __( 'Trigger placeholder', 'blockendar' ) }
 						help={ __(
-							'Replaces the start label once the JavaScript picker merges both fields into a single range input.',
+							'Shown on the trigger when no dates are chosen.',
 							'blockendar'
 						) }
-						value={ labelRange }
+						value={ triggerLabel }
 						onChange={ ( val ) =>
-							setAttributes( { labelRange: val } )
+							setAttributes( { triggerLabel: val } )
 						}
 					/>
 					<TextControl

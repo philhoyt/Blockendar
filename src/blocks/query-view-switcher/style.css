@@ -1,0 +1,54 @@
+.blockendar-view-switcher {
+	display: flex;
+	gap: 0.25em;
+}
+
+.blockendar-view-switcher__button {
+	align-items: center;
+	background: var(--blockendar-surface, #fff);
+	border: 1px solid var(--blockendar-line, currentcolor);
+	border-radius: var(--blockendar-radius, 2px);
+	color: inherit;
+	cursor: pointer;
+	display: inline-flex;
+	gap: 0.4em;
+	padding: var(--blockendar-control-padding, 0.7em 0.9em);
+	text-decoration: none;
+}
+
+.blockendar-view-switcher__button.is-active {
+	background: var(--blockendar-accent, currentcolor);
+	border-color: var(--blockendar-accent, currentcolor);
+}
+
+.blockendar-view-switcher__button.is-active
+.blockendar-view-switcher__label {
+
+	/* The background is currentcolor, so the text has to invert to stay legible
+	   whatever palette the theme supplies. */
+	color: var(--wp--preset--color--base, #fff);
+}
+
+/* Icons are drawn with borders rather than shipped as SVG files, so they
+   inherit the theme's colour with no fill attribute to keep in sync. */
+.blockendar-view-switcher__icon {
+	block-size: 0.9em;
+	inline-size: 0.9em;
+	position: relative;
+}
+
+.blockendar-view-switcher__button[data-view="list"]
+.blockendar-view-switcher__icon {
+	border-block: 2px solid currentcolor;
+	border-block-end-width: 2px;
+}
+
+.blockendar-view-switcher__button[data-view="grid"]
+.blockendar-view-switcher__icon {
+	border: 2px solid currentcolor;
+}
+
+.blockendar-view-switcher__button.is-active
+.blockendar-view-switcher__icon {
+	border-color: var(--wp--preset--color--base, #fff);
+}

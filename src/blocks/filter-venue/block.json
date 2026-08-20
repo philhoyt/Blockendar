@@ -34,7 +34,7 @@
 	"attributes": {
 		"displayStyle": {
 			"type": "string",
-			"default": "list",
+			"default": "dropdown",
 			"enum": [
 				"list",
 				"dropdown"
@@ -51,10 +51,15 @@
 		"label": {
 			"type": "string",
 			"default": ""
+		},
+		"triggerLabel": {
+			"type": "string",
+			"default": "All venues"
 		}
 	},
 	"render": "file:./render.php",
 	"editorScript": "file:./index.js",
 	"viewScript": "file:./view.js",
-	"style": "file:./style-index.css"
+	"style": "file:./style-index.css",
+	"viewStyle": "file:./view.css"
 }

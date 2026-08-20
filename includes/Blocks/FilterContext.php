@@ -56,11 +56,20 @@ class FilterContext {
 	 * }
 	 */
 	public static function get_active_filters( string $query_id ): array {
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		/*
+		 * NonceVerification: these are public read-only filters in a GET request;
+		 * there is no state change to protect.
+		 *
+		 * ValidatedSanitizedInput: every value below is sanitised — absint(),
+		 * sanitize_text_field() or, for the term list, parse_id_list() — but each
+		 * passes through scalar_param() first, and the sniff cannot follow a
+		 * helper between the superglobal and its sanitiser.
+		 */
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput
 		$type_raw   = $_GET[ self::param_name( 'type', $query_id ) ] ?? '';
-		$venue_raw  = absint( $_GET[ self::param_name( 'venue', $query_id ) ] ?? 0 );
-		$date_start = sanitize_text_field( wp_unslash( $_GET[ self::param_name( 'date_start', $query_id ) ] ?? '' ) );
-		$date_end   = sanitize_text_field( wp_unslash( $_GET[ self::param_name( 'date_end', $query_id ) ] ?? '' ) );
+		$venue_raw  = absint( self::scalar_param( wp_unslash( $_GET[ self::param_name( 'venue', $query_id ) ] ?? 0 ) ) );
+		$date_start = sanitize_text_field( self::scalar_param( wp_unslash( $_GET[ self::param_name( 'date_start', $query_id ) ] ?? '' ) ) );
+		$date_end   = sanitize_text_field( self::scalar_param( wp_unslash( $_GET[ self::param_name( 'date_end', $query_id ) ] ?? '' ) ) );
 		// phpcs:enable
 
 		$start = self::validate_date( $date_start );
@@ -78,7 +87,61 @@ class FilterContext {
 			'venue_id'   => $venue_raw ?: null,
 			'date_start' => $start,
 			'date_end'   => $end,
+			'view'       => self::get_view( $query_id ),
 		];
+	}
+
+	/**
+	 * The layout modes a view switcher may select.
+	 *
+	 * Returned through a filter so a theme can register additional modes, but the
+	 * result is still treated as an allow-list: whatever comes back is normalised
+	 * with sanitize_key() and a value outside it is discarded rather than reaching
+	 * a class attribute. events-query renders any mode it does not implement as a
+	 * list.
+	 *
+	 * @return string[] Allowed mode keys.
+	 */
+	public static function view_modes(): array {
+		$modes = [ 'list', 'grid' ];
+
+		/**
+		 * Filter the layout modes a view switcher may select.
+		 *
+		 * @param string[] $modes Allowed mode keys.
+		 */
+		$modes = (array) apply_filters( 'blockendar_filter_view_modes', $modes );
+
+		$modes = array_map( 'sanitize_key', array_filter( $modes, 'is_scalar' ) );
+
+		return array_values( array_unique( array_filter( $modes ) ) );
+	}
+
+	/**
+	 * Resolve the requested view mode for a query, or null when none applies.
+	 *
+	 * @param string $query_id Query ID from the blockendar/queryId block context.
+	 */
+	public static function get_view( string $query_id ): ?string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput -- read-only GET filter; sanitize_key() applies, via the scalar guard the sniff cannot follow.
+		$raw = sanitize_key( (string) self::scalar_param( wp_unslash( $_GET[ self::param_name( 'view', $query_id ) ] ?? '' ) ) );
+
+		return in_array( $raw, self::view_modes(), true ) ? $raw : null;
+	}
+
+	/**
+	 * Discard non-scalar input for params that only ever carry a single value.
+	 *
+	 * A query string can always be forced into array shape — `?blockendar_venue[]=99`
+	 * arrives as an array. absint() coerces an array to 1 rather than rejecting it,
+	 * so without this guard that URL silently filtered by term 1. Only the term-ID
+	 * list legitimately accepts arrays; everything else is scalar or nothing.
+	 *
+	 * @param mixed $value Raw value straight from $_GET.
+	 * @return string|int|float|bool Empty string when the input was not scalar.
+	 */
+	private static function scalar_param( mixed $value ): string|int|float|bool {
+		return is_scalar( $value ) ? $value : '';
 	}
 
 	/**
@@ -149,6 +212,7 @@ class FilterContext {
 			self::param_name( 'date_start', $query_id ),
 			self::param_name( 'date_end', $query_id ),
 			self::param_name( 'page', $query_id ),
+			self::param_name( 'view', $query_id ),
 		];
 
 		return esc_url( remove_query_arg( $remove ) );

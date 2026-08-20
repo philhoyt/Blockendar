@@ -1,9 +1,7 @@
 .blockendar-filter-date-range {
-	container-type: inline-size;
 
-	/* Positioning context for the Flatpickr calendar, which is mounted
-	   inside this wrapper via the appendTo option. */
-	position: relative;
+	/* Flatpickr's static mode supplies its own positioned wrapper around
+	   the input, so no positioning context is needed here. */
 }
 
 .blockendar-filter-date-range__fields {
@@ -67,4 +65,55 @@
 	margin: 0;
 	padding: 0;
 	min-width: 0;
+}
+
+/*
+ * The calendar is the panel's content, so the panel is sized by it rather than
+ * capped and scrolled. Flatpickr's inline mode renders at its own natural
+ * width; letting it set the panel width avoids a cramped grid in a narrow
+ * column.
+ */
+.blockendar-filter-date-range.is-enhanced.is-open .blockendar-filter__panel {
+
+	/*
+	 * The panel keeps the trigger's width and the calendar fills it, rather than
+	 * the panel shrinking to a fixed month grid. min-inline-size keeps it usable
+	 * when the trigger itself is narrow — in a Row, a filter column can be far
+	 * slimmer than a calendar needs.
+	 */
+	inline-size: 100%;
+	max-block-size: none;
+	min-inline-size: 18rem;
+	overflow: visible;
+	padding: 0;
+}
+
+/*
+ * Flatpickr sizes its calendar, day container and rows in fixed pixels. Each
+ * has to be released for the grid to track the panel rather than sit in it.
+ */
+.blockendar-filter-date-range__calendar .flatpickr-calendar.inline,
+.blockendar-filter-date-range__calendar .flatpickr-days,
+.blockendar-filter-date-range__calendar .dayContainer {
+	inline-size: 100%;
+	max-inline-size: none;
+	min-inline-size: 0;
+}
+
+.blockendar-filter-date-range__calendar .flatpickr-calendar.inline {
+	border: 0;
+	box-shadow: none;
+	margin: 0;
+}
+
+/* Day cells are capped at 39px by default, which would leave the row short
+   of the full width; releasing the cap lets the seven columns divide it
+   evenly. */
+.blockendar-filter-date-range__calendar .flatpickr-day {
+	max-inline-size: none;
+}
+
+.blockendar-filter-date-range.is-enhanced .blockendar-filter__actions {
+	margin: 0;
+	padding: 0.75em;
 }

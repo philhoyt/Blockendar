@@ -1,9 +1,17 @@
 /**
  * filter-venue — frontend view script.
  *
- * Auto-submits the form when a radio button or select changes.
- * Strips the pagination param before submitting.
+ * Auto-submits the form when a radio button changes, and strips the pagination
+ * param so a filter change returns to page 1.
+ *
+ * Dropdown style additionally upgrades the trigger/panel pair into a popover.
+ * Unlike event type, venue is single-select, so a click is a complete decision
+ * and auto-submit still applies — the panel closes because the page reloads.
  */
+import { initFilterPopover } from '../shared/filter-popover';
+import '../shared/filter-popover.css';
+import '../shared/filter-controls.css';
+
 ( function () {
 	document.querySelectorAll( '.blockendar-filter-venue' ).forEach( ( el ) => {
 		const form = el.querySelector( 'form' );
@@ -11,6 +19,8 @@
 		if ( ! form ) {
 			return;
 		}
+
+		initFilterPopover( el );
 
 		const submitBtn = el.querySelector( '.blockendar-filter__submit' );
 

@@ -17,9 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Blockendar\Blocks\FilterContext;
 
 $query_id      = (string) ( $block->context['blockendar/queryId'] ?? '' );
-$display_style = in_array( $attributes['displayStyle'] ?? 'list', [ 'list', 'dropdown' ], true )
+$display_style = in_array( $attributes['displayStyle'] ?? 'dropdown', [ 'list', 'dropdown' ], true )
 	? $attributes['displayStyle']
-	: 'list';
+	: 'dropdown';
 $show_empty    = ! empty( $attributes['showEmpty'] );
 $show_virtual  = isset( $attributes['showVirtual'] ) ? (bool) $attributes['showVirtual'] : true;
 $label         = sanitize_text_field( $attributes['label'] ?? '' );
@@ -27,14 +27,37 @@ $label         = sanitize_text_field( $attributes['label'] ?? '' );
 $param_name = FilterContext::param_name( 'venue', $query_id );
 $active_id  = FilterContext::get_active_filters( $query_id )['venue_id'];
 
-$all_terms = get_terms(
-	[
-		'taxonomy'   => 'event_venue',
-		'hide_empty' => ! $show_empty,
-		'orderby'    => 'name',
-		'order'      => 'ASC',
-	]
-);
+$term_args = [
+	'taxonomy'   => 'event_venue',
+	'orderby'    => 'name',
+	'order'      => 'ASC',
+
+	/*
+	 * Emptiness is decided below, from the index, not from the taxonomy count.
+	 * Leaving this to its default of true would hide every term on a site whose
+	 * counts are zero — which is the normal state here, because occurrences live
+	 * in the index rather than as posts carrying the term.
+	 */
+	'hide_empty' => false,
+];
+
+/*
+ * "Empty" means no upcoming events, not no posts at all — a venue whose last
+ * event was years ago should not offer itself as a filter that can only return
+ * an empty list. See the same note in filter-event-type.
+ */
+if ( ! $show_empty ) {
+	$index       = new \Blockendar\DB\EventIndex();
+	$with_events = $index->get_term_ids_with_events( 'venue' );
+
+	if ( empty( $with_events ) ) {
+		return;
+	}
+
+	$term_args['include'] = $with_events;
+}
+
+$all_terms = get_terms( $term_args );
 
 if ( is_wp_error( $all_terms ) || empty( $all_terms ) ) {
 	return;
@@ -56,7 +79,8 @@ if ( empty( $terms ) ) {
 	return;
 }
 
-$form_action = esc_url( remove_query_arg( [ $param_name, FilterContext::param_name( 'page', $query_id ) ] ) );
+$page_param  = FilterContext::param_name( 'page', $query_id );
+$form_action = esc_url( remove_query_arg( [ $param_name, $page_param ] ) );
 
 // Preserve other active filters.
 $other_filters = FilterContext::get_active_filters( $query_id );
@@ -71,6 +95,28 @@ if ( null !== $other_filters['date_start'] ) {
 if ( null !== $other_filters['date_end'] ) {
 	$hidden_inputs .= '<input type="hidden" name="' . esc_attr( FilterContext::param_name( 'date_end', $query_id ) ) . '" value="' . esc_attr( $other_filters['date_end'] ) . '">';
 }
+
+// Unique per instance: the param name is shared by every venue filter targeting
+// the same query, so it cannot serve as an id.
+$panel_id   = wp_unique_id( 'blockendar-venue-panel-' );
+$trigger_id = wp_unique_id( 'blockendar-venue-trigger-' );
+
+/*
+ * Venue is single-select, so the trigger either names the chosen venue or falls
+ * back to the placeholder. render.php falls back as well as block.json, because
+ * instances saved before triggerLabel existed carry no value.
+ */
+$selected_venue = null;
+foreach ( $terms as $term ) {
+	if ( $active_id === $term->term_id ) {
+		$selected_venue = $term;
+		break;
+	}
+}
+
+$placeholder  = sanitize_text_field( $attributes['triggerLabel'] ?? '' );
+$placeholder  = '' !== $placeholder ? $placeholder : __( 'All venues', 'blockendar' );
+$trigger_text = $selected_venue ? $selected_venue->name : $placeholder;
 
 $wrapper_attrs = get_block_wrapper_attributes(
 	[
@@ -92,23 +138,25 @@ $wrapper_attrs = get_block_wrapper_attributes(
 		?>
 
 		<?php if ( 'dropdown' === $display_style ) : ?>
-
-			<select name="<?php echo esc_attr( $param_name ); ?>"
-				class="blockendar-filter__select"
-				aria-label="<?php esc_attr_e( 'Filter by venue', 'blockendar' ); ?>">
-				<option value=""><?php esc_html_e( 'All venues', 'blockendar' ); ?></option>
-				<?php foreach ( $terms as $term ) : ?>
-					<option value="<?php echo esc_attr( (string) $term->term_id ); ?>"
-						<?php selected( $active_id, $term->term_id ); ?>>
-						<?php echo esc_html( $term->name ); ?>
-					</option>
-				<?php endforeach; ?>
-			</select>
-			<button type="submit" class="blockendar-filter__submit screen-reader-text">
-				<?php esc_html_e( 'Apply', 'blockendar' ); ?>
+			<?php
+			/*
+			 * type="button": this sits inside the filter <form>, where a bare
+			 * <button> submits and would reload the page on every open.
+			 */
+			?>
+			<button
+				type="button"
+				class="blockendar-filter__trigger"
+				id="<?php echo esc_attr( $trigger_id ); ?>"
+				aria-expanded="false"
+				aria-controls="<?php echo esc_attr( $panel_id ); ?>"
+			>
+				<span class="blockendar-filter__trigger-text"><?php echo esc_html( $trigger_text ); ?></span>
+				<span class="blockendar-filter__trigger-icon" aria-hidden="true"></span>
 			</button>
 
-		<?php else : ?>
+			<div class="blockendar-filter__panel" id="<?php echo esc_attr( $panel_id ); ?>">
+		<?php endif; ?>
 
 			<ul class="blockendar-filter__list" role="radiogroup" aria-label="<?php esc_attr_e( 'Filter by venue', 'blockendar' ); ?>">
 				<li class="blockendar-filter__item<?php echo null === $active_id ? ' is-active' : ''; ?>">
@@ -131,10 +179,20 @@ $wrapper_attrs = get_block_wrapper_attributes(
 					</li>
 				<?php endforeach; ?>
 			</ul>
-			<button type="submit" class="blockendar-filter__submit">
-				<?php esc_html_e( 'Apply', 'blockendar' ); ?>
-			</button>
+			<div class="blockendar-filter__actions">
+				<?php if ( null !== $active_id ) : ?>
+					<a href="<?php echo esc_url( remove_query_arg( [ $param_name, $page_param ] ) ); ?>" class="blockendar-filter__clear">
+						<?php esc_html_e( 'Clear', 'blockendar' ); ?>
+					</a>
+				<?php endif; ?>
 
+				<button type="submit" class="blockendar-filter__submit">
+					<?php esc_html_e( 'Apply', 'blockendar' ); ?>
+				</button>
+			</div>
+
+		<?php if ( 'dropdown' === $display_style ) : ?>
+			</div>
 		<?php endif; ?>
 	</form>
 </div>

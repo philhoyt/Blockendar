@@ -11,7 +11,8 @@ import {
 import { __ } from '@wordpress/i18n';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { displayStyle, showCount, showEmptyTerms, label } = attributes;
+	const { displayStyle, showCount, showEmptyTerms, label, triggerLabel } =
+		attributes;
 	const blockProps = useBlockProps( {
 		className: 'blockendar-filter-event-type',
 	} );
@@ -28,6 +29,17 @@ export default function Edit( { attributes, setAttributes } ) {
 						) }
 						value={ label }
 						onChange={ ( val ) => setAttributes( { label: val } ) }
+					/>
+					<TextControl
+						label={ __( 'Trigger placeholder', 'blockendar' ) }
+						help={ __(
+							'Shown on the dropdown trigger when nothing is selected.',
+							'blockendar'
+						) }
+						value={ triggerLabel }
+						onChange={ ( val ) =>
+							setAttributes( { triggerLabel: val } )
+						}
 					/>
 					<SelectControl
 						label={ __( 'Display style', 'blockendar' ) }

@@ -41,10 +41,6 @@
 			"type": "string",
 			"default": "To"
 		},
-		"labelRange": {
-			"type": "string",
-			"default": "Dates"
-		},
 		"minDate": {
 			"type": "string",
 			"default": ""
@@ -56,10 +52,15 @@
 		"label": {
 			"type": "string",
 			"default": ""
+		},
+		"triggerLabel": {
+			"type": "string",
+			"default": "All dates"
 		}
 	},
 	"render": "file:./render.php",
 	"editorScript": "file:./index.js",
 	"viewScript": "file:./view.js",
-	"style": "file:./style-index.css"
+	"style": "file:./style-index.css",
+	"viewStyle": "file:./view.css"
 }

@@ -7,6 +7,8 @@ import {
 	useBlockProps,
 	BlockControls,
 	BlockContextProvider,
+	BlockPreview,
+	store as blockEditorStore,
 } from '@wordpress/block-editor';
 import {
 	PanelBody,
@@ -18,8 +20,19 @@ import {
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
+import { useState } from '@wordpress/element';
+import { useResizeObserver } from '@wordpress/compose';
 import { store as coreStore } from '@wordpress/core-data';
+import { useEntityRecords } from '@wordpress/core-data';
 import { __, _x } from '@wordpress/i18n';
+
+/*
+ * Upper bound on how many events the editor previews, regardless of how many the
+ * block is set to show. Each preview renders the full inner-block template, so an
+ * unbounded perPage would turn a large number into a slow editor for no extra
+ * information — half a dozen is enough to judge a layout.
+ */
+const MAX_PREVIEWS = 6;
 
 const IconList = (
 	<svg
@@ -54,7 +67,47 @@ const TEMPLATE = [
 	[ 'blockendar/events-query-no-results' ],
 ];
 
-export function Edit( { attributes, setAttributes } ) {
+/**
+ * A read-only copy of the block template rendered with one event's context.
+ *
+ * BlockPreview scales its contents by container width / viewportWidth, so a fixed
+ * viewportWidth renders every preview at a fraction of the size of the editable
+ * first item — 0.92 against the default 700. Measuring the container and passing
+ * its own width back makes the ratio 1, so the previews match the item above them.
+ *
+ * @param {Object} props        Component props.
+ * @param {Array}  props.blocks Inner blocks to preview.
+ */
+function EventPreview( { blocks } ) {
+	const [ width, setWidth ] = useState( 0 );
+
+	const setMeasuredRef = useResizeObserver(
+		( entries ) => {
+			const measured = Math.round(
+				entries[ 0 ]?.contentRect?.width ?? 0
+			);
+
+			if ( measured ) {
+				setWidth( measured );
+			}
+		},
+		{ box: 'border-box' }
+	);
+
+	return (
+		<div
+			className="blockendar-events-query__preview"
+			ref={ setMeasuredRef }
+		>
+			{ /* Held back until measured, so nothing renders at the wrong scale first. */ }
+			{ width > 0 && (
+				<BlockPreview blocks={ blocks } viewportWidth={ width } />
+			) }
+		</div>
+	);
+}
+
+export function Edit( { attributes, setAttributes, clientId } ) {
 	const {
 		typeIds,
 		perPage,
@@ -79,14 +132,30 @@ export function Edit( { attributes, setAttributes } ) {
 		[]
 	);
 
-	const firstPostId = useSelect(
-		( select ) =>
-			select( coreStore ).getEntityRecords(
-				'postType',
-				'blockendar_event',
-				{ per_page: 1, _fields: [ 'id' ] }
-			)?.[ 0 ]?.id ?? 0,
-		[]
+	/*
+	 * _fields is limited to the id because that is all the preview needs: each
+	 * inner block resolves its own data from the postId supplied through block
+	 * context, exactly as it does on the front end.
+	 */
+	const previewCount = Math.min( Math.max( perPage, 1 ), MAX_PREVIEWS );
+	const { records: previewEvents, hasResolved } = useEntityRecords(
+		'postType',
+		'blockendar_event',
+		{
+			per_page: previewCount,
+			status: 'publish',
+			_fields: [ 'id' ],
+		}
+	);
+
+	const events = previewEvents ?? [];
+	const firstPostId = events[ 0 ]?.id ?? 0;
+
+	// The template the previews render. Read from the block itself so a preview
+	// always reflects whatever the editor has just changed.
+	const innerBlocks = useSelect(
+		( select ) => select( blockEditorStore ).getBlocks( clientId ),
+		[ clientId ]
 	);
 
 	const blockProps = useBlockProps( {
@@ -345,17 +414,46 @@ export function Edit( { attributes, setAttributes } ) {
 						templateInsertUpdatesSelection={ false }
 					/>
 				</BlockContextProvider>
-				{ Array.from( { length: perPage - 1 } ).map( ( _, i ) => (
-					<div
-						key={ i }
-						className="blockendar-events-query__ghost"
-						aria-hidden="true"
-					>
-						<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--title" />
-						<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--meta" />
-						<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--meta" />
-					</div>
-				) ) }
+				{ /*
+				   Remaining items are read-only previews of the same template with
+				   each event's own context, so the block shows real content rather
+				   than grey bars. Only the first item is editable; editing every
+				   copy would be ambiguous about which one owns the template.
+				*/ }
+				{ ! hasResolved &&
+					Array.from( { length: previewCount - 1 } ).map( ( _, i ) => (
+						<div
+							key={ `ghost-${ i }` }
+							className="blockendar-events-query__ghost"
+							aria-hidden="true"
+						>
+							<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--title" />
+							<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--meta" />
+							<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--meta" />
+						</div>
+					) ) }
+
+				{ hasResolved &&
+					events.slice( 1 ).map( ( event ) => (
+						<BlockContextProvider
+							key={ event.id }
+							value={ {
+								postId: event.id,
+								postType: 'blockendar_event',
+							} }
+						>
+							<EventPreview blocks={ innerBlocks } />
+						</BlockContextProvider>
+					) ) }
+
+				{ hasResolved && 0 === events.length && (
+					<p className="blockendar-events-query__notice">
+						{ __(
+							'No published events yet. The layout above is a template — it will repeat for each event once you publish some.',
+							'blockendar'
+						) }
+					</p>
+				) }
 			</div>
 		</>
 	);

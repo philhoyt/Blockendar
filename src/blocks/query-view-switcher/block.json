@@ -1,0 +1,37 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockendar/query-view-switcher",
+	"version": "1.0.1",
+	"title": "Events View Switcher",
+	"category": "blockendar",
+	"icon": "grid-view",
+	"description": "Lets visitors switch the Events Query block between list and grid layouts.",
+	"keywords": [ "events", "view", "layout", "grid", "list" ],
+	"textdomain": "blockendar",
+	"usesContext": [ "blockendar/queryId" ],
+	"supports": {
+		"html": false,
+		"spacing": {
+			"padding": true,
+			"margin": true
+		},
+		"color": {
+			"background": true,
+			"text": true
+		}
+	},
+	"attributes": {
+		"showLabels": {
+			"type": "boolean",
+			"default": false
+		},
+		"defaultView": {
+			"type": "string",
+			"default": "list"
+		}
+	},
+	"render": "file:./render.php",
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css"
+}
