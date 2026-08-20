@@ -34,7 +34,7 @@
 	"attributes": {
 		"displayStyle": {
 			"type": "string",
-			"default": "list",
+			"default": "dropdown",
 			"enum": [
 				"list",
 				"dropdown"

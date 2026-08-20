@@ -119,15 +119,20 @@ test( 'unfiltered query lists every event', async ( { page } ) => {
 test( 'checking a type actually filters the results', async ( { page } ) => {
 	await page.goto( `/?p=${ pageId }` );
 
+	// The block defaults to its dropdown style, so the choices live behind the
+	// trigger and multi-select is committed with Apply rather than on change.
+	await page.locator( '.blockendar-filter__trigger' ).click();
+	await expect( page.locator( '.blockendar-filter__panel' ) ).toBeVisible();
+
 	const concertBox = page
 		.locator( '.blockendar-filter-event-type input[type="checkbox"]' )
 		.first();
 	await expect( concertBox ).toBeVisible();
+	await concertBox.check();
 
-	// view.js auto-submits on change and navigates.
 	await Promise.all( [
 		page.waitForURL( /blockendar_type/ ),
-		concertBox.check(),
+		page.locator( '.blockendar-filter__submit' ).click(),
 	] );
 
 	// This is the assertion the original bug would fail: before the

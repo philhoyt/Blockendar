@@ -17,9 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Blockendar\Blocks\FilterContext;
 
 $query_id      = (string) ( $block->context['blockendar/queryId'] ?? '' );
-$display_style = in_array( $attributes['displayStyle'] ?? 'list', [ 'list', 'dropdown' ], true )
+$display_style = in_array( $attributes['displayStyle'] ?? 'dropdown', [ 'list', 'dropdown' ], true )
 	? $attributes['displayStyle']
-	: 'list';
+	: 'dropdown';
 $show_empty    = ! empty( $attributes['showEmpty'] );
 $show_virtual  = isset( $attributes['showVirtual'] ) ? (bool) $attributes['showVirtual'] : true;
 $label         = sanitize_text_field( $attributes['label'] ?? '' );
@@ -28,9 +28,17 @@ $param_name = FilterContext::param_name( 'venue', $query_id );
 $active_id  = FilterContext::get_active_filters( $query_id )['venue_id'];
 
 $term_args = [
-	'taxonomy' => 'event_venue',
-	'orderby'  => 'name',
-	'order'    => 'ASC',
+	'taxonomy'   => 'event_venue',
+	'orderby'    => 'name',
+	'order'      => 'ASC',
+
+	/*
+	 * Emptiness is decided below, from the index, not from the taxonomy count.
+	 * Leaving this to its default of true would hide every term on a site whose
+	 * counts are zero — which is the normal state here, because occurrences live
+	 * in the index rather than as posts carrying the term.
+	 */
+	'hide_empty' => false,
 ];
 
 /*
