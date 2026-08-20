@@ -27,14 +27,29 @@ $label         = sanitize_text_field( $attributes['label'] ?? '' );
 $param_name = FilterContext::param_name( 'venue', $query_id );
 $active_id  = FilterContext::get_active_filters( $query_id )['venue_id'];
 
-$all_terms = get_terms(
-	[
-		'taxonomy'   => 'event_venue',
-		'hide_empty' => ! $show_empty,
-		'orderby'    => 'name',
-		'order'      => 'ASC',
-	]
-);
+$term_args = [
+	'taxonomy' => 'event_venue',
+	'orderby'  => 'name',
+	'order'    => 'ASC',
+];
+
+/*
+ * "Empty" means no upcoming events, not no posts at all — a venue whose last
+ * event was years ago should not offer itself as a filter that can only return
+ * an empty list. See the same note in filter-event-type.
+ */
+if ( ! $show_empty ) {
+	$index       = new \Blockendar\DB\EventIndex();
+	$with_events = $index->get_term_ids_with_events( 'venue' );
+
+	if ( empty( $with_events ) ) {
+		return;
+	}
+
+	$term_args['include'] = $with_events;
+}
+
+$all_terms = get_terms( $term_args );
 
 if ( is_wp_error( $all_terms ) || empty( $all_terms ) ) {
 	return;

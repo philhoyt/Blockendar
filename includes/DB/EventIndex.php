@@ -408,6 +408,75 @@ class EventIndex {
 	}
 
 	/**
+	 * Term IDs that actually have an occurrence from a given moment onwards.
+	 *
+	 * Filter blocks use this instead of the taxonomy's own counts. A term count
+	 * includes every published event ever assigned to it, so a venue whose last
+	 * event was three years ago still offers itself as a filter that can only
+	 * return nothing. This answers the question the visitor is really asking:
+	 * which venues and types have something coming up.
+	 *
+	 * @param string      $taxonomy 'venue' or 'type'.
+	 * @param string|null $from     UTC datetime to look forward from. Defaults to now.
+	 * @return int[] Term IDs, unsorted.
+	 */
+	public function get_term_ids_with_events( string $taxonomy, ?string $from = null ): array {
+		global $wpdb;
+
+		$from = $from ?? gmdate( 'Y-m-d H:i:s' );
+
+		$cache_key = $this->cache_key( 'terms_with_events', [ $taxonomy, $from ] );
+		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
+
+		if ( false !== $cached ) {
+			return $cached;
+		}
+
+		$events_table = Schema::events_table();
+		$posts_table  = $wpdb->posts;
+
+		if ( 'venue' === $taxonomy ) {
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT e.venue_term_id
+					FROM   {$events_table} e
+					JOIN   {$posts_table} p ON p.ID = e.post_id
+					WHERE  e.venue_term_id IS NOT NULL
+					  AND  p.post_status = 'publish'
+					  AND  e.hide_from_listings = 0
+					  AND  e.end_datetime >= %s",
+					$from
+				)
+			);
+			// phpcs:enable
+		} else {
+			$type_terms_table = Schema::type_terms_table();
+
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT t.type_term_id
+					FROM   {$type_terms_table} t
+					JOIN   {$events_table} e ON e.id = t.event_index_id
+					JOIN   {$posts_table} p ON p.ID = e.post_id
+					WHERE  p.post_status = 'publish'
+					  AND  e.hide_from_listings = 0
+					  AND  e.end_datetime >= %s",
+					$from
+				)
+			);
+			// phpcs:enable
+		}
+
+		$ids = array_values( array_unique( array_filter( array_map( 'absint', (array) $ids ) ) ) );
+
+		wp_cache_set( $cache_key, $ids, self::CACHE_GROUP );
+
+		return $ids;
+	}
+
+	/**
 	 * Delete all index rows for a given post ID, including junction table rows.
 	 *
 	 * @param int $post_id The event post ID.

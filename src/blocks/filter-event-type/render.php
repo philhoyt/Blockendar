@@ -29,14 +29,31 @@ $label         = sanitize_text_field( $attributes['label'] ?? '' );
 $param_name = FilterContext::param_name( 'type', $query_id );
 $active_ids = FilterContext::get_active_filters( $query_id )['type_ids'];
 
-$terms = get_terms(
-	[
-		'taxonomy'   => 'event_type',
-		'hide_empty' => ! $show_empty,
-		'orderby'    => 'name',
-		'order'      => 'ASC',
-	]
-);
+$term_args = [
+	'taxonomy' => 'event_type',
+	'orderby'  => 'name',
+	'order'    => 'ASC',
+];
+
+/*
+ * "Empty" means no upcoming events, not no posts at all. The taxonomy's own
+ * count includes every event ever assigned to a term, so a type whose events
+ * have all finished would otherwise offer itself as a filter that can only
+ * return an empty list. Restrict to the terms the index says still have
+ * something ahead of them.
+ */
+if ( ! $show_empty ) {
+	$index       = new \Blockendar\DB\EventIndex();
+	$with_events = $index->get_term_ids_with_events( 'type' );
+
+	if ( empty( $with_events ) ) {
+		return;
+	}
+
+	$term_args['include'] = $with_events;
+}
+
+$terms = get_terms( $term_args );
 
 if ( is_wp_error( $terms ) || empty( $terms ) ) {
 	return;

@@ -159,6 +159,129 @@ class EventIndexTest extends WP_UnitTestCase {
 	}
 
 	// -------------------------------------------------------------------------
+	// Terms that still have something scheduled
+	// -------------------------------------------------------------------------
+
+	public function test_only_terms_with_upcoming_events_are_returned(): void {
+		$upcoming = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+		$finished = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+
+		$future = gmdate( 'Y-m-d', strtotime( '+30 days' ) );
+		$past   = gmdate( 'Y-m-d', strtotime( '-30 days' ) );
+
+		$this->seed_event( $future, [ 'venue_term_id' => $upcoming ] );
+		$this->seed_event( $past, [ 'venue_term_id' => $finished ] );
+
+		$ids = $this->index->get_term_ids_with_events( 'venue' );
+
+		$this->assertContains( $upcoming, $ids );
+		$this->assertNotContains(
+			$finished,
+			$ids,
+			'a venue whose events have all finished offers a filter that can only return nothing'
+		);
+	}
+
+	public function test_an_event_in_progress_still_counts(): void {
+		// Ends in the future, started in the past — a multi-day festival mid-run.
+		$term = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+
+		$post_id = self::factory()->post->create(
+			[
+				'post_type'   => 'blockendar_event',
+				'post_status' => 'publish',
+			]
+		);
+
+		$this->index->insert(
+			[
+				'post_id'        => $post_id,
+				'start_datetime' => gmdate( 'Y-m-d H:i:s', strtotime( '-2 days' ) ),
+				'end_datetime'   => gmdate( 'Y-m-d H:i:s', strtotime( '+2 days' ) ),
+				'start_date'     => gmdate( 'Y-m-d', strtotime( '-2 days' ) ),
+				'end_date'       => gmdate( 'Y-m-d', strtotime( '+2 days' ) ),
+				'all_day'        => 0,
+				'status'         => 'scheduled',
+				'venue_term_id'  => $term,
+			]
+		);
+
+		$this->assertContains(
+			$term,
+			$this->index->get_term_ids_with_events( 'venue' )
+		);
+	}
+
+	public function test_hidden_events_do_not_keep_a_term_alive(): void {
+		$term = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+
+		$this->seed_event(
+			gmdate( 'Y-m-d', strtotime( '+30 days' ) ),
+			[
+				'venue_term_id'      => $term,
+				'hide_from_listings' => 1,
+			]
+		);
+
+		$this->assertNotContains(
+			$term,
+			$this->index->get_term_ids_with_events( 'venue' ),
+			'an event hidden from listings cannot be reached through a filter'
+		);
+	}
+
+	public function test_draft_events_do_not_keep_a_term_alive(): void {
+		$term = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+
+		$post_id = self::factory()->post->create(
+			[
+				'post_type'   => 'blockendar_event',
+				'post_status' => 'draft',
+			]
+		);
+
+		$date = gmdate( 'Y-m-d', strtotime( '+30 days' ) );
+
+		$this->index->insert(
+			[
+				'post_id'        => $post_id,
+				'start_datetime' => "{$date} 09:00:00",
+				'end_datetime'   => "{$date} 10:00:00",
+				'start_date'     => $date,
+				'end_date'       => $date,
+				'all_day'        => 0,
+				'status'         => 'scheduled',
+				'venue_term_id'  => $term,
+			]
+		);
+
+		$this->assertNotContains(
+			$term,
+			$this->index->get_term_ids_with_events( 'venue' )
+		);
+	}
+
+	public function test_the_term_list_refreshes_when_an_event_is_added(): void {
+		$term = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+
+		$this->assertNotContains(
+			$term,
+			$this->index->get_term_ids_with_events( 'venue' )
+		);
+
+		$this->seed_event(
+			gmdate( 'Y-m-d', strtotime( '+30 days' ) ),
+			[ 'venue_term_id' => $term ]
+		);
+
+		$this->assertContains(
+			$term,
+			$this->index->get_term_ids_with_events( 'venue' ),
+			'the cached list must not outlive the insert that changed it'
+		);
+	}
+
+	// -------------------------------------------------------------------------
 	// Cache correctness
 	// -------------------------------------------------------------------------
 
