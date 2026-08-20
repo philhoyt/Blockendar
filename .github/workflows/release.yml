@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      # Lowercase only, deliberately. Plugin Update Checker normalises a tag with
+      # ltrim( $tag, 'v' ), which does not strip an uppercase V — a tag like
+      # V1.1.0 stays "V1.1.0" and version_compare() then ranks it BELOW the
+      # installed version, so no update is ever offered.
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Create plugin zip
+        run: npm run plugin-zip
+
+      - name: Extract changelog
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk "/^= ${VERSION} =/{found=1} found && /^= [0-9]/ && !/^= ${VERSION} =/{exit} found{print}" readme.txt > changelog_body.txt
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            blockendar.zip
+            readme.txt
+          body_path: changelog_body.txt
