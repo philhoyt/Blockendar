@@ -180,6 +180,15 @@ $wrapper_attrs = get_block_wrapper_attributes(
 				>
 			</div>
 		</div>
+
+			<?php
+			/*
+			 * Mount point for the inline calendar. Empty on the server: without
+			 * JavaScript the two date fields above are the control, and this stays
+			 * a harmless empty div.
+			 */
+			?>
+			<div class="blockendar-filter-date-range__calendar" aria-hidden="true"></div>
 		</fieldset>
 
 		<div class="blockendar-filter__actions">

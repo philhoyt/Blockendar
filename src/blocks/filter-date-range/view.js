@@ -4,17 +4,20 @@
  * Upgrades the two native <input type="date"> fields to a Flatpickr range
  * picker. Falls back to the native inputs if Flatpickr fails or is unavailable.
  *
- * The two fields live inside a popover panel. Flatpickr is only initialised the
- * first time that panel opens: static:true measures the input to place the
- * calendar, and an element inside a display:none panel has no dimensions to
- * measure, so initialising on load would mis-position it.
+ * The popover panel holds the calendar itself, rather than two text fields that
+ * open a calendar beneath them — the latter made the panel taller than it could
+ * show and forced the visitor to scroll to reach the month grid.
+ *
+ * The calendar is built the first time the panel opens. Flatpickr measures on
+ * init, and an element inside a display:none panel has no dimensions to measure.
  *
  * Flatpickr is pulled in with a dynamic import() so it ships as its own chunk:
  * the native inputs are fully usable on their own, so there is no reason to make
  * every visitor download a date picker before the form works.
  *
- * On date selection the form auto-submits after a short debounce. The
- * pagination param is stripped so a new date range always starts at page 1.
+ * Selecting dates writes them to the hidden native inputs; the Apply button
+ * commits them. There is no auto-submit: with a range you are mid-decision after
+ * the first click, and navigating then would be wrong.
  * An inverted range is normalised server-side in FilterContext, so the two
  * fields do not need to police each other here.
  */
@@ -43,54 +46,19 @@ import '../shared/filter-controls.css';
 				return;
 			}
 
-			const startLabel = inputStart
-				.closest( '.blockendar-filter-date-range__field' )
-				?.querySelector( 'label' );
+			const startField = inputStart.closest(
+				'.blockendar-filter-date-range__field'
+			);
 			const endField = inputEnd.closest(
 				'.blockendar-filter-date-range__field'
 			);
 
-			let debounceTimer = null;
-
-			const submit = () => {
-				clearTimeout( debounceTimer );
-				debounceTimer = setTimeout( () => {
-					const url = new URL( form.action, window.location.href );
-					const params = new URLSearchParams( url.searchParams );
-
-					if ( inputStart.value ) {
-						params.set( paramStart, inputStart.value );
-					} else {
-						params.delete( paramStart );
-					}
-
-					if ( inputEnd.value ) {
-						params.set( paramEnd, inputEnd.value );
-					} else {
-						params.delete( paramEnd );
-					}
-
-					// Reset pagination.
-					const queryId =
-						el.closest( '[data-blockendar-query-id]' )?.dataset
-							?.blockendarQueryId ?? '';
-					const pageKey = queryId
-						? 'blockendar_page_' + queryId
-						: 'blockendar_page';
-					params.delete( pageKey );
-
-					// Carry over other hidden filter inputs.
-					new FormData( form ).forEach( ( val, key ) => {
-						if ( key !== paramStart && key !== paramEnd ) {
-							params.set( key, val );
-						}
-					} );
-
-					url.search = params.toString();
-					window.location.assign( url.toString() );
-				}, 300 );
-			};
-
+			/*
+			 * No JavaScript submit helper. The Apply button is a native submit
+			 * inside the form, the form action already drops the pagination param,
+			 * and the other filters travel as hidden inputs — so the browser does
+			 * everything the old handler did.
+			 */
 			// The Apply button stays available: the picker auto-submits once a
 			// full range is chosen, but the button is the no-JS path and the way
 			// to commit if the picker never loads.
@@ -111,22 +79,28 @@ import '../shared/filter-controls.css';
 					import( 'flatpickr/dist/flatpickr.css' ),
 				] )
 					.then( ( [ { default: flatpickr } ] ) => {
+						const mount = el.querySelector(
+							'.blockendar-filter-date-range__calendar'
+						);
+
+						if ( ! mount ) {
+							return;
+						}
+
 						flatpickr( inputStart, {
 							mode: 'range',
 							dateFormat: 'Y-m-d',
-							// Renders the calendar in a wrapper next to the input
-							// rather than floating it against page coordinates.
-							static: true,
+							// The calendar is the panel's content, always visible
+							// rather than opening in response to a field.
+							inline: true,
+							appendTo: mount,
 							minDate: minDate ?? undefined,
 							maxDate: maxDate ?? undefined,
 							defaultDate: [
 								inputStart.value || null,
 								inputEnd.value || null,
 							].filter( Boolean ),
-							onClose( selectedDates ) {
-								// Only navigate on a real change. Submitting on
-								// every close meant that opening and dismissing the
-								// picker reloaded the page.
+							onChange( selectedDates ) {
 								const fmt = ( d ) =>
 									d.getFullYear() +
 									'-' +
@@ -137,41 +111,29 @@ import '../shared/filter-controls.css';
 									'-' +
 									String( d.getDate() ).padStart( 2, '0' );
 
-								const nextStart =
-									selectedDates.length === 2
-										? fmt( selectedDates[ 0 ] )
-										: '';
-								const nextEnd =
-									selectedDates.length === 2
-										? fmt( selectedDates[ 1 ] )
-										: '';
-
-								// One date picked is not a range yet.
-								if ( selectedDates.length === 1 ) {
-									return;
+								// A range is only meaningful once both ends exist.
+								// Until then the fields keep their previous value,
+								// so dismissing mid-selection changes nothing.
+								if ( selectedDates.length === 2 ) {
+									inputStart.value = fmt(
+										selectedDates[ 0 ]
+									);
+									inputEnd.value = fmt( selectedDates[ 1 ] );
+								} else if ( selectedDates.length === 0 ) {
+									inputStart.value = '';
+									inputEnd.value = '';
 								}
-
-								if (
-									nextStart === inputStart.value &&
-									nextEnd === inputEnd.value
-								) {
-									return;
-								}
-
-								inputStart.value = nextStart;
-								inputEnd.value = nextEnd;
-								submit();
 							},
 						} );
 
-						// One input now covers both ends of the range, so "From"
-						// no longer describes it. The replacement text comes from
-						// PHP because view scripts carry no translation context.
-						if ( startLabel && el.dataset.labelRange ) {
-							startLabel.textContent = el.dataset.labelRange;
-						}
+						// The native fields carry the values but are no longer the
+						// control; the calendar is. They stay in the DOM so the form
+						// still submits them.
+						[ startField, endField ].forEach( ( field ) =>
+							field?.setAttribute( 'hidden', '' )
+						);
 
-						endField?.setAttribute( 'hidden', '' );
+						mount.removeAttribute( 'aria-hidden' );
 					} )
 					.catch( () => {
 						// Picker unavailable: both native date inputs stay visible

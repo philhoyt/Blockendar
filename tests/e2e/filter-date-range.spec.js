@@ -87,22 +87,51 @@ test.describe( 'without JavaScript', () => {
 	} );
 } );
 
-test( 'the picker collapses the two fields into one labelled range input', async ( {
+test( 'the panel presents the calendar itself, not fields that open one', async ( {
 	page,
 } ) => {
 	await page.goto( `/?p=${ pageId }` );
 	await openDatePopover( page );
 
-	const endField = page
-		.locator( '.blockendar-filter-date-range__field' )
-		.nth( 1 );
-	await expect( endField ).toBeHidden( { timeout: 15000 } );
+	// The reference this follows shows a month grid on open. Fields that open a
+	// second layer made the panel taller than it could show, forcing a scroll to
+	// reach the grid.
+	await expect( page.locator( '.flatpickr-calendar.inline' ) ).toBeVisible( {
+		timeout: 15000,
+	} );
 
-	// A range input labelled "From" would be wrong, so the label is swapped.
-	const visible = await page
-		.locator( '.blockendar-filter-date-range label:visible' )
-		.allTextContents();
-	expect( visible.map( ( s ) => s.trim() ) ).toEqual( [ 'Dates' ] );
+	const visibleDateFields = page.locator(
+		'.blockendar-filter-date-range__field:not([hidden])'
+	);
+	await expect( visibleDateFields ).toHaveCount( 0 );
+
+	// Both named inputs stay in the DOM: they carry the values the form submits.
+	await expect(
+		page.locator( 'input[name="blockendar_date_start"]' )
+	).toHaveCount( 1 );
+	await expect(
+		page.locator( 'input[name="blockendar_date_end"]' )
+	).toHaveCount( 1 );
+} );
+
+test( 'the panel is sized to the calendar and does not scroll', async ( {
+	page,
+} ) => {
+	await page.goto( `/?p=${ pageId }` );
+	await openDatePopover( page );
+	await expect( page.locator( '.flatpickr-calendar.inline' ) ).toBeVisible( {
+		timeout: 15000,
+	} );
+
+	const panel = page.locator( '.blockendar-filter__panel' );
+
+	const scrolls = await panel.evaluate(
+		( n ) => n.scrollHeight > n.clientHeight + 1
+	);
+	expect(
+		scrolls,
+		'the month grid must be reachable without scrolling'
+	).toBe( false );
 } );
 
 test( 'the calendar mounts inside the block and is not a full-page blob', async ( {
@@ -110,17 +139,9 @@ test( 'the calendar mounts inside the block and is not a full-page blob', async 
 } ) => {
 	await page.goto( `/?p=${ pageId }` );
 	await openDatePopover( page );
-	await expect(
-		page.locator( '.blockendar-filter-date-range__field' ).nth( 1 )
-	).toBeHidden( { timeout: 15000 } );
 
-	await page
-		.locator( '.blockendar-filter-date-range__input' )
-		.first()
-		.click();
-
-	const cal = page.locator( '.flatpickr-calendar' ).first();
-	await expect( cal ).toBeVisible();
+	const cal = page.locator( '.flatpickr-calendar.inline' );
+	await expect( cal ).toBeVisible( { timeout: 15000 } );
 
 	// Mounted inside the block rather than at document.body — this is what lets
 	// the block's own Flatpickr theme overrides apply. Checked by ancestry, not
@@ -138,13 +159,22 @@ test( 'the calendar mounts inside the block and is not a full-page blob', async 
 		true
 	);
 
-	// With its stylesheet missing the calendar rendered many hundreds of pixels
-	// tall; a styled month grid is far smaller.
+	/*
+	 * Without its stylesheet the calendar rendered as a sprawling unstyled block
+	 * hundreds of pixels tall. Width is no longer the tell — the grid is meant to
+	 * fill the panel — so this checks that it tracks the panel rather than
+	 * exceeding it, and that its height stays that of a month grid.
+	 */
+	const panelBox = await page
+		.locator( '.blockendar-filter__panel' )
+		.boundingBox();
 	const box = await cal.boundingBox();
+
 	expect( box.height, `calendar height was ${ box?.height }` ).toBeLessThan(
 		500
 	);
-	expect( box.width, `calendar width was ${ box?.width }` ).toBeLessThan(
-		500
-	);
+	expect(
+		box.width,
+		`calendar ${ box?.width } vs panel ${ panelBox?.width }`
+	).toBeLessThanOrEqual( panelBox.width + 1 );
 } );

@@ -72,7 +72,7 @@ async function scrollFilterIntoView( page ) {
 	return page.evaluate( () => window.scrollY );
 }
 
-test( 'opening and closing the date picker leaves the page where it was', async ( {
+test( 'opening and closing the date filter leaves the page where it was', async ( {
 	page,
 } ) => {
 	const navigations = [];
@@ -82,10 +82,6 @@ test( 'opening and closing the date picker leaves the page where it was', async 
 	);
 
 	await page.goto( `/?p=${ pageId }` );
-	await openDatePopover( page );
-	await expect(
-		page.locator( '.blockendar-filter-date-range__field' ).nth( 1 )
-	).toBeHidden( { timeout: 15000 } );
 
 	const before = await scrollFilterIntoView( page );
 	expect(
@@ -95,22 +91,19 @@ test( 'opening and closing the date picker leaves the page where it was', async 
 
 	navigations.length = 0;
 
-	await page
-		.locator( '.blockendar-filter-date-range__input' )
-		.first()
-		.click();
-	await expect( page.locator( '.flatpickr-calendar' ).first() ).toBeVisible();
+	await openDatePopover( page );
+	await expect( page.locator( '.flatpickr-calendar.inline' ) ).toBeVisible();
 	await page.keyboard.press( 'Escape' );
-	await page.waitForTimeout( 1000 );
+	await page.waitForTimeout( 800 );
 
 	expect(
 		navigations,
-		'closing an untouched picker must not navigate'
+		'closing an untouched filter must not navigate'
 	).toEqual( [] );
 	expect( await page.evaluate( () => window.scrollY ) ).toBe( before );
 } );
 
-test( 'a half-finished range does not clear the fields or navigate', async ( {
+test( 'picking dates does not navigate until Apply is pressed', async ( {
 	page,
 } ) => {
 	const navigations = [];
@@ -121,49 +114,44 @@ test( 'a half-finished range does not clear the fields or navigate', async ( {
 
 	await page.goto( `/?p=${ pageId }` );
 	await openDatePopover( page );
-	await expect(
-		page.locator( '.blockendar-filter-date-range__field' ).nth( 1 )
-	).toBeHidden( { timeout: 15000 } );
+	await expect( page.locator( '.flatpickr-calendar.inline' ) ).toBeVisible();
 
 	navigations.length = 0;
 
-	await page
-		.locator( '.blockendar-filter-date-range__input' )
-		.first()
-		.click();
-	await expect( page.locator( '.flatpickr-calendar' ).first() ).toBeVisible();
-
-	// One click starts a range but does not finish it.
-	await page
-		.locator(
-			'.flatpickr-day:not(.prevMonthDay):not(.nextMonthDay):not(.flatpickr-disabled)'
-		)
-		.nth( 3 )
-		.click();
-	await page.keyboard.press( 'Escape' );
-	await page.waitForTimeout( 1000 );
-
-	expect( navigations, 'an unfinished range must not submit' ).toEqual( [] );
-} );
-
-test( 'choosing a complete range still applies the filter', async ( {
-	page,
-} ) => {
-	await page.goto( `/?p=${ pageId }` );
-	await openDatePopover( page );
-	await expect(
-		page.locator( '.blockendar-filter-date-range__field' ).nth( 1 )
-	).toBeHidden( { timeout: 15000 } );
-
-	await page
-		.locator( '.blockendar-filter-date-range__input' )
-		.first()
-		.click();
 	const days = page.locator(
 		'.flatpickr-day:not(.prevMonthDay):not(.nextMonthDay):not(.flatpickr-disabled)'
 	);
-	await days.nth( 3 ).click();
-	await days.nth( 8 ).click();
+
+	// Half a range: the visitor is mid-decision, so navigating would be wrong.
+	await days.nth( 5 ).click();
+	await page.waitForTimeout( 400 );
+	expect( navigations, 'a half-finished range must not submit' ).toEqual(
+		[]
+	);
+
+	// A complete range still waits for Apply, as the reference UI does.
+	await days.nth( 12 ).click();
+	await page.waitForTimeout( 600 );
+	expect(
+		navigations,
+		'a complete range is committed by Apply, not on the second click'
+	).toEqual( [] );
+} );
+
+test( 'Apply commits the chosen range to the URL', async ( { page } ) => {
+	await page.goto( `/?p=${ pageId }` );
+	await openDatePopover( page );
+	await expect( page.locator( '.flatpickr-calendar.inline' ) ).toBeVisible();
+
+	const days = page.locator(
+		'.flatpickr-day:not(.prevMonthDay):not(.nextMonthDay):not(.flatpickr-disabled)'
+	);
+	await days.nth( 5 ).click();
+	await days.nth( 12 ).click();
+
+	await page
+		.locator( '.blockendar-filter-date-range .blockendar-filter__submit' )
+		.click();
 
 	await page.waitForURL( /blockendar_date_start=/, { timeout: 15000 } );
 	expect( page.url() ).toMatch( /blockendar_date_end=/ );
