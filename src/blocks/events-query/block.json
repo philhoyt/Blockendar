@@ -32,6 +32,9 @@
 		"postType",
 		"blockendar/queryId"
 	],
+	"providesContext": {
+		"blockendar/activeLayout": "displayLayout"
+	},
 	"attributes": {
 		"typeIds": {
 			"type": "array",

@@ -33,6 +33,15 @@
 	}
 }
 
+/* Per-layout templates: both are in the DOM, only one is shown.
+
+   [hidden] is a presentation hint that loses to any display declaration, and
+   this stylesheet sets display on the query itself — so the inactive layout has
+   to win explicitly or it would stay visible. */
+.blockendar-events-query__layout[hidden] {
+	display: none !important;
+}
+
 .blockendar-events-query__empty {
 	color: color-mix(in srgb, currentcolor 50%, transparent);
 }

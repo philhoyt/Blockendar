@@ -78,6 +78,17 @@ function applyView( switcher, queries, mode ) {
 			query.classList.remove( `is-${ known }-view` )
 		);
 		query.classList.add( `is-${ mode }-view` );
+
+		/*
+		 * A query whose layouts use different templates renders both and hides
+		 * the inactive one. Queries sharing one template have no such elements,
+		 * where this is a no-op and the class swap above is the whole job.
+		 */
+		query
+			.querySelectorAll( '.blockendar-events-query__layout' )
+			.forEach( ( layout ) => {
+				layout.hidden = layout.dataset.layout !== mode;
+			} );
 	} );
 
 	switcher.dataset.activeView = mode;

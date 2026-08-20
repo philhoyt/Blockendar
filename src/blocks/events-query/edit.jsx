@@ -17,14 +17,23 @@ import {
 	ToggleControl,
 	CheckboxControl,
 	ToolbarButton,
+	Button,
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
+import { createBlock, cloneBlock } from '@wordpress/blocks';
+import { useSelect, useDispatch } from '@wordpress/data';
 import { useState } from '@wordpress/element';
 import { useResizeObserver } from '@wordpress/compose';
 import { store as coreStore } from '@wordpress/core-data';
 import { useEntityRecords } from '@wordpress/core-data';
 import { __, _x } from '@wordpress/i18n';
+import {
+	cardBlocksFor,
+	hasSplitTemplates,
+	layoutTemplatesIn,
+	TEMPLATE_BLOCK,
+	NO_RESULTS_BLOCK,
+} from './templates';
 
 /*
  * Upper bound on how many events the editor previews, regardless of how many the
@@ -158,15 +167,70 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 		[ clientId ]
 	);
 
-	/*
-	 * The no-results block belongs to the query, not to an event card: render.php
-	 * partitions it out before looping over events, and the previews have to do
-	 * the same. Left in, it repeats once per previewed event — a message about
-	 * having no events, shown against events that plainly exist.
+	const { replaceInnerBlocks } = useDispatch( blockEditorStore );
+
+	const layoutTemplates = layoutTemplatesIn( innerBlocks );
+	const isSplit = hasSplitTemplates( innerBlocks );
+	const activeLayout = isGrid ? 'grid' : 'list';
+
+	// The blocks making up one card in the layout being edited, partitioned the
+	// same way render.php partitions them. See ./templates.js.
+	const previewBlocks = cardBlocksFor( innerBlocks, activeLayout );
+
+	/**
+	 * Give each layout its own copy of the current card template.
+	 *
+	 * Both start identical, so splitting changes nothing on the front end until
+	 * one of them is actually edited.
 	 */
-	const previewBlocks = innerBlocks.filter(
-		( block ) => block.name !== 'blockendar/events-query-no-results'
-	);
+	const splitTemplates = () => {
+		const noResults = innerBlocks.filter(
+			( block ) => block.name === NO_RESULTS_BLOCK
+		);
+		const card = innerBlocks.filter(
+			( block ) => block.name !== NO_RESULTS_BLOCK
+		);
+
+		replaceInnerBlocks(
+			clientId,
+			[
+				createBlock(
+					TEMPLATE_BLOCK,
+					{ layout: 'list' },
+					card.map( cloneBlock )
+				),
+				createBlock(
+					TEMPLATE_BLOCK,
+					{ layout: 'grid' },
+					card.map( cloneBlock )
+				),
+				...noResults,
+			],
+			false
+		);
+	};
+
+	/**
+	 * Collapse back to a single template, keeping the layout being edited.
+	 *
+	 * The other one is discarded, which is why this is a deliberate button and
+	 * not a toggle that could be flipped past by accident.
+	 */
+	const mergeTemplates = () => {
+		const keep =
+			layoutTemplates.find(
+				( template ) => template.attributes.layout === activeLayout
+			) ?? layoutTemplates[ 0 ];
+		const noResults = innerBlocks.filter(
+			( block ) => block.name === NO_RESULTS_BLOCK
+		);
+
+		replaceInnerBlocks(
+			clientId,
+			[ ...keep.innerBlocks.map( cloneBlock ), ...noResults ],
+			false
+		);
+	};
 
 	const blockProps = useBlockProps( {
 		className: `blockendar-events-query is-${
@@ -290,6 +354,63 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 									__nextHasNoMarginBottom
 								/>
 							</>
+						) }
+
+						{ ! isSplit && (
+							<div>
+								<Button
+									variant="secondary"
+									onClick={ splitTemplates }
+								>
+									{ __(
+										'Use a separate template per layout',
+										'blockendar'
+									) }
+								</Button>
+								<p className="components-base-control__help">
+									{ __(
+										'List and grid currently share one event template. Splitting gives each its own copy, so they can show different blocks.',
+										'blockendar'
+									) }
+								</p>
+							</div>
+						) }
+
+						{ isSplit && (
+							<div>
+								<p className="components-base-control__help">
+									{ isGrid
+										? __(
+												'Editing the grid template. Switch to list view in the toolbar to edit the other one.',
+												'blockendar'
+										  )
+										: __(
+												'Editing the list template. Switch to grid view in the toolbar to edit the other one.',
+												'blockendar'
+										  ) }
+								</p>
+								<Button
+									variant="secondary"
+									isDestructive
+									onClick={ mergeTemplates }
+								>
+									{ __(
+										'Use one template for both',
+										'blockendar'
+									) }
+								</Button>
+								<p className="components-base-control__help">
+									{ isGrid
+										? __(
+												'Keeps the grid template and discards the list one.',
+												'blockendar'
+										  )
+										: __(
+												'Keeps the list template and discards the grid one.',
+												'blockendar'
+										  ) }
+								</p>
+							</div>
 						) }
 					</VStack>
 				</PanelBody>

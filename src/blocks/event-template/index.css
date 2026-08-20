@@ -1,0 +1,5 @@
+/* The layout not currently selected in the toolbar is hidden rather than
+   unmounted, so its blocks keep their state while the other one is edited. */
+.blockendar-event-template.is-inactive-layout {
+	display: none;
+}

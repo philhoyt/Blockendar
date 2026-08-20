@@ -207,15 +207,47 @@ if ( $inherit ) {
 	}
 }
 
-// Partition inner blocks: separate the no-results block from the event card template.
+/*
+ * Partition inner blocks into three groups:
+ *
+ * - the no-results block, which belongs to the query rather than to a card;
+ * - any per-layout templates (blockendar/event-template), keyed by layout;
+ * - anything else, which is a card template saved before per-layout templates
+ *   existed and still applies to every layout.
+ */
 $no_results_block = null;
 $inner_blocks     = [];
+$layout_templates = [];
+
 foreach ( $block->parsed_block['innerBlocks'] as $inner ) {
 	if ( 'blockendar/events-query-no-results' === $inner['blockName'] ) {
 		$no_results_block = $inner;
-	} else {
-		$inner_blocks[] = $inner;
+		continue;
 	}
+
+	if ( 'blockendar/event-template' === $inner['blockName'] ) {
+		$template_layout = sanitize_key( $inner['attrs']['layout'] ?? '' );
+
+		if ( in_array( $template_layout, FilterContext::view_modes(), true ) ) {
+			$layout_templates[ $template_layout ] = $inner['innerBlocks'];
+		}
+
+		continue;
+	}
+
+	$inner_blocks[] = $inner;
+}
+
+/*
+ * Only render each event more than once when the layouts genuinely differ. A
+ * single template — whether it is legacy content or a split that was undone —
+ * produces identical markup for every layout, which is what lets the view
+ * switcher swap layouts by changing a class instead of reloading.
+ */
+$has_split_templates = count( $layout_templates ) > 1;
+
+if ( ! $has_split_templates && 1 === count( $layout_templates ) ) {
+	$inner_blocks = reset( $layout_templates );
 }
 
 if ( empty( $events ) ) {
@@ -267,9 +299,32 @@ add_filter( 'post_type_link', 'blockendar_occurrence_permalink_filter', 10, 2 );
 		$GLOBALS['post'] = get_post( (int) $row->post_id );
 		setup_postdata( $GLOBALS['post'] );
 
-		foreach ( $inner_blocks as $inner_block ) {
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- block render output.
-			echo render_block( $inner_block );
+		if ( $has_split_templates ) {
+			/*
+			 * Both layouts are rendered and the inactive one is hidden, so the
+			 * view switcher can swap between them without a round trip. The
+			 * hidden attribute keeps it out of the accessibility tree as well as
+			 * out of view — CSS alone would leave it exposed to screen readers.
+			 */
+			foreach ( $layout_templates as $template_layout => $template_blocks ) {
+				printf(
+					'<div class="blockendar-events-query__layout" data-layout="%s"%s>',
+					esc_attr( $template_layout ),
+					$template_layout === $layout_type ? '' : ' hidden'
+				);
+
+				foreach ( $template_blocks as $inner_block ) {
+					// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- block render output.
+					echo render_block( $inner_block );
+				}
+
+				echo '</div>';
+			}
+		} else {
+			foreach ( $inner_blocks as $inner_block ) {
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- block render output.
+				echo render_block( $inner_block );
+			}
 		}
 		?>
 	</li>

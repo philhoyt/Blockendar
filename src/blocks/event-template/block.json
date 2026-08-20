@@ -1,0 +1,26 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "blockendar/event-template",
+	"version": "1.1.0",
+	"title": "Event Template",
+	"category": "blockendar",
+	"icon": "layout",
+	"description": "Holds the blocks that make up a single event for one layout, so list and grid can differ.",
+	"textdomain": "blockendar",
+	"ancestor": [ "blockendar/events-query" ],
+	"usesContext": [ "blockendar/activeLayout" ],
+	"supports": {
+		"html": false,
+		"reusable": false,
+		"inserter": false
+	},
+	"attributes": {
+		"layout": {
+			"type": "string",
+			"default": "list"
+		}
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css"
+}
