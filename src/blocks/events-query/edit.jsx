@@ -158,6 +158,16 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 		[ clientId ]
 	);
 
+	/*
+	 * The no-results block belongs to the query, not to an event card: render.php
+	 * partitions it out before looping over events, and the previews have to do
+	 * the same. Left in, it repeats once per previewed event — a message about
+	 * having no events, shown against events that plainly exist.
+	 */
+	const previewBlocks = innerBlocks.filter(
+		( block ) => block.name !== 'blockendar/events-query-no-results'
+	);
+
 	const blockProps = useBlockProps( {
 		className: `blockendar-events-query is-${
 			isGrid ? 'grid' : 'list'
@@ -442,7 +452,7 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 								postType: 'blockendar_event',
 							} }
 						>
-							<EventPreview blocks={ innerBlocks } />
+							<EventPreview blocks={ previewBlocks } />
 						</BlockContextProvider>
 					) ) }
 
