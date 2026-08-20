@@ -70,10 +70,16 @@ const IconGrid = (
 );
 
 const TEMPLATE = [
-	[ 'core/post-title', { isLink: true, level: 3 } ],
-	[ 'blockendar/event-datetime' ],
-	[ 'blockendar/event-venue' ],
-	[ 'blockendar/events-query-no-results' ],
+	[
+		TEMPLATE_BLOCK,
+		{ layout: 'list' },
+		[
+			[ 'core/post-title', { isLink: true, level: 3 } ],
+			[ 'blockendar/event-datetime' ],
+			[ 'blockendar/event-venue' ],
+		],
+	],
+	[ NO_RESULTS_BLOCK ],
 ];
 
 /**
@@ -187,23 +193,21 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 		const noResults = innerBlocks.filter(
 			( block ) => block.name === NO_RESULTS_BLOCK
 		);
-		const card = innerBlocks.filter(
-			( block ) => block.name !== NO_RESULTS_BLOCK
-		);
+
+		/*
+		 * Clone through an arrow rather than passing cloneBlock to map directly:
+		 * map supplies (block, index, array), and cloneBlock reads its second and
+		 * third arguments as attributes and inner blocks. That hands every clone
+		 * the whole array as children with their original clientIds, and
+		 * duplicate clientIds corrupt the editor's block tree.
+		 */
+		const cloneCard = () => previewBlocks.map( ( block ) => cloneBlock( block ) );
 
 		replaceInnerBlocks(
 			clientId,
 			[
-				createBlock(
-					TEMPLATE_BLOCK,
-					{ layout: 'list' },
-					card.map( cloneBlock )
-				),
-				createBlock(
-					TEMPLATE_BLOCK,
-					{ layout: 'grid' },
-					card.map( cloneBlock )
-				),
+				createBlock( TEMPLATE_BLOCK, { layout: 'list' }, cloneCard() ),
+				createBlock( TEMPLATE_BLOCK, { layout: 'grid' }, cloneCard() ),
 				...noResults,
 			],
 			false
@@ -227,7 +231,14 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 
 		replaceInnerBlocks(
 			clientId,
-			[ ...keep.innerBlocks.map( cloneBlock ), ...noResults ],
+			[
+				createBlock(
+					TEMPLATE_BLOCK,
+					{ layout: 'list' },
+					keep.innerBlocks.map( ( block ) => cloneBlock( block ) )
+				),
+				...noResults,
+			],
 			false
 		);
 	};

@@ -11,6 +11,7 @@ const { wpCli, wpCliId } = require( './wp-cli' );
 
 let splitPageId;
 let sharedPageId;
+let singlePageId;
 const created = [];
 
 /**
@@ -74,6 +75,27 @@ test.beforeAll( () => {
 		'--porcelain',
 	] );
 	created.push( splitPageId );
+
+	const singleContainer =
+		'<!-- wp:blockendar/query-filters -->' +
+		'<!-- wp:blockendar/query-view-switcher /-->' +
+		'<!-- wp:blockendar/events-query -->' +
+		'<!-- wp:blockendar/event-template {"layout":"list"} -->' +
+		'<!-- wp:post-title {"isLink":true,"level":3} /-->' +
+		'<!-- /wp:blockendar/event-template -->' +
+		'<!-- /wp:blockendar/events-query -->' +
+		'<!-- /wp:blockendar/query-filters -->';
+
+	singlePageId = wpCliId( [
+		'post',
+		'create',
+		'--post_type=page',
+		'--post_title=E2E Single Template Page',
+		'--post_status=publish',
+		`--post_content=${ singleContainer }`,
+		'--porcelain',
+	] );
+	created.push( singlePageId );
 
 	const shared =
 		'<!-- wp:blockendar/query-filters -->' +
@@ -174,4 +196,33 @@ test( 'a query with one shared template renders each event once', async ( {
 		page.locator( '.blockendar-events-query__layout' ),
 		'the duplicate-markup cost is only paid when templates actually differ'
 	).toHaveCount( 0 );
+} );
+
+test( 'the default single-template shape renders each event once', async ( {
+	page,
+} ) => {
+	await page.goto( `/?p=${ singlePageId }` );
+
+	await expect(
+		page.locator( '.blockendar-events-query__item' ).first()
+	).toBeVisible();
+
+	// One template applies to every layout, so there is nothing to duplicate.
+	await expect(
+		page.locator( '.blockendar-events-query__layout' )
+	).toHaveCount( 0 );
+} );
+
+test( 'a lone template still renders when a different layout is requested', async ( {
+	page,
+} ) => {
+	await page.goto( `/?p=${ singlePageId }&blockendar_view=grid` );
+
+	await expect( page.locator( '.blockendar-events-query' ) ).toHaveClass(
+		/is-grid-view/
+	);
+	await expect(
+		page.locator( '.blockendar-events-query__item' ),
+		'a template claiming list must not vanish in grid view'
+	).not.toHaveCount( 0 );
 } );

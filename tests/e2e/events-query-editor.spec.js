@@ -118,3 +118,104 @@ test( 'previews render at the same scale as the editable item', async ( {
  * is unchanged. What this work actually introduced — the previews and their
  * scale — is covered above. Flagged in the plan's Notes as a real gap.
  */
+
+test( 'splitting the template leaves the editor in a valid state', async ( {
+	page,
+} ) => {
+	// Logging in and booting the editor eats most of the default budget before
+	// this test does any of its own work.
+	test.setTimeout( 120000 );
+
+	const pageErrors = [];
+	page.on( 'pageerror', ( error ) => pageErrors.push( error.message ) );
+
+	await loginAsAdmin( page );
+	const canvas = await openEditor( page, postId );
+	await expect(
+		canvas.locator( '.blockendar-events-query' ).first()
+	).toBeVisible( { timeout: 30000 } );
+
+	/*
+	 * Select through the data store rather than clicking the canvas: the block's
+	 * own overlays intercept clicks inside the editor iframe, which is what made
+	 * earlier attempts at this fail for harness reasons rather than product ones.
+	 */
+	await page.evaluate( () => {
+		const query = window.wp.data
+			.select( 'core/block-editor' )
+			.getBlocks()
+			.find( ( block ) => block.name === 'blockendar/events-query' );
+
+		window.wp.data
+			.dispatch( 'core/block-editor' )
+			.selectBlock( query.clientId );
+	} );
+
+	// Selecting through the store does not open the settings sidebar, and the
+	// Layout panel may be collapsed from a previous session's preferences.
+	await page.evaluate( () => {
+		window.wp.data
+			.dispatch( 'core/edit-post' )
+			?.openGeneralSidebar?.( 'edit-post/block' );
+	} );
+
+	const layoutPanel = page.getByRole( 'button', {
+		name: 'Layout',
+		exact: true,
+	} );
+
+	if ( await layoutPanel.count() ) {
+		if (
+			'false' ===
+			( await layoutPanel.first().getAttribute( 'aria-expanded' ) )
+		) {
+			await layoutPanel.first().click();
+		}
+	}
+
+	/*
+	 * Located by text rather than by role: opening the sidebar from the data
+	 * store leaves an ancestor out of the accessibility tree, so getByRole finds
+	 * nothing even though the button is on screen and clickable.
+	 */
+	const splitButton = page.locator( 'button.components-button', {
+		hasText: 'Use a separate template per layout',
+	} );
+
+	await splitButton.waitFor( { state: 'visible', timeout: 20000 } );
+	await splitButton.click();
+
+	const result = await page.evaluate( () => {
+		const query = window.wp.data
+			.select( 'core/block-editor' )
+			.getBlocks()
+			.find( ( block ) => block.name === 'blockendar/events-query' );
+
+		const ids = [];
+		const walk = ( blocks ) =>
+			blocks.forEach( ( block ) => {
+				ids.push( block.clientId );
+				walk( block.innerBlocks ?? [] );
+			} );
+		walk( [ query ] );
+
+		return {
+			templates: query.innerBlocks.filter(
+				( block ) => block.name === 'blockendar/event-template'
+			).length,
+			totalIds: ids.length,
+			uniqueIds: new Set( ids ).size,
+		};
+	} );
+
+	expect( result.templates ).toBe( 2 );
+
+	// Reusing a clientId across both copies corrupts the block tree, which
+	// surfaces as "Cannot read properties of undefined (reading 'name')".
+	expect(
+		result.uniqueIds,
+		'every block in the tree needs its own clientId'
+	).toBe( result.totalIds );
+
+	expect( pageErrors, pageErrors.join( '\n' ) ).toEqual( [] );
+} );

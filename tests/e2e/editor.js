@@ -35,11 +35,32 @@ async function openEditor( page, postId ) {
 		waitUntil: 'domcontentloaded',
 	} );
 
-	// The welcome guide covers the canvas on a fresh profile.
-	const guide = page.locator(
-		'.components-guide__container button[aria-label="Close"]'
-	);
-	await guide.click( { timeout: 8000 } ).catch( () => {} );
+	/*
+	 * Turn the welcome guide off rather than racing its markup. Waiting for the
+	 * overlay and closing it does not work: the guide mounts after the editor is
+	 * ready, so a check on load finds nothing and the overlay then appears and
+	 * swallows pointer events across the whole page — including the sidebar.
+	 *
+	 * The preference scope differs between WordPress versions, so set both.
+	 */
+	await page
+		.waitForFunction( () => window.wp?.data?.dispatch, { timeout: 30000 } )
+		.catch( () => {} );
+
+	await page
+		.evaluate( () => {
+			const preferences = window.wp.data.dispatch( 'core/preferences' );
+
+			preferences?.set( 'core/edit-post', 'welcomeGuide', false );
+			preferences?.set( 'core', 'welcomeGuide', false );
+		} )
+		.catch( () => {} );
+
+	await page
+		.locator( '.components-modal__screen-overlay' )
+		.first()
+		.waitFor( { state: 'detached', timeout: 15000 } )
+		.catch( () => {} );
 
 	const iframe = page.locator( 'iframe[name="editor-canvas"]' );
 
