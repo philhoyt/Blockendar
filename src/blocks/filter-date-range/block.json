@@ -41,10 +41,6 @@
 			"type": "string",
 			"default": "To"
 		},
-		"labelRange": {
-			"type": "string",
-			"default": "Dates"
-		},
 		"minDate": {
 			"type": "string",
 			"default": ""

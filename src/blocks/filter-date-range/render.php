@@ -22,10 +22,6 @@ $query_id    = (string) ( $block->context['blockendar/queryId'] ?? '' );
 $label       = sanitize_text_field( $attributes['label'] ?? '' );
 $label_start = sanitize_text_field( $attributes['labelStart'] ?? __( 'From', 'blockendar' ) );
 $label_end   = sanitize_text_field( $attributes['labelEnd'] ?? __( 'To', 'blockendar' ) );
-// Shown in place of the start label once JavaScript collapses the two fields
-// into a single range picker, where "From" would no longer describe the input.
-$label_range = sanitize_text_field( $attributes['labelRange'] ?? __( 'Dates', 'blockendar' ) );
-
 // Field ids must be unique per instance: the param names are shared by every
 // date-range block that targets the same query, so using them directly would
 // emit duplicate ids and break label association when a page has two.
@@ -97,7 +93,6 @@ $wrapper_attrs = get_block_wrapper_attributes(
 	[
 		'class'                  => 'blockendar-filter-date-range' . ( $has_dates ? ' has-active-dates' : '' ),
 		'data-blockendar-filter' => 'date-range',
-		'data-label-range'       => $label_range,
 		'data-param-start'       => $param_start,
 		'data-param-end'         => $param_end,
 		'data-min-date'          => $min_date,
