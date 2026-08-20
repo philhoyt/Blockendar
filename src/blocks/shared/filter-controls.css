@@ -27,6 +27,38 @@
 }
 
 /* --------------------------------------------------------------------------
+   Behaviour inside a layout
+   -------------------------------------------------------------------------- */
+
+/*
+ * These blocks are routinely dropped into a Row. A flex parent resolves
+ * flex-basis: auto against the child's intrinsic size, and these carried
+ * container-type: inline-size — which applies size containment and reports
+ * that intrinsic size as zero, collapsing every filter to nothing. The
+ * container-type was removed (no @container query used it); this gives them a
+ * real basis so they share the row instead of fighting for it.
+ */
+.blockendar-filter-event-type,
+.blockendar-filter-venue,
+.blockendar-filter-date-range {
+	flex: 1 1 12rem;
+	min-inline-size: 0;
+}
+
+/* The switcher is icon-sized; it should not stretch to fill a share of the
+   row. */
+.blockendar-view-switcher {
+	flex: 0 0 auto;
+}
+
+/* A narrow column must truncate the trigger label rather than overflow it. */
+.blockendar-filter__trigger-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
    Choice lists
    -------------------------------------------------------------------------- */
 

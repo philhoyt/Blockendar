@@ -1,5 +1,4 @@
 .blockendar-filter-date-range {
-	container-type: inline-size;
 
 	/* Flatpickr's static mode supplies its own positioned wrapper around
 	   the input, so no positioning context is needed here. */
