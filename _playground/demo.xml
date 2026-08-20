@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	PLACEHOLDER — replace with a real WordPress WXR export.
+
+	Export from: WordPress Admin > Tools > Export > All content
+	(Not "Events" only — the export must also carry the demo page and the
+	event_type / event_venue terms, or the filter blocks render empty.)
+
+	Save the result here as _playground/demo.xml.
+
+	Two things the demo depends on:
+
+	1. A page whose slug is exactly `events-demo`. The blueprint's landing
+	   redirect looks that slug up by name; if it is missing, Playground falls
+	   back to the site home page. Change the slug in both places if you
+	   prefer a different one.
+
+	2. Event occurrences are stored in the custom `blockendar_events` index
+	   table, which a WXR file cannot carry. The blueprint runs
+	   `wp blockendar rebuild-index` after this import to regenerate it from
+	   the imported CPT data. Do not remove that step — without it the events
+	   import fine but no calendar or query block returns a single result.
+-->
+<rss version="2.0" xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wfw="http://wellformedweb.org/CommentAPI/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:wp="http://wordpress.org/export/1.2/">
+	<channel>
+		<wp:wxr_version>1.2</wp:wxr_version>
+	</channel>
+</rss>

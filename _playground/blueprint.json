@@ -1,0 +1,64 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "Blockendar - Events and Calendars",
+		"description": "A block-native WordPress events plugin. No shortcodes. No legacy widgets. The block editor is the UI.",
+		"author": "philhoyt",
+		"categories": [ "blocks" ]
+	},
+	"preferredVersions": {
+		"php": "8.3",
+		"wp": "latest"
+	},
+	"login": true,
+	"landingPage": "/open-demo-page.php",
+	"steps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "url",
+				"url": "https://github.com/philhoyt/Blockendar/releases/latest/download/blockendar.zip"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"blogname": "Blockendar Demo",
+				"permalink_structure": "/%postname%/"
+			}
+		},
+		{
+			"step": "importWxr",
+			"file": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/philhoyt/Blockendar/main/_playground/demo.xml"
+			},
+			"fetchAttachments": false,
+			"importComments": false,
+			"authorsMode": "default-author",
+			"defaultAuthorUsername": "admin"
+		},
+		{
+			"step": "wp-cli",
+			"command": "wp rewrite flush --hard",
+			"progress": {
+				"caption": "Flushing permalinks"
+			}
+		},
+		{
+			"step": "wp-cli",
+			"command": "wp blockendar rebuild-index",
+			"progress": {
+				"caption": "Building the Blockendar event index"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/wordpress/open-demo-page.php",
+			"data": "<?php require_once 'wp-load.php'; $pages = get_posts( [ 'name' => 'events-demo', 'post_type' => 'page', 'numberposts' => 1 ] ); if ( $pages ) { wp_redirect( get_permalink( $pages[0]->ID ) ); } else { wp_redirect( home_url() ); } exit;"
+		}
+	]
+}
