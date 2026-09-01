@@ -70,6 +70,18 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 1.2.0
+- Added: a separate event template per layout — list and grid can each show their own blocks. Splitting is opt-in per block, so existing content is untouched.
+- Added: a WordPress Playground demo blueprint, so the plugin can be tried in a browser.
+- Changed: switching between list and grid no longer reloads the page.
+- Changed: the view switcher's starting layout follows the Events Query block. The separate Default view control is gone — it was what let the two disagree.
+- Changed: every Events Query starts with an Event Template container, matching the core Query Loop's Post Template.
+- Changed: the view switcher draws real SVG icons, in the editor preview as well as the front end.
+- Fixed: undoing a list/grid change in the editor did not revert it, and left the page permanently unsaved
+- Fixed: splitting a template dropped the list template and rendered every layout through the grid one
+- Fixed: splitting a template could fail with an error and corrupt the block tree
+- Fixed: "No events found." appeared beneath every event in editor previews
+
 ### 1.1.0
 - Added: Events View Switcher block — visitors can switch the event list between list and grid layouts. The choice travels in the URL, and the control works without JavaScript.
 - Added: filter blocks for event type, venue and date range, each as a dropdown with its choices in a panel.

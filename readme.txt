@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -84,6 +84,18 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 1.2.0 =
+* Added: a separate event template per layout. List and grid can now show different blocks, added from the Events Query block's Layout settings. Splitting is opt-in per block, so existing content keeps rendering exactly as it did.
+* Added: a WordPress Playground demo blueprint, so the plugin can be tried in a browser without installing it.
+* Changed: switching between list and grid no longer reloads the page. The control is still a set of links, so it keeps working without JavaScript, and middle-click and modified clicks still open as they always did.
+* Changed: the view switcher's starting layout now follows the Events Query block it belongs to. The separate "Default view" setting has been removed — it was what allowed the control and the results to disagree. Blocks saved with a stale default are reconciled automatically on load.
+* Changed: every Events Query now starts with an Event Template container, matching the way the core Query Loop always carries a Post Template.
+* Changed: the view switcher draws real SVG icons, in the editor preview as well as on the front end.
+* Fixed: undoing a list/grid change in the editor did not revert it, and left the page permanently marked as having unsaved changes.
+* Fixed: splitting a template produced two templates that behaved as one — the list template was dropped and every layout rendered through the grid one.
+* Fixed: splitting a template could fail with an error and corrupt the block tree.
+* Fixed: "No events found." appeared beneath every event in the editor's previews.
 
 = 1.1.0 =
 * Added: Events View Switcher block — visitors can switch the event list between list and grid layouts. The choice travels in the URL, and the control works without JavaScript.
@@ -205,6 +217,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+The view switcher's "Default view" setting has been removed. The starting layout now comes from the Events Query block it belongs to, which is what the results already followed — any block where the two disagreed will now match. No action required.
 
 = 1.1.0 =
 The Event Type and Venue filters now default to their dropdown style. Any of those blocks where you never chose a style explicitly will change from a list to a dropdown — set it back to List in the block settings if you prefer. Those two filters also now list only terms that have upcoming events.
