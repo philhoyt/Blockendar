@@ -1,14 +1,18 @@
 # Blockendar — Filter Blocks Feature Plan
 
-**Status:** Planned
-**Target version:** 0.10.0
-**Last updated:** 2026-03-14
+**Status:** Shipped in 1.1.0
+**Last updated:** 2026-09-01
 
 ---
 
 ## Overview
 
 A set of filter blocks that let visitors interactively narrow the results of an `events-query` block by event type, venue, and date range.
+
+This is the plan the blocks were built from, kept for the reasoning behind the
+design. It is not API documentation — `block.json` is the authority on
+attributes. Where the built result diverged from the plan, the sections below
+have been corrected and the change noted.
 
 ---
 
@@ -62,9 +66,11 @@ Wrapper block. Renders no HTML of its own beyond a wrapper `<div data-blockendar
 Renders event type terms as a filterable list or dropdown.
 
 **Attributes:**
-- `displayStyle` (enum: `"list"` | `"dropdown"`, default `"list"`)
+- `displayStyle` (enum: `"list"` | `"dropdown"`, default `"dropdown"`) — planned as `"list"`; the dropdown proved the better default and existing blocks were migrated to it in 1.1.0.
 - `showCount` (boolean, default `false`) — shows occurrence count per term. Note: enables N+1 queries; only suitable for small term lists.
 - `showEmptyTerms` (boolean, default `false`)
+- `label` (string, default `""`) — optional visible label above the control.
+- `triggerLabel` (string, default `"All types"`) — text on the closed dropdown.
 
 **render.php:** Fetches `event_type` terms, renders checkboxes (multi-select) or `<select multiple>`. Marks active terms from `$_GET`. Preserves other active filter params as hidden inputs.
 
@@ -77,9 +83,11 @@ Renders event type terms as a filterable list or dropdown.
 Renders venue terms as a filterable list or dropdown. Single-select (one venue per occurrence row in the index).
 
 **Attributes:**
-- `displayStyle` (enum: `"list"` | `"dropdown"`, default `"list"`)
+- `displayStyle` (enum: `"list"` | `"dropdown"`, default `"dropdown"`) — see the note on the event type filter.
 - `showEmpty` (boolean, default `false`)
 - `showVirtual` (boolean, default `true`)
+- `label` (string, default `""`) — optional visible label above the control.
+- `triggerLabel` (string, default `"All venues"`) — text on the closed dropdown.
 
 **render.php:** Fetches `event_venue` terms, optionally filters out virtual venues. Renders radio buttons or `<select>`. Includes an "All venues" option that clears the filter. Marks active venue.
 
@@ -96,10 +104,17 @@ Airbnb-style date range picker backed by **Flatpickr** (MIT, ~16 KB gzipped, van
 - `labelEnd` (string, default `"To"`)
 - `minDate` (string, default `""`) — optional Y-m-d lower bound
 - `maxDate` (string, default `""`) — optional Y-m-d upper bound
+- `label` (string, default `""`) — optional visible label above the control.
+- `triggerLabel` (string, default `"All dates"`) — text on the closed dropdown.
 
-**render.php:** Renders two `<input type="date">` fields (functional without JS). Includes a submit button and a "Clear dates" link. Pre-populates from `$_GET`.
+**render.php:** Renders two `<input type="date">` fields (functional without JS), an "Apply dates" submit button and a "Clear dates" link. Pre-populates from `$_GET`.
 
-**view.js:** Initialises Flatpickr in `mode: "range"` on the two inputs, giving the Airbnb-style single-calendar range selection UI. Falls back gracefully to native date inputs if Flatpickr fails to load. On date selection, strips `blockendar_page`, updates URL. Cross-field validation: start ≤ end enforced.
+**view.js:** Lazy-imports Flatpickr and renders it inline in the dropdown panel, so the panel *is* the calendar rather than fields that open one. Falls back to the native date inputs if Flatpickr fails to load.
+
+Two changes from the plan, both made in 1.1.0: the calendar is shown directly
+in the panel instead of being attached to the inputs, and a range applies when
+"Apply dates" is pressed rather than on selection. Applying as you click fired
+a navigation mid-range, before the second date had been chosen.
 
 **Dependency:** `flatpickr` (MIT) — added to `package.json`, bundled via webpack into the block's `viewScript`.
 
@@ -224,7 +239,7 @@ src/blocks/filter-date-range/style.css
 
 ## Future Improvements (Post-v1)
 
-- **AJAX re-render**: A `GET /blockendar/v1/render/events-query` endpoint that returns rendered HTML. Filter `view.js` calls it on change and swaps the DOM instead of doing a full page reload. Requires converting `events-query/render.php` to be callable outside the block render pipeline.
+- **AJAX re-render**: A `GET /blockendar/v1/render/events-query` endpoint that returns rendered HTML. Filter `view.js` calls it on change and swaps the DOM instead of doing a full page reload. Requires converting `events-query/render.php` to be callable outside the block render pipeline. Still open: every filter change is a full page load. Note that the view switcher now swaps layout in place, but it does so by rendering both layouts up front, which only works because there are two known outcomes — filters have arbitrarily many.
 - **Term event counts** in the type/venue filters: currently a potential N+1 when `showCount` is enabled. A single `GROUP BY` query against the index table would be more efficient.
 - **Denormalize `featured` and `hide_from_listings`** into the index table to eliminate the `wp_postmeta` subqueries (see `SCOPE.md` §3.3).
-- **Junction table for `type_term_ids`** if `JSON_CONTAINS` performance becomes a bottleneck on large sites (see `SCOPE.md` §3.3).
+- ~~**Junction table for `type_term_ids`**~~ — delivered in 1.0.0 as `{prefix}blockendar_event_type_terms`, replacing the `JSON_CONTAINS` filtering entirely.
