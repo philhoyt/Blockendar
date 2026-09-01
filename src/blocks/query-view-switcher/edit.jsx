@@ -7,7 +7,7 @@ import {
 	store as blockEditorStore,
 } from '@wordpress/block-editor';
 import { PanelBody, ToggleControl } from '@wordpress/components';
-import { useSelect } from '@wordpress/data';
+import { useDispatch, useSelect } from '@wordpress/data';
 import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import { ViewIcon } from './icons';
@@ -69,11 +69,28 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		[ clientId ]
 	);
 
+	const { __unstableMarkNextChangeAsNotPersistent } =
+		useDispatch( blockEditorStore );
+
+	/*
+	 * defaultView is derived from the query rather than authored here, so the
+	 * sync must not become an undo step of its own. Left persistent, undoing a
+	 * layout change pops only this write: the query is still on the new layout,
+	 * so the effect immediately puts defaultView back and the undo never
+	 * converges. Merging it into the change that triggered it means one undo
+	 * returns both blocks together.
+	 */
 	useEffect( () => {
 		if ( queryLayout && queryLayout !== defaultView ) {
+			__unstableMarkNextChangeAsNotPersistent();
 			setAttributes( { defaultView: queryLayout } );
 		}
-	}, [ queryLayout, defaultView, setAttributes ] );
+	}, [
+		queryLayout,
+		defaultView,
+		setAttributes,
+		__unstableMarkNextChangeAsNotPersistent,
+	] );
 
 	const blockProps = useBlockProps( {
 		className: 'blockendar-view-switcher',

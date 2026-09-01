@@ -10,6 +10,7 @@ const { wpCli, wpCliId } = require( './wp-cli' );
 const { loginAsAdmin, openEditor } = require( './editor' );
 
 let postId;
+let switcherPostId;
 const created = [];
 
 test.beforeAll( () => {
@@ -54,6 +55,22 @@ test.beforeAll( () => {
 		'--porcelain',
 	] );
 	created.push( postId );
+
+	/*
+	 * A second page where a switcher sits beside the query under a shared
+	 * ancestor, which is how the switcher finds the query it belongs to. The
+	 * first fixture has no switcher, so it cannot exercise the sync between them.
+	 */
+	switcherPostId = wpCliId( [
+		'post',
+		'create',
+		'--post_type=page',
+		'--post_title=E2E Switcher Page',
+		'--post_status=draft',
+		'--post_content=<!-- wp:blockendar/query-filters --><!-- wp:blockendar/query-view-switcher /--><!-- wp:blockendar/events-query {"perPage":3} --><!-- wp:post-title {"level":3} /--><!-- /wp:blockendar/events-query --><!-- /wp:blockendar/query-filters -->',
+		'--porcelain',
+	] );
+	created.push( switcherPostId );
 } );
 
 test.afterAll( () => {
@@ -317,4 +334,112 @@ test( 'each layout gets its own template that the toolbar switches between', asy
 	await expect(
 		canvas.locator( '.blockendar-event-template.is-inactive-layout' )
 	).toHaveCount( 1 );
+} );
+
+test( 'undoing a layout change takes the switcher back with it', async ( {
+	page,
+} ) => {
+	// Logging in and booting the editor eats most of the default budget before
+	// this test does any of its own work.
+	test.setTimeout( 120000 );
+
+	await loginAsAdmin( page );
+	const canvas = await openEditor( page, switcherPostId );
+	await expect(
+		canvas.locator( '.blockendar-events-query' ).first()
+	).toBeVisible( { timeout: 30000 } );
+
+	/*
+	 * The switcher mirrors the query's layout into its own defaultView so the
+	 * control and the results cannot drift. That write must merge into the change
+	 * that caused it rather than landing as an undo step of its own: as a step of
+	 * its own, undo pops the mirror, the query is still on the new layout, and the
+	 * effect writes it straight back. The layout then never reverts and the post
+	 * can never be returned to a clean state.
+	 */
+	const read = () =>
+		page.evaluate( () => {
+			const find = ( name, list ) => {
+				for ( const block of list ) {
+					if ( block.name === name ) {
+						return block;
+					}
+
+					const found = find( name, block.innerBlocks ?? [] );
+
+					if ( found ) {
+						return found;
+					}
+				}
+
+				return null;
+			};
+
+			const blocks = window.wp.data
+				.select( 'core/block-editor' )
+				.getBlocks();
+
+			return {
+				layout:
+					find( 'blockendar/events-query', blocks ).attributes
+						.displayLayout?.type ?? 'list',
+				defaultView: find( 'blockendar/query-view-switcher', blocks )
+					.attributes.defaultView,
+				dirty: window.wp.data
+					.select( 'core/editor' )
+					.isEditedPostDirty(),
+			};
+		} );
+
+	expect( await read() ).toEqual( {
+		layout: 'list',
+		defaultView: 'list',
+		dirty: false,
+	} );
+
+	await page.evaluate( () => {
+		const find = ( list ) => {
+			for ( const block of list ) {
+				if ( block.name === 'blockendar/events-query' ) {
+					return block;
+				}
+
+				const found = find( block.innerBlocks ?? [] );
+
+				if ( found ) {
+					return found;
+				}
+			}
+
+			return null;
+		};
+
+		const query = find(
+			window.wp.data.select( 'core/block-editor' ).getBlocks()
+		);
+
+		window.wp.data
+			.dispatch( 'core/block-editor' )
+			.updateBlockAttributes( query.clientId, {
+				displayLayout: { type: 'grid' },
+			} );
+	} );
+
+	// The mirror runs in an effect, so wait for it rather than assuming it has
+	// already landed.
+	await expect
+		.poll( async () => ( await read() ).defaultView )
+		.toBe( 'grid' );
+
+	await page.evaluate( () =>
+		window.wp.data.dispatch( 'core/editor' ).undo()
+	);
+
+	await expect
+		.poll( () => read() )
+		.toEqual( {
+			layout: 'list',
+			defaultView: 'list',
+			dirty: false,
+		} );
 } );
