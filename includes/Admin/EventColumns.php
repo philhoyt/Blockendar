@@ -69,7 +69,7 @@ class EventColumns {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
-				'SELECT start_date, start_datetime, end_date, end_datetime, all_day FROM %i WHERE post_id = %d ORDER BY start_datetime ASC LIMIT 1',
+				'SELECT start_date, start_datetime, end_date, end_datetime, all_day, ongoing FROM %i WHERE post_id = %d ORDER BY start_datetime ASC LIMIT 1',
 				$table,
 				$post_id
 			)
@@ -90,6 +90,9 @@ class EventColumns {
 				$display .= ' <span style="color:#757575">' . esc_html( date_i18n( $time_format, strtotime( $row->start_datetime ) ) ) . '</span>';
 			}
 			echo wp_kses( $display, [ 'span' => [ 'style' => [] ] ] );
+		} elseif ( ! empty( $row->ongoing ) ) {
+			// The index holds a sentinel end for ongoing events; never print it.
+			echo esc_html__( 'Ongoing', 'blockendar' );
 		} else {
 			$display = $row->end_date ? esc_html( date_i18n( $date_format, strtotime( $row->end_date ) ) ) : '&mdash;';
 			if ( ! $all_day && $row->end_datetime && $row->end_date ) {
