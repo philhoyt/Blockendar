@@ -39,6 +39,7 @@ $start_time = get_post_meta( $post_id, 'blockendar_start_time', true );
 $end_date   = get_post_meta( $post_id, 'blockendar_end_date', true );
 $end_time   = get_post_meta( $post_id, 'blockendar_end_time', true );
 $tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
+$ongoing    = $occurrence ? ! empty( $occurrence->ongoing ) : (bool) get_post_meta( $post_id, 'blockendar_ongoing', true );
 
 if ( ! $start_date ) {
 	return;
@@ -50,8 +51,10 @@ try {
 	$dt         = new DateTimeImmutable( "$start_date " . ( $start_time ?: '00:00' ) . ':00', $tz );
 	$target_utc = $dt->setTimezone( $utc )->format( 'c' );
 
+	// An ongoing event is "in progress" indefinitely once it starts: give the
+	// ticker no end target so it never reaches the "passed" state.
 	$end_utc = '';
-	if ( $end_date ) {
+	if ( $end_date && ! $ongoing ) {
 		$end_dt  = new DateTimeImmutable( "$end_date " . ( $end_time ?: '23:59' ) . ':00', $tz );
 		$end_utc = $end_dt->setTimezone( $utc )->format( 'c' );
 	}
