@@ -89,6 +89,10 @@
 		"rangeSeparator": {
 			"type": "string",
 			"default": "–"
+		},
+		"ongoingLabel": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"render": "file:./render.php",

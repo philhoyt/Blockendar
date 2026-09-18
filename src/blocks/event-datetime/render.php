@@ -17,6 +17,7 @@ $show_start_time = (bool) ( $attributes['showStartTime'] ?? true );
 $show_end_date   = (bool) ( $attributes['showEndDate'] ?? true );
 $show_end_time   = (bool) ( $attributes['showEndTime'] ?? true );
 $show_tz         = (bool) ( $attributes['showTimezone'] ?? false );
+$ongoing_label   = trim( (string) ( $attributes['ongoingLabel'] ?? '' ) );
 
 // For recurring events honour ?occurrence_date= (set by calendar links); fall back
 // to next upcoming occurrence, or post meta when all occurrences are past.
@@ -24,6 +25,7 @@ $occurrence = blockendar_resolve_occurrence( $post_id );
 $start_date = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
 $end_date   = $occurrence ? $occurrence->end_date : get_post_meta( $post_id, 'blockendar_end_date', true );
 $all_day    = $occurrence ? (bool) $occurrence->all_day : (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
+$ongoing    = $occurrence ? ! empty( $occurrence->ongoing ) : (bool) get_post_meta( $post_id, 'blockendar_ongoing', true );
 // Time and timezone are the same across all occurrences — always read from meta.
 $start_time = get_post_meta( $post_id, 'blockendar_start_time', true );
 $end_time   = get_post_meta( $post_id, 'blockendar_end_time', true );
@@ -45,9 +47,16 @@ $fmt_date = fn( string $date ) => date_i18n( $date_format, strtotime( $date ) );
 $fmt_time = fn( string $time, string $date ) => date_i18n( $time_format, strtotime( "$date $time" ) );
 
 $same_day = $start_date === $end_date;
+
+// Ongoing events have no end: never print the end date/time (the index holds a
+// sentinel there), and only show the optional label after a rendered start.
+$show_start     = $show_start_date || ( $show_start_time && ! $all_day );
+$render_end     = ! $ongoing;
+$render_ongoing = $ongoing && '' !== $ongoing_label && $show_start;
+$render_all_day = $all_day && $show_start_time && ! $render_ongoing;
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-datetime' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-	<?php if ( $show_start_date || ( $show_start_time && ! $all_day ) ) : ?>
+	<?php if ( $show_start ) : ?>
 		<time class="blockendar-event-datetime__start" datetime="<?php echo esc_attr( $start_date . ( $start_time ? "T$start_time" : '' ) ); ?>">
 			<?php
 			if ( $show_start_date ) {
@@ -60,7 +69,10 @@ $same_day = $start_date === $end_date;
 		</time>
 	<?php endif; ?>
 
-	<?php if ( $show_end_date && $end_date && ! $same_day ) : ?>
+	<?php if ( $render_ongoing ) : ?>
+		<span class="blockendar-event-datetime__sep" aria-hidden="true"> <?php echo esc_html( $range_sep ); ?> </span>
+		<span class="blockendar-event-datetime__ongoing"><?php echo esc_html( $ongoing_label ); ?></span>
+	<?php elseif ( $render_end && $show_end_date && $end_date && ! $same_day ) : ?>
 		<span class="blockendar-event-datetime__sep" aria-hidden="true"> <?php echo esc_html( $range_sep ); ?> </span>
 		<time class="blockendar-event-datetime__end" datetime="<?php echo esc_attr( $end_date . ( $end_time ? "T$end_time" : '' ) ); ?>">
 			<?php echo esc_html( $fmt_date( $end_date ) ); ?>
@@ -69,7 +81,7 @@ $same_day = $start_date === $end_date;
 				echo ( $show_end_date ? ' ' . esc_html( $time_sep ) . ' ' : '' ) . esc_html( $fmt_time( $end_time, $end_date ) );}
 			?>
 		</time>
-	<?php elseif ( $show_end_time && ! $all_day && $same_day && $end_time && $end_time !== $start_time ) : ?>
+	<?php elseif ( $render_end && $show_end_time && ! $all_day && $same_day && $end_time && $end_time !== $start_time ) : ?>
 		<span class="blockendar-event-datetime__sep" aria-hidden="true"> <?php echo esc_html( $range_sep ); ?> </span>
 		<time class="blockendar-event-datetime__end" datetime="<?php echo esc_attr( "{$end_date}T{$end_time}" ); ?>">
 			<?php echo esc_html( $fmt_time( $end_time, $end_date ) ); ?>
@@ -80,11 +92,11 @@ $same_day = $start_date === $end_date;
 		<span class="blockendar-event-datetime__tz">(<?php echo esc_html( $tz_str ); ?>)</span>
 	<?php endif; ?>
 
-	<?php if ( $all_day && $show_start_time && $show_start_date ) : ?>
+	<?php if ( $render_all_day && $show_start_date ) : ?>
 		<span class="blockendar-event-datetime__sep" aria-hidden="true"> <?php echo esc_html( $range_sep ); ?> </span>
 	<?php endif; ?>
 
-	<?php if ( $all_day && $show_start_time ) : ?>
+	<?php if ( $render_all_day ) : ?>
 		<span class="blockendar-event-datetime__allday"><?php esc_html_e( 'All day', 'blockendar' ); ?></span>
 	<?php endif; ?>
 </div>
