@@ -659,7 +659,11 @@ export function DateTimePanel() {
 	// When start date changes, pull end date forward if it would precede start.
 	const handleStartDateChange = ( val ) => {
 		const updates = { blockendar_start_date: val };
-		if ( ! endDate || endDate === startDate || val > endDate ) {
+		// Ongoing events keep an empty end; the toggle seeds it when turned off.
+		if (
+			! ongoing &&
+			( ! endDate || endDate === startDate || val > endDate )
+		) {
 			updates.blockendar_end_date = val;
 		}
 		setMeta( updates );
