@@ -295,7 +295,6 @@ class EventsController extends AbstractController {
 			return new WP_Error( 'blockendar_save_failed', __( 'Failed to save recurrence rule.', 'blockendar' ), [ 'status' => 500 ] );
 		}
 
-		$this->index->delete_by_post_id( $post_id );
 		$this->builder->build_for_post( $post_id );
 
 		$rule = $this->rules->get( $post_id );
@@ -316,7 +315,6 @@ class EventsController extends AbstractController {
 		}
 
 		$this->rules->delete( $post_id );
-		$this->index->delete_by_post_id( $post_id );
 		$this->builder->build_for_post( $post_id );
 
 		return $this->respond( [ 'recurrence' => null ], 200 );

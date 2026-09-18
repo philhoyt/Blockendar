@@ -50,16 +50,14 @@ class IndexBuilder {
 	 * @param \WP_Post $post    Post object.
 	 */
 	public function on_save( int $post_id, \WP_Post $post ): void {
-		// Skip autosaves, revisions, and non-published posts that have no index rows.
+		// Skip autosaves and revisions.
 		if ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
 			return;
 		}
 
-		// Always delete existing rows first.
-		$this->index->delete_by_post_id( $post_id );
-
-		// Only index published posts.
+		// Only published posts are indexed; anything else loses its rows.
 		if ( 'publish' !== $post->post_status ) {
+			$this->index->delete_by_post_id( $post_id );
 			return;
 		}
 
@@ -76,8 +74,8 @@ class IndexBuilder {
 			return;
 		}
 
-		// Delete any rows written by the earlier save_post hook (which had stale/empty meta).
-		$this->index->delete_by_post_id( $post->ID );
+		// Replaces any rows written by the earlier save_post hook, which ran
+		// before the REST request's meta was persisted.
 		$this->build_for_post( $post->ID );
 	}
 
@@ -112,12 +110,18 @@ class IndexBuilder {
 	}
 
 	/**
-	 * Generate and insert index rows for a single post.
+	 * Replace the index rows for a single post.
 	 *
-	 * For non-recurring events this produces one row.
-	 * For recurring events the recurrence engine handles materialisation —
-	 * IndexBuilder only handles the single-occurrence case here.
-	 * The Recurrence\Generator calls index->insert() directly for instances.
+	 * Idempotent: the post's existing rows are cleared before anything is
+	 * written, so calling this any number of times leaves the same rows.
+	 * Import scripts and REST handlers can call it directly without deleting
+	 * first.
+	 *
+	 * For non-recurring events this produces one row. For recurring events the
+	 * recurrence engine owns materialisation — Recurrence\Generator clears the
+	 * post's rows itself (it is also the cron entry point) and calls
+	 * index->insert() per instance, so rows are cleared exactly once on either
+	 * path.
 	 *
 	 * @param int $post_id Post ID.
 	 */
@@ -125,20 +129,21 @@ class IndexBuilder {
 		$meta    = $this->get_event_meta( $post_id );
 		$ongoing = ! empty( $meta['ongoing'] );
 
+		// Ongoing events are never recurring — any stored rule is ignored so the
+		// single sentinel row below is what gets indexed.
+		if ( ! $ongoing && $this->has_recurrence( $post_id ) ) {
+			do_action( 'blockendar_generate_recurrence_index', $post_id );
+			return;
+		}
+
+		$this->index->delete_by_post_id( $post_id );
+
 		if ( empty( $meta['start_date'] ) ) {
 			return;
 		}
 
 		// Ongoing events have no end date; everything else needs one.
 		if ( ! $ongoing && empty( $meta['end_date'] ) ) {
-			return;
-		}
-
-		// If this is a recurring event, the recurrence engine owns index generation.
-		// Ongoing events are never recurring — any stored rule is ignored so the
-		// single sentinel row below is what gets indexed.
-		if ( ! $ongoing && $this->has_recurrence( $post_id ) ) {
-			do_action( 'blockendar_generate_recurrence_index', $post_id );
 			return;
 		}
 
@@ -152,6 +157,9 @@ class IndexBuilder {
 	/**
 	 * Rebuild the entire index for all published events.
 	 * Used by WP-CLI and the admin "Rebuild Index" button.
+	 *
+	 * Truncates once up front; the per-post clear inside build_for_post() is
+	 * then a no-op on an indexed column.
 	 *
 	 * @return array{ rebuilt: int, skipped: int } Result summary.
 	 */
