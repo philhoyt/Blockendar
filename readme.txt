@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -84,6 +84,15 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 1.3.0 =
+* Added: an "Ongoing, no end date" toggle in the event editor, for events with no announced end such as long-running exhibits. Ongoing events stay in upcoming listings until you set an end date or unpublish them, and are kept out of past listings.
+* Added: the Event Date & Time block shows only the start for ongoing events, with an optional "Ongoing label" setting that prints in place of the end date (for example "Opened September 13 – Ongoing").
+* Added: an "Exclude Event Types" filter on the Events Query block, so a listing can show everything except one type without naming every other type.
+* Changed: the REST API returns "ongoing": true with null end fields for ongoing events, the Calendar View shows them on their start day, and the iCal feed and per-event .ics downloads emit a VEVENT with no DTEND rather than a made-up end.
+* Changed: the admin Events list shows "Ongoing" in the End Date column for these events.
+* Changed: the countdown block treats a started ongoing event as in progress indefinitely; it never reports the event as passed.
+* Database schema upgraded to version 3. The event index is rebuilt automatically on first load after upgrading.
 
 = 1.2.0 =
 * Added: a separate event template per layout. List and grid can now show different blocks, added from the Events Query block's Layout settings. Splitting is opt-in per block, so existing content keeps rendering exactly as it did.
@@ -217,6 +226,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.3.0 =
+Database schema upgraded to version 3 to support ongoing events. The event index will be rebuilt automatically on first load after upgrading — no manual action required.
 
 = 1.2.0 =
 The view switcher's "Default view" setting has been removed. The starting layout now comes from the Events Query block it belongs to, which is what the results already followed — any block where the two disagreed will now match. No action required.

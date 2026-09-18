@@ -70,6 +70,15 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 1.3.0
+- Added: an "Ongoing, no end date" toggle in the event editor for events with no announced end, such as long-running exhibits. Ongoing events stay in upcoming listings until you set an end date or unpublish them.
+- Added: the Event Date & Time block shows only the start for ongoing events, with an optional "Ongoing label" attribute to print in place of the end date.
+- Added: an "Exclude Event Types" filter on the Events Query block, so a listing can show everything except one type without naming every other type.
+- Changed: the REST API returns `"ongoing": true` with null end fields for ongoing events; the Calendar View shows them on their start day; the iCal feed and per-event .ics downloads emit a VEVENT with no DTEND.
+- Changed: the admin Events list shows "Ongoing" in the End Date column for these events.
+- Changed: the countdown block treats a started ongoing event as in progress indefinitely.
+- Database schema upgraded to version 3 (new `ongoing` column). The event index is rebuilt automatically on first load after upgrading.
+
 ### 1.2.0
 - Added: a separate event template per layout — list and grid can each show their own blocks. Splitting is opt-in per block, so existing content is untouched.
 - Added: a WordPress Playground demo blueprint, so the plugin can be tried in a browser.
