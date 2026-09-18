@@ -77,6 +77,9 @@ class EventIndex {
 	 *     @type bool      $featured       Filter by featured flag.
 	 *     @type bool      $hide_hidden    Exclude hide_from_listings events (default true).
 	 *     @type bool|null $ongoing        true = only ongoing events, false = exclude them, null = no filter.
+	 *     @type string    $ended_before   UTC datetime. When set, "past" semantics replace the overlap
+	 *                                     match: the event must have ended at or before this cutoff
+	 *                                     (and within the window), and ongoing events are excluded.
 	 *     @type int|int[] $exclude_type_term_id Exclude events carrying any of these event type terms.
 	 *     @type int       $per_page       Results per page (default 100).
 	 *     @type int       $page           1-based page number (default 1).
@@ -106,6 +109,7 @@ class EventIndex {
 			'featured'             => null,
 			'hide_hidden'          => true,
 			'ongoing'              => null,
+			'ended_before'         => null,
 			'per_page'             => 100,
 			'page'                 => 1,
 			'orderby'              => 'start_datetime',
@@ -116,11 +120,21 @@ class EventIndex {
 		$where   = [];
 		$params  = [];
 
-		// Date range — events that overlap the requested window.
-		$where[]  = 'e.start_datetime < %s';
-		$params[] = $end;
-		$where[]  = 'e.end_datetime > %s';
-		$params[] = $start;
+		if ( null !== $filters['ended_before'] ) {
+			// Past mode — the event has finished, and finished inside the window.
+			// A narrower $end tightens the cutoff; $start bounds how far back to look.
+			$where[]  = 'e.end_datetime <= %s';
+			$params[] = min( $end, (string) $filters['ended_before'] );
+			$where[]  = 'e.end_datetime > %s';
+			$params[] = $start;
+			$where[]  = 'e.ongoing = 0';
+		} else {
+			// Date range — events that overlap the requested window.
+			$where[]  = 'e.start_datetime < %s';
+			$params[] = $end;
+			$where[]  = 'e.end_datetime > %s';
+			$params[] = $start;
+		}
 
 		// Only published posts.
 		$where[] = "p.post_status = 'publish'";
@@ -253,17 +267,26 @@ class EventIndex {
 			'featured'             => null,
 			'hide_hidden'          => true,
 			'ongoing'              => null,
+			'ended_before'         => null,
 		];
 
 		$filters = wp_parse_args( $filters, $defaults );
 		$where   = [];
 		$params  = [];
 
-		$where[]  = 'e.start_datetime < %s';
-		$params[] = $end;
-		$where[]  = 'e.end_datetime > %s';
-		$params[] = $start;
-		$where[]  = "p.post_status = 'publish'";
+		if ( null !== $filters['ended_before'] ) {
+			$where[]  = 'e.end_datetime <= %s';
+			$params[] = min( $end, (string) $filters['ended_before'] );
+			$where[]  = 'e.end_datetime > %s';
+			$params[] = $start;
+			$where[]  = 'e.ongoing = 0';
+		} else {
+			$where[]  = 'e.start_datetime < %s';
+			$params[] = $end;
+			$where[]  = 'e.end_datetime > %s';
+			$params[] = $start;
+		}
+		$where[] = "p.post_status = 'publish'";
 
 		if ( null !== $filters['status'] ) {
 			$where[]  = 'e.status = %s';

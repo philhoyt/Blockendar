@@ -60,7 +60,7 @@
 		},
 		"order": {
 			"type": "string",
-			"default": "ASC"
+			"default": ""
 		},
 		"inherit": {
 			"type": "boolean",

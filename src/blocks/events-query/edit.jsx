@@ -257,6 +257,10 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 			: undefined,
 	} );
 
+	// An empty order means auto: ASC for upcoming, DESC for past. The toggle
+	// shows the direction that is actually in effect.
+	const effectiveOrderDesc = order ? order === 'DESC' : showPast;
+
 	// A term can be included or excluded, never both: checking it in one list
 	// removes it from the other.
 	const toggleType = ( termId, checked ) => {
@@ -480,7 +484,11 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 						/>
 						<ToggleControl
 							label={ __( 'Reverse order', 'blockendar' ) }
-							checked={ order === 'DESC' }
+							help={ __(
+								'Upcoming events list soonest first; past events list most recent first.',
+								'blockendar'
+							) }
+							checked={ effectiveOrderDesc }
 							onChange={ ( val ) =>
 								setAttributes( { order: val ? 'DESC' : 'ASC' } )
 							}
