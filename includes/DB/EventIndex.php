@@ -20,6 +20,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 class EventIndex {
 
 	/**
+	 * Sentinel end_datetime / end_date written for ongoing events (no end date).
+	 *
+	 * Far enough in the future that every overlap query treats the event as still
+	 * running. Consumers must branch on the `ongoing` column, never on this value.
+	 */
+	public const ONGOING_END      = '9999-12-31 00:00:00';
+	public const ONGOING_END_DATE = '9999-12-31';
+
+	/**
 	 * Object cache group for index reads.
 	 *
 	 * Invalidation is incremental: every cache key embeds the group's
@@ -67,6 +76,7 @@ class EventIndex {
 	 *     @type string    $status         Event status (default: scheduled).
 	 *     @type bool      $featured       Filter by featured flag.
 	 *     @type bool      $hide_hidden    Exclude hide_from_listings events (default true).
+	 *     @type bool|null $ongoing        true = only ongoing events, false = exclude them, null = no filter.
 	 *     @type int       $per_page       Results per page (default 100).
 	 *     @type int       $page           1-based page number (default 1).
 	 *     @type string    $orderby        start_datetime|end_datetime|post_title (default: start_datetime).
@@ -93,6 +103,7 @@ class EventIndex {
 			'status'        => null,
 			'featured'      => null,
 			'hide_hidden'   => true,
+			'ongoing'       => null,
 			'per_page'      => 100,
 			'page'          => 1,
 			'orderby'       => 'start_datetime',
@@ -154,6 +165,11 @@ class EventIndex {
 			$where[] = 'e.hide_from_listings = 0';
 		}
 
+		// Ongoing filter — unlike `featured`, false is meaningful here.
+		if ( null !== $filters['ongoing'] ) {
+			$where[] = $filters['ongoing'] ? 'e.ongoing = 1' : 'e.ongoing = 0';
+		}
+
 		// ORDER BY — whitelist columns to prevent injection.
 		$allowed_orderby = [ 'start_datetime', 'end_datetime', 'post_title' ];
 		$orderby         = in_array( $filters['orderby'], $allowed_orderby, true )
@@ -175,7 +191,7 @@ class EventIndex {
 			"SELECT e.id, e.post_id, e.start_datetime, e.end_datetime, e.start_date,
 			        e.end_date, e.all_day, e.recurrence_id, e.status,
 			        e.venue_term_id, e.type_term_ids, e.featured, e.hide_from_listings,
-			        p.post_title, p.post_name, p.guid
+			        e.ongoing, p.post_title, p.post_name, p.guid
 			FROM   {$events_table} e
 			JOIN   {$posts_table} p ON p.ID = e.post_id
 			{$where_sql}
@@ -220,6 +236,7 @@ class EventIndex {
 			'status'        => null,
 			'featured'      => null,
 			'hide_hidden'   => true,
+			'ongoing'       => null,
 		];
 
 		$filters = wp_parse_args( $filters, $defaults );
@@ -263,6 +280,10 @@ class EventIndex {
 
 		if ( $filters['hide_hidden'] ) {
 			$where[] = 'e.hide_from_listings = 0';
+		}
+
+		if ( null !== $filters['ongoing'] ) {
+			$where[] = $filters['ongoing'] ? 'e.ongoing = 1' : 'e.ongoing = 0';
 		}
 
 		$where_sql = 'WHERE ' . implode( ' AND ', $where );
@@ -540,6 +561,7 @@ class EventIndex {
 	 *     @type array  $type_term_ids      Optional array of event type term IDs.
 	 *     @type int    $featured           1 if event is featured, 0 otherwise.
 	 *     @type int    $hide_from_listings 1 if event should be hidden from listings.
+	 *     @type int    $ongoing            1 if the event has no end date (sentinel end).
 	 * }
 	 * @return int|false Inserted row ID or false on failure.
 	 */
@@ -565,9 +587,10 @@ class EventIndex {
 				: null,
 			'featured'           => isset( $data['featured'] ) ? (int) $data['featured'] : 0,
 			'hide_from_listings' => isset( $data['hide_from_listings'] ) ? (int) $data['hide_from_listings'] : 0,
+			'ongoing'            => isset( $data['ongoing'] ) ? (int) $data['ongoing'] : 0,
 		];
 
-		$formats = [ '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%d', '%d' ];
+		$formats = [ '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%d', '%d', '%d' ];
 
 		$result = $wpdb->insert( Schema::events_table(), $row, $formats );
 
