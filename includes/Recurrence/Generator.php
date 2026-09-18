@@ -80,6 +80,13 @@ class Generator {
 	 * @param int $post_id Event post ID.
 	 */
 	public function generate_for_post( int $post_id ): void {
+		// Ongoing events are never recurring. IndexBuilder writes their single
+		// sentinel row; leave it alone even if a stale rule still exists (this
+		// path is also reached by the nightly roll_horizon() cron).
+		if ( get_post_meta( $post_id, 'blockendar_ongoing', true ) ) {
+			return;
+		}
+
 		$rule = $this->get_rule( $post_id );
 
 		if ( null === $rule ) {
