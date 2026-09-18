@@ -109,19 +109,21 @@ class UpgraderTest extends WP_UnitTestCase {
 		$this->assertIsArray( get_option( 'rewrite_rules' ) );
 	}
 
-	public function test_changing_the_events_slug_flushes(): void {
+	public function test_changing_the_events_slug_resets_the_rules(): void {
 		( new Upgrader() )->register();
+		flush_rewrite_rules( false );
+		$this->assertIsArray( get_option( 'rewrite_rules' ), 'Precondition: rules are stored.' );
 
 		// First save with a non-default slug: WordPress adds the option.
 		update_option( SettingsPage::OPTION_NAME, [ 'events_slug' => 'whats-on' ] );
-		$this->assertIsArray( get_option( 'rewrite_rules' ), 'A first save with a new slug regenerates the rules.' );
+		$this->assertFalse( get_option( 'rewrite_rules' ), 'A first save with a new slug drops the stored rules.' );
 
 		// Subsequent change: WordPress updates the option.
-		delete_option( 'rewrite_rules' );
+		flush_rewrite_rules( false );
 		update_option( SettingsPage::OPTION_NAME, [ 'events_slug' => 'exhibitions' ] );
-		$this->assertIsArray( get_option( 'rewrite_rules' ), 'A slug change regenerates the rules.' );
+		$this->assertFalse( get_option( 'rewrite_rules' ), 'A slug change drops the stored rules.' );
 
-		delete_option( 'rewrite_rules' );
+		flush_rewrite_rules( false );
 		update_option(
 			SettingsPage::OPTION_NAME,
 			[
@@ -129,6 +131,6 @@ class UpgraderTest extends WP_UnitTestCase {
 				'timezone_mode' => 'site',
 			]
 		);
-		$this->assertFalse( get_option( 'rewrite_rules' ), 'Other setting changes leave the rules alone.' );
+		$this->assertIsArray( get_option( 'rewrite_rules' ), 'Other setting changes leave the rules alone.' );
 	}
 }

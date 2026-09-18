@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\Admin\SettingsPage;
 use Blockendar\CPT\EventPostType;
 
 /**
@@ -58,7 +59,7 @@ class EventType {
 			'show_in_rest'      => true,
 			'rest_base'         => 'event-types',
 			'rewrite'           => [
-				'slug'       => 'events/type',
+				'slug'       => SettingsPage::events_slug() . '/type',
 				'with_front' => false,
 			],
 		];
@@ -67,20 +68,23 @@ class EventType {
 	}
 
 	/**
-	 * Explicitly register top-priority rewrite rules for the events/type/* path.
+	 * Explicitly register top-priority rewrite rules for the {events_slug}/type/* path.
 	 *
 	 * The taxonomy slug contains a slash which can lose the race against the
 	 * CPT's own rewrite rules. Adding with 'top' priority guarantees they match
 	 * first, before WordPress evaluates the CPT single-post rules.
 	 */
 	public function add_rewrite_rules(): void {
+		// sanitize_title() limits the slug to [a-z0-9-], so it is regex-safe as is.
+		$base = SettingsPage::events_slug();
+
 		add_rewrite_rule(
-			'^events/type/([^/]+)/page/([0-9]{1,})/?$',
+			'^' . $base . '/type/([^/]+)/page/([0-9]{1,})/?$',
 			'index.php?event_type=$matches[1]&paged=$matches[2]',
 			'top'
 		);
 		add_rewrite_rule(
-			'^events/type/([^/]+)/?$',
+			'^' . $base . '/type/([^/]+)/?$',
 			'index.php?event_type=$matches[1]',
 			'top'
 		);

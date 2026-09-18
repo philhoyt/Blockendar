@@ -6,7 +6,10 @@ import { __ } from '@wordpress/i18n';
 
 export function PermalinksSection( { settings, update } ) {
 	const slug = settings.events_slug ?? 'events';
-	const preview = `/${ slug }/your-event-name/`;
+	// An empty slug falls back to "events" on save; preview what will apply.
+	const effectiveSlug = slug || 'events';
+	const preview = `/${ effectiveSlug }/your-event-name/`;
+	const typePreview = `/${ effectiveSlug }/type/exhibit/`;
 
 	return (
 		<VStack spacing={ 5 }>
@@ -17,13 +20,13 @@ export function PermalinksSection( { settings, update } ) {
 				help={
 					<>
 						{ __(
-							'The URL prefix for events. Preview:',
+							'The URL prefix for events and their type, venue and tag archives. Preview:',
 							'blockendar'
-						) }
-						<code>{ preview }</code>
+						) }{ ' ' }
+						<code>{ preview }</code>, <code>{ typePreview }</code>
 						<br />
 						{ __(
-							'Save and visit Settings > Permalinks to flush rewrite rules after changing this.',
+							'Rewrite rules are refreshed automatically when you save.',
 							'blockendar'
 						) }
 					</>

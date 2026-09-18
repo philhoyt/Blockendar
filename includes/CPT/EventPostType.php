@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\Admin\SettingsPage;
+
 /**
  * Registers the blockendar_event CPT.
  */
@@ -52,6 +54,8 @@ class EventPostType {
 			'name_admin_bar'        => _x( 'Event', 'add new on admin bar', 'blockendar' ),
 		];
 
+		$slug = SettingsPage::events_slug();
+
 		$args = [
 			'labels'             => $labels,
 			'public'             => true,
@@ -59,9 +63,9 @@ class EventPostType {
 			'show_ui'            => true,
 			'show_in_menu'       => true,
 			'query_var'          => true,
-			'rewrite'            => [ 'slug' => 'events' ],
+			'rewrite'            => [ 'slug' => $slug ],
 			'capability_type'    => 'post',
-			'has_archive'        => 'events',
+			'has_archive'        => $slug,
 			'hierarchical'       => false,
 			'menu_position'      => 20,
 			'menu_icon'          => 'dashicons-calendar-alt',

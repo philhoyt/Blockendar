@@ -69,27 +69,40 @@ class Upgrader {
 	}
 
 	/**
-	 * Flush when the events slug changes.
+	 * Refresh rewrite rules when the events slug changes.
 	 *
 	 * @param mixed $old_value Previous settings array.
 	 * @param mixed $new_value New settings array.
 	 */
 	public function on_settings_saved( mixed $old_value, mixed $new_value ): void {
 		if ( $this->slug_of( $old_value ) !== $this->slug_of( $new_value ) ) {
-			flush_rewrite_rules( false );
+			$this->reset_rewrite_rules();
 		}
 	}
 
 	/**
-	 * Flush when the settings are first stored with a non-default slug.
+	 * Refresh rewrite rules when the settings are first stored with a
+	 * non-default slug.
 	 *
 	 * @param string $option Option name.
 	 * @param mixed  $value  New settings array.
 	 */
 	public function on_settings_added( string $option, mixed $value ): void {
 		if ( $this->slug_of( $value ) !== $this->slug_of( SettingsPage::defaults() ) ) {
-			flush_rewrite_rules( false );
+			$this->reset_rewrite_rules();
 		}
+	}
+
+	/**
+	 * Drop the stored rules so the next request regenerates them.
+	 *
+	 * Flushing here would be wrong: the post type and taxonomies registered
+	 * earlier in this request with the old slug, so a flush now would write
+	 * the old rules back. WordPress rebuilds the option lazily on the next
+	 * request, after registration has picked up the new slug.
+	 */
+	private function reset_rewrite_rules(): void {
+		delete_option( 'rewrite_rules' );
 	}
 
 	/**
