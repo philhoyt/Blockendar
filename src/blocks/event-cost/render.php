@@ -58,7 +58,12 @@ if ( ! function_exists( 'blockendar_format_cost' ) ) :
 	}
 endif;
 
-$post_id      = $block->context['postId'] ?? get_the_ID();
+$post_id = blockendar_block_event_id( $block );
+
+if ( ! $post_id ) {
+	return;
+}
+
 $cost         = (string) get_post_meta( $post_id, 'blockendar_cost', true );
 $reg_url      = get_post_meta( $post_id, 'blockendar_registration_url', true );
 $button_label = ! empty( $attributes['buttonLabel'] )

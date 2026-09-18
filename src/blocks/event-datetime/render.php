@@ -11,7 +11,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
-$post_id         = $block->context['postId'] ?? get_the_ID();
+$post_id = blockendar_block_event_id( $block );
+
+if ( ! $post_id ) {
+	return;
+}
+
 $show_start_date = (bool) ( $attributes['showStartDate'] ?? true );
 $show_start_time = (bool) ( $attributes['showStartTime'] ?? true );
 $show_end_date   = (bool) ( $attributes['showEndDate'] ?? true );
