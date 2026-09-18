@@ -16,12 +16,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Manages the three custom tables:
  *   - {prefix}blockendar_events            — denormalised occurrence index
+ *                                            (v3 adds the `ongoing` flag column)
  *   - {prefix}blockendar_recurrence        — RRULE storage
  *   - {prefix}blockendar_event_type_terms  — junction table for event type term filtering
  */
 class Schema {
 
-	const DB_VERSION        = '2';
+	const DB_VERSION        = '3';
 	const DB_VERSION_OPTION = 'blockendar_db_version';
 
 	/**
@@ -50,6 +51,7 @@ class Schema {
 			type_term_ids      JSON                     DEFAULT NULL,
 			featured           TINYINT(1)      NOT NULL DEFAULT 0,
 			hide_from_listings TINYINT(1)      NOT NULL DEFAULT 0,
+			ongoing            TINYINT(1)      NOT NULL DEFAULT 0,
 			PRIMARY KEY  (id),
 			KEY idx_start_datetime     (start_datetime),
 			KEY idx_end_datetime       (end_datetime),
@@ -58,7 +60,8 @@ class Schema {
 			KEY idx_venue              (venue_term_id),
 			KEY idx_status             (status),
 			KEY idx_featured           (featured),
-			KEY idx_hide_from_listings (hide_from_listings)
+			KEY idx_hide_from_listings (hide_from_listings),
+			KEY idx_ongoing            (ongoing)
 		) ENGINE=InnoDB $charset_collate;";
 
 		// Junction table: event index rows ↔ event type terms.
