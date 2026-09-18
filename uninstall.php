@@ -40,6 +40,7 @@ Blockendar\DB\Schema::drop_tables();
 // Remove plugin options.
 $options = [ // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 	'blockendar_db_version',
+	'blockendar_version',
 	'blockendar_last_index_rebuild',
 	'blockendar_settings',
 ];
