@@ -122,14 +122,22 @@ class IndexBuilder {
 	 * @param int $post_id Post ID.
 	 */
 	public function build_for_post( int $post_id ): void {
-		$meta = $this->get_event_meta( $post_id );
+		$meta    = $this->get_event_meta( $post_id );
+		$ongoing = ! empty( $meta['ongoing'] );
 
-		if ( empty( $meta['start_date'] ) || empty( $meta['end_date'] ) ) {
+		if ( empty( $meta['start_date'] ) ) {
+			return;
+		}
+
+		// Ongoing events have no end date; everything else needs one.
+		if ( ! $ongoing && empty( $meta['end_date'] ) ) {
 			return;
 		}
 
 		// If this is a recurring event, the recurrence engine owns index generation.
-		if ( $this->has_recurrence( $post_id ) ) {
+		// Ongoing events are never recurring — any stored rule is ignored so the
+		// single sentinel row below is what gets indexed.
+		if ( ! $ongoing && $this->has_recurrence( $post_id ) ) {
 			do_action( 'blockendar_generate_recurrence_index', $post_id );
 			return;
 		}
@@ -226,31 +234,47 @@ class IndexBuilder {
 		$utc = new \DateTimeZone( 'UTC' );
 
 		$all_day    = ! empty( $meta['all_day'] );
+		$ongoing    = ! empty( $meta['ongoing'] );
 		$start_time = $all_day ? '00:00' : ( $meta['start_time'] ?: '00:00' );
 		$end_time   = $all_day ? '00:00' : ( $meta['end_time'] ?: $start_time );
 
 		$start_local_str = "{$meta['start_date']} {$start_time}:00";
 
-		if ( $all_day ) {
-			$end_date_exclusive = gmdate( 'Y-m-d', strtotime( '+1 day', strtotime( $meta['end_date'] ) ) );
-			$end_local_str      = "{$end_date_exclusive} 00:00:00";
-		} else {
-			$end_local_str = "{$meta['end_date']} {$end_time}:00";
-		}
-
 		try {
 			$start_dt = new \DateTimeImmutable( $start_local_str, $tz );
-			$end_dt   = new \DateTimeImmutable( $end_local_str, $tz );
 		} catch ( \Exception ) {
 			return null;
+		}
+
+		if ( $ongoing ) {
+			// No end date: index a far-future sentinel so overlap queries keep
+			// matching, and flag the row so consumers never display the sentinel.
+			$end_datetime = EventIndex::ONGOING_END;
+			$end_date     = EventIndex::ONGOING_END_DATE;
+		} else {
+			if ( $all_day ) {
+				$end_date_exclusive = gmdate( 'Y-m-d', strtotime( '+1 day', strtotime( $meta['end_date'] ) ) );
+				$end_local_str      = "{$end_date_exclusive} 00:00:00";
+			} else {
+				$end_local_str = "{$meta['end_date']} {$end_time}:00";
+			}
+
+			try {
+				$end_dt = new \DateTimeImmutable( $end_local_str, $tz );
+			} catch ( \Exception ) {
+				return null;
+			}
+
+			$end_datetime = $end_dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' );
+			$end_date     = $meta['end_date'];
 		}
 
 		return [
 			'post_id'            => $post_id,
 			'start_datetime'     => $start_dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
-			'end_datetime'       => $end_dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
+			'end_datetime'       => $end_datetime,
 			'start_date'         => $meta['start_date'],
-			'end_date'           => $meta['end_date'],
+			'end_date'           => $end_date,
 			'all_day'            => $all_day ? 1 : 0,
 			'recurrence_id'      => null,
 			'status'             => $meta['status'] ?? 'scheduled',
@@ -258,6 +282,7 @@ class IndexBuilder {
 			'type_term_ids'      => $this->get_type_term_ids( $post_id ),
 			'featured'           => ! empty( $meta['featured'] ) ? 1 : 0,
 			'hide_from_listings' => ! empty( $meta['hide_from_listings'] ) ? 1 : 0,
+			'ongoing'            => $ongoing ? 1 : 0,
 		];
 	}
 
@@ -278,6 +303,7 @@ class IndexBuilder {
 			'status'             => get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled',
 			'featured'           => (bool) get_post_meta( $post_id, 'blockendar_featured', true ),
 			'hide_from_listings' => (bool) get_post_meta( $post_id, 'blockendar_hide_from_listings', true ),
+			'ongoing'            => (bool) get_post_meta( $post_id, 'blockendar_ongoing', true ),
 		];
 	}
 
