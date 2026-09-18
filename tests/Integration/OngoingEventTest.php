@@ -167,7 +167,12 @@ class OngoingEventTest extends WP_UnitTestCase {
 
 	public function test_a_past_listing_window_excludes_ongoing_events_when_filtered(): void {
 		// Mirrors the events-query "show past" window: 2000-01-01 → now.
-		$this->create_event( [ 'ongoing' => true, 'start_date' => '2020-01-01' ] );
+		$this->create_event(
+			[
+				'ongoing'    => true,
+				'start_date' => '2020-01-01',
+			]
+		);
 
 		$now  = gmdate( 'Y-m-d H:i:s' );
 		$rows = $this->index->get_events_in_range( '2000-01-01 00:00:00', $now, [ 'ongoing' => false ] );
@@ -182,7 +187,13 @@ class OngoingEventTest extends WP_UnitTestCase {
 	public function test_generator_leaves_the_ongoing_row_alone_when_a_rule_exists(): void {
 		$post_id = $this->create_event( [ 'ongoing' => true ] );
 
-		( new RuleRepository() )->upsert( $post_id, [ 'frequency' => 'weekly', 'byday' => 'SA' ] );
+		( new RuleRepository() )->upsert(
+			$post_id,
+			[
+				'frequency' => 'weekly',
+				'byday'     => 'SA',
+			]
+		);
 
 		// This is what the nightly roll_horizon() cron calls for every rule.
 		( new Generator() )->generate_for_post( $post_id );
@@ -200,7 +211,14 @@ class OngoingEventTest extends WP_UnitTestCase {
 
 		$request = new WP_REST_Request( 'POST', "/blockendar/v1/events/{$post_id}/recurrence" );
 		$request->set_header( 'Content-Type', 'application/json' );
-		$request->set_body( (string) wp_json_encode( [ 'frequency' => 'weekly', 'byday' => 'SA' ] ) );
+		$request->set_body(
+			(string) wp_json_encode(
+				[
+					'frequency' => 'weekly',
+					'byday'     => 'SA',
+				]
+			)
+		);
 		$request->set_param( 'id', $post_id );
 
 		$response = ( new EventsController() )->save_recurrence( $request );
