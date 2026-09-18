@@ -43,6 +43,13 @@
 				"type": "integer"
 			}
 		},
+		"excludeTypeIds": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "integer"
+			}
+		},
 		"perPage": {
 			"type": "integer",
 			"default": 10

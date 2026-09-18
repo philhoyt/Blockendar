@@ -24,17 +24,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Blockendar\Blocks\FilterContext;
 use Blockendar\DB\EventIndex;
 
-$type_ids        = array_filter( array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) ) );
-$per_page        = max( 1, min( 50, (int) ( $attributes['perPage'] ?? 10 ) ) );
-$show_past       = ! empty( $attributes['showPast'] );
-$order           = 'DESC' === ( $attributes['order'] ?? 'ASC' ) ? 'DESC' : 'ASC';
-$inherit         = ! empty( $attributes['inherit'] );
-$show_pagination = ! empty( $attributes['showPagination'] );
-$related_to      = in_array( $attributes['relatedTo'] ?? 'none', [ 'none', 'type', 'venue', 'both' ], true )
+$type_ids = array_filter( array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) ) );
+// An ID in both lists is dropped from the exclusions: the explicit allowlist wins.
+// The inspector keeps the lists disjoint, but saved markup need not be.
+$exclude_type_ids = array_values(
+	array_diff(
+		array_filter( array_map( 'intval', (array) ( $attributes['excludeTypeIds'] ?? [] ) ) ),
+		$type_ids
+	)
+);
+$per_page         = max( 1, min( 50, (int) ( $attributes['perPage'] ?? 10 ) ) );
+$show_past        = ! empty( $attributes['showPast'] );
+$order            = 'DESC' === ( $attributes['order'] ?? 'ASC' ) ? 'DESC' : 'ASC';
+$inherit          = ! empty( $attributes['inherit'] );
+$show_pagination  = ! empty( $attributes['showPagination'] );
+$related_to       = in_array( $attributes['relatedTo'] ?? 'none', [ 'none', 'type', 'venue', 'both' ], true )
 	? ( $attributes['relatedTo'] ?? 'none' )
 	: 'none';
-$query_id        = (string) ( $block->context['blockendar/queryId'] ?? '' );
-$page_param      = FilterContext::param_name( 'page', $query_id );
+$query_id         = (string) ( $block->context['blockendar/queryId'] ?? '' );
+$page_param       = FilterContext::param_name( 'page', $query_id );
 // phpcs:disable WordPress.Security.NonceVerification.Recommended
 $current_page = max( 1, absint( wp_unslash( $_GET[ $page_param ] ?? 1 ) ) );
 // phpcs:enable
@@ -197,12 +205,13 @@ if ( $inherit ) {
 	}
 
 	$standard_filters = $ongoing_filter + [
-		'type_term_id'  => ! empty( $effective_type_ids ) ? $effective_type_ids : null,
-		'venue_term_id' => $url_filters['venue_id'],
-		'per_page'      => $per_page,
-		'page'          => $current_page,
-		'orderby'       => 'start_datetime',
-		'order'         => $order,
+		'type_term_id'         => ! empty( $effective_type_ids ) ? $effective_type_ids : null,
+		'exclude_type_term_id' => ! empty( $exclude_type_ids ) ? $exclude_type_ids : null,
+		'venue_term_id'        => $url_filters['venue_id'],
+		'per_page'             => $per_page,
+		'page'                 => $current_page,
+		'orderby'              => 'start_datetime',
+		'order'                => $order,
 	];
 	$events           = $index->get_events_in_range( $start, $end, $standard_filters );
 

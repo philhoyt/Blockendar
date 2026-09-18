@@ -77,6 +77,7 @@ class EventIndex {
 	 *     @type bool      $featured       Filter by featured flag.
 	 *     @type bool      $hide_hidden    Exclude hide_from_listings events (default true).
 	 *     @type bool|null $ongoing        true = only ongoing events, false = exclude them, null = no filter.
+	 *     @type int|int[] $exclude_type_term_id Exclude events carrying any of these event type terms.
 	 *     @type int       $per_page       Results per page (default 100).
 	 *     @type int       $page           1-based page number (default 1).
 	 *     @type string    $orderby        start_datetime|end_datetime|post_title (default: start_datetime).
@@ -98,16 +99,17 @@ class EventIndex {
 		$posts_table  = $wpdb->posts;
 
 		$defaults = [
-			'venue_term_id' => null,
-			'type_term_id'  => null,
-			'status'        => null,
-			'featured'      => null,
-			'hide_hidden'   => true,
-			'ongoing'       => null,
-			'per_page'      => 100,
-			'page'          => 1,
-			'orderby'       => 'start_datetime',
-			'order'         => 'ASC',
+			'venue_term_id'        => null,
+			'type_term_id'         => null,
+			'exclude_type_term_id' => null,
+			'status'               => null,
+			'featured'             => null,
+			'hide_hidden'          => true,
+			'ongoing'              => null,
+			'per_page'             => 100,
+			'page'                 => 1,
+			'orderby'              => 'start_datetime',
+			'order'                => 'ASC',
 		];
 
 		$filters = wp_parse_args( $filters, $defaults );
@@ -152,6 +154,19 @@ class EventIndex {
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$where[] = "e.id IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
 				$params  = array_merge( $params, $type_ids );
+			}
+		}
+
+		// Event type exclusion — same junction subquery, negated.
+		if ( null !== $filters['exclude_type_term_id'] ) {
+			$exclude_ids = array_filter( array_map( 'absint', (array) $filters['exclude_type_term_id'] ) );
+
+			if ( ! empty( $exclude_ids ) ) {
+				$type_terms_table = Schema::type_terms_table();
+				$placeholders     = implode( ', ', array_fill( 0, count( $exclude_ids ), '%d' ) );
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$where[] = "e.id NOT IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
+				$params  = array_merge( $params, $exclude_ids );
 			}
 		}
 
@@ -231,12 +246,13 @@ class EventIndex {
 		$posts_table  = $wpdb->posts;
 
 		$defaults = [
-			'venue_term_id' => null,
-			'type_term_id'  => null,
-			'status'        => null,
-			'featured'      => null,
-			'hide_hidden'   => true,
-			'ongoing'       => null,
+			'venue_term_id'        => null,
+			'type_term_id'         => null,
+			'exclude_type_term_id' => null,
+			'status'               => null,
+			'featured'             => null,
+			'hide_hidden'          => true,
+			'ongoing'              => null,
 		];
 
 		$filters = wp_parse_args( $filters, $defaults );
@@ -271,6 +287,17 @@ class EventIndex {
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$where[] = "e.id IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
 				$params  = array_merge( $params, $type_ids );
+			}
+		}
+
+		if ( null !== $filters['exclude_type_term_id'] ) {
+			$exclude_ids = array_filter( array_map( 'absint', (array) $filters['exclude_type_term_id'] ) );
+			if ( ! empty( $exclude_ids ) ) {
+				$type_terms_table = Schema::type_terms_table();
+				$placeholders     = implode( ', ', array_fill( 0, count( $exclude_ids ), '%d' ) );
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$where[] = "e.id NOT IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
+				$params  = array_merge( $params, $exclude_ids );
 			}
 		}
 
