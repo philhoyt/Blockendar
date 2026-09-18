@@ -203,7 +203,7 @@ class SettingsPage {
 			'calendar_slot_duration' => sanitize_text_field( $raw['calendar_slot_duration'] ?? $d['calendar_slot_duration'] ),
 
 			// Permalinks.
-			'events_slug'            => sanitize_title( $raw['events_slug'] ?? $d['events_slug'] ),
+			'events_slug'            => sanitize_title( $raw['events_slug'] ?? '' ) ?: $d['events_slug'],
 
 			// Map.
 			'map_default_zoom'       => max( 1, min( 20, (int) ( $raw['map_default_zoom'] ?? $d['map_default_zoom'] ) ) ),
@@ -223,6 +223,18 @@ class SettingsPage {
 			'rest_public'            => (bool) ( $raw['rest_public'] ?? $d['rest_public'] ),
 			'rest_feed_token'        => sanitize_text_field( $raw['rest_feed_token'] ?? '' ),
 		];
+	}
+
+	/**
+	 * The URL base for events, e.g. "events" in /events/my-event/ and
+	 * /events/type/exhibit/. Read by the post type and taxonomies when they
+	 * register, so a change here needs a rewrite flush (Upgrader handles it).
+	 */
+	public static function events_slug(): string {
+		$settings = get_option( self::OPTION_NAME );
+		$slug     = is_array( $settings ) ? sanitize_title( (string) ( $settings['events_slug'] ?? '' ) ) : '';
+
+		return '' !== $slug ? $slug : 'events';
 	}
 
 	/**

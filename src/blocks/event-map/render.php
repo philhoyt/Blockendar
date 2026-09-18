@@ -14,8 +14,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
-$post_id = $block->context['postId'] ?? get_the_ID();
-$terms   = get_the_terms( $post_id, 'event_venue' );
+$post_id = blockendar_block_event_id( $block );
+
+if ( ! $post_id ) {
+	return;
+}
+
+$terms = get_the_terms( $post_id, 'event_venue' );
 
 if ( is_wp_error( $terms ) || empty( $terms ) ) {
 	return;

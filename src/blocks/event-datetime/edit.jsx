@@ -51,6 +51,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 		timeFormat,
 		timeSeparator,
 		rangeSeparator,
+		ongoingLabel,
 	} = attributes;
 
 	const postId = context?.postId;
@@ -63,6 +64,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 	const endDate = meta?.blockendar_end_date ?? '';
 	const endTime = meta?.blockendar_end_time ?? '';
 	const allDay = !! meta?.blockendar_all_day;
+	const ongoing = !! meta?.blockendar_ongoing;
 	const timezone = meta?.blockendar_timezone ?? '';
 
 	const effectiveDateFormat = dateFormat || siteDateFormat;
@@ -97,6 +99,13 @@ export function Edit( { attributes, setAttributes, context } ) {
 
 	const sameDay =
 		activeStartDate && activeEndDate && activeStartDate === activeEndDate;
+
+	// Mirror render.php: an ongoing event never shows an end, and the optional
+	// label only follows a rendered start.
+	const showStart = showStartDate || ( showStartTime && ! activeAllDay );
+	const renderEnd = ! ongoing;
+	const renderOngoing = ongoing && !! ongoingLabel.trim() && showStart;
+	const renderAllDay = activeAllDay && showStartTime && ! renderOngoing;
 
 	return (
 		<>
@@ -218,13 +227,27 @@ export function Edit( { attributes, setAttributes, context } ) {
 							}
 							__nextHasNoMarginBottom
 						/>
+
+						<TextControl
+							label={ __( 'Ongoing label', 'blockendar' ) }
+							help={ __(
+								'Shown in place of the end date for events marked "Ongoing, no end date". Leave empty to show only the start.',
+								'blockendar'
+							) }
+							placeholder={ __( 'Ongoing', 'blockendar' ) }
+							value={ ongoingLabel }
+							onChange={ ( val ) =>
+								setAttributes( { ongoingLabel: val } )
+							}
+							__nextHasNoMarginBottom
+						/>
 					</VStack>
 				</PanelBody>
 			</InspectorControls>
 
 			<div { ...blockProps }>
 				{ /* Start */ }
-				{ ( showStartDate || ( showStartTime && ! activeAllDay ) ) && (
+				{ showStart && (
 					<time className="blockendar-event-datetime__start">
 						{ showStartDate && fmtDate( activeStartDate ) }
 						{ showStartTime &&
@@ -243,8 +266,23 @@ export function Edit( { attributes, setAttributes, context } ) {
 					</time>
 				) }
 
+				{ /* Ongoing label — replaces the end */ }
+				{ renderOngoing && (
+					<>
+						<span
+							className="blockendar-event-datetime__sep"
+							aria-hidden="true"
+						>
+							{ ` ${ rangeSeparator } ` }
+						</span>
+						<span className="blockendar-event-datetime__ongoing">
+							{ ongoingLabel.trim() }
+						</span>
+					</>
+				) }
+
 				{ /* End — different day */ }
-				{ showEndDate && activeEndDate && ! sameDay && (
+				{ renderEnd && showEndDate && activeEndDate && ! sameDay && (
 					<>
 						<span
 							className="blockendar-event-datetime__sep"
@@ -272,7 +310,8 @@ export function Edit( { attributes, setAttributes, context } ) {
 				) }
 
 				{ /* End time only — same day */ }
-				{ showEndTime &&
+				{ renderEnd &&
+					showEndTime &&
 					! activeAllDay &&
 					sameDay &&
 					activeEndTime &&
@@ -298,7 +337,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 				) }
 
 				{ /* All day */ }
-				{ activeAllDay && showStartTime && showStartDate && (
+				{ renderAllDay && showStartDate && (
 					<span
 						className="blockendar-event-datetime__sep"
 						aria-hidden="true"
@@ -306,7 +345,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 						{ ` ${ rangeSeparator } ` }
 					</span>
 				) }
-				{ activeAllDay && showStartTime && (
+				{ renderAllDay && (
 					<span className="blockendar-event-datetime__allday">
 						{ __( 'All day', 'blockendar' ) }
 					</span>

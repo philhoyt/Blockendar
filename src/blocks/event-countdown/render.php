@@ -23,22 +23,27 @@ $passed_label  = $attributes['passedLabel'] ?: __( 'This event has passed.', 'bl
 
 $pinned_id = (int) ( $attributes['pinnedPostId'] ?? 0 );
 
+$post_id = blockendar_block_event_id( $block, $pinned_id );
+
+if ( ! $post_id ) {
+	return;
+}
+
 if ( $pinned_id > 0 ) {
 	// Pinned event — always use its next occurrence (not URL-based).
-	$post_id    = $pinned_id;
 	$occurrence = \Blockendar\DB\EventIndex::next_occurrence( $post_id );
-	$start_date = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
 } else {
 	// Context event — honour ?occurrence_date= if present.
-	$post_id    = $block->context['postId'] ?? get_the_ID();
-	$occurrence = blockendar_resolve_occurrence( (int) $post_id );
-	$start_date = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
+	$occurrence = blockendar_resolve_occurrence( $post_id );
 }
+
+$start_date = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
 
 $start_time = get_post_meta( $post_id, 'blockendar_start_time', true );
 $end_date   = get_post_meta( $post_id, 'blockendar_end_date', true );
 $end_time   = get_post_meta( $post_id, 'blockendar_end_time', true );
 $tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
+$ongoing    = $occurrence ? ! empty( $occurrence->ongoing ) : (bool) get_post_meta( $post_id, 'blockendar_ongoing', true );
 
 if ( ! $start_date ) {
 	return;
@@ -50,8 +55,10 @@ try {
 	$dt         = new DateTimeImmutable( "$start_date " . ( $start_time ?: '00:00' ) . ':00', $tz );
 	$target_utc = $dt->setTimezone( $utc )->format( 'c' );
 
+	// An ongoing event is "in progress" indefinitely once it starts: give the
+	// ticker no end target so it never reaches the "passed" state.
 	$end_utc = '';
-	if ( $end_date ) {
+	if ( $end_date && ! $ongoing ) {
 		$end_dt  = new DateTimeImmutable( "$end_date " . ( $end_time ?: '23:59' ) . ':00', $tz );
 		$end_utc = $end_dt->setTimezone( $utc )->format( 'c' );
 	}

@@ -50,16 +50,14 @@ class IndexBuilder {
 	 * @param \WP_Post $post    Post object.
 	 */
 	public function on_save( int $post_id, \WP_Post $post ): void {
-		// Skip autosaves, revisions, and non-published posts that have no index rows.
+		// Skip autosaves and revisions.
 		if ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
 			return;
 		}
 
-		// Always delete existing rows first.
-		$this->index->delete_by_post_id( $post_id );
-
-		// Only index published posts.
+		// Only published posts are indexed; anything else loses its rows.
 		if ( 'publish' !== $post->post_status ) {
+			$this->index->delete_by_post_id( $post_id );
 			return;
 		}
 
@@ -76,8 +74,8 @@ class IndexBuilder {
 			return;
 		}
 
-		// Delete any rows written by the earlier save_post hook (which had stale/empty meta).
-		$this->index->delete_by_post_id( $post->ID );
+		// Replaces any rows written by the earlier save_post hook, which ran
+		// before the REST request's meta was persisted.
 		$this->build_for_post( $post->ID );
 	}
 
@@ -112,25 +110,40 @@ class IndexBuilder {
 	}
 
 	/**
-	 * Generate and insert index rows for a single post.
+	 * Replace the index rows for a single post.
 	 *
-	 * For non-recurring events this produces one row.
-	 * For recurring events the recurrence engine handles materialisation —
-	 * IndexBuilder only handles the single-occurrence case here.
-	 * The Recurrence\Generator calls index->insert() directly for instances.
+	 * Idempotent: the post's existing rows are cleared before anything is
+	 * written, so calling this any number of times leaves the same rows.
+	 * Import scripts and REST handlers can call it directly without deleting
+	 * first.
+	 *
+	 * For non-recurring events this produces one row. For recurring events the
+	 * recurrence engine owns materialisation — Recurrence\Generator clears the
+	 * post's rows itself (it is also the cron entry point) and calls
+	 * index->insert() per instance, so rows are cleared exactly once on either
+	 * path.
 	 *
 	 * @param int $post_id Post ID.
 	 */
 	public function build_for_post( int $post_id ): void {
-		$meta = $this->get_event_meta( $post_id );
+		$meta    = $this->get_event_meta( $post_id );
+		$ongoing = ! empty( $meta['ongoing'] );
 
-		if ( empty( $meta['start_date'] ) || empty( $meta['end_date'] ) ) {
+		// Ongoing events are never recurring — any stored rule is ignored so the
+		// single sentinel row below is what gets indexed.
+		if ( ! $ongoing && $this->has_recurrence( $post_id ) ) {
+			do_action( 'blockendar_generate_recurrence_index', $post_id );
 			return;
 		}
 
-		// If this is a recurring event, the recurrence engine owns index generation.
-		if ( $this->has_recurrence( $post_id ) ) {
-			do_action( 'blockendar_generate_recurrence_index', $post_id );
+		$this->index->delete_by_post_id( $post_id );
+
+		if ( empty( $meta['start_date'] ) ) {
+			return;
+		}
+
+		// Ongoing events have no end date; everything else needs one.
+		if ( ! $ongoing && empty( $meta['end_date'] ) ) {
 			return;
 		}
 
@@ -144,6 +157,9 @@ class IndexBuilder {
 	/**
 	 * Rebuild the entire index for all published events.
 	 * Used by WP-CLI and the admin "Rebuild Index" button.
+	 *
+	 * Truncates once up front; the per-post clear inside build_for_post() is
+	 * then a no-op on an indexed column.
 	 *
 	 * @return array{ rebuilt: int, skipped: int } Result summary.
 	 */
@@ -226,31 +242,47 @@ class IndexBuilder {
 		$utc = new \DateTimeZone( 'UTC' );
 
 		$all_day    = ! empty( $meta['all_day'] );
+		$ongoing    = ! empty( $meta['ongoing'] );
 		$start_time = $all_day ? '00:00' : ( $meta['start_time'] ?: '00:00' );
 		$end_time   = $all_day ? '00:00' : ( $meta['end_time'] ?: $start_time );
 
 		$start_local_str = "{$meta['start_date']} {$start_time}:00";
 
-		if ( $all_day ) {
-			$end_date_exclusive = gmdate( 'Y-m-d', strtotime( '+1 day', strtotime( $meta['end_date'] ) ) );
-			$end_local_str      = "{$end_date_exclusive} 00:00:00";
-		} else {
-			$end_local_str = "{$meta['end_date']} {$end_time}:00";
-		}
-
 		try {
 			$start_dt = new \DateTimeImmutable( $start_local_str, $tz );
-			$end_dt   = new \DateTimeImmutable( $end_local_str, $tz );
 		} catch ( \Exception ) {
 			return null;
+		}
+
+		if ( $ongoing ) {
+			// No end date: index a far-future sentinel so overlap queries keep
+			// matching, and flag the row so consumers never display the sentinel.
+			$end_datetime = EventIndex::ONGOING_END;
+			$end_date     = EventIndex::ONGOING_END_DATE;
+		} else {
+			if ( $all_day ) {
+				$end_date_exclusive = gmdate( 'Y-m-d', strtotime( '+1 day', strtotime( $meta['end_date'] ) ) );
+				$end_local_str      = "{$end_date_exclusive} 00:00:00";
+			} else {
+				$end_local_str = "{$meta['end_date']} {$end_time}:00";
+			}
+
+			try {
+				$end_dt = new \DateTimeImmutable( $end_local_str, $tz );
+			} catch ( \Exception ) {
+				return null;
+			}
+
+			$end_datetime = $end_dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' );
+			$end_date     = $meta['end_date'];
 		}
 
 		return [
 			'post_id'            => $post_id,
 			'start_datetime'     => $start_dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
-			'end_datetime'       => $end_dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' ),
+			'end_datetime'       => $end_datetime,
 			'start_date'         => $meta['start_date'],
-			'end_date'           => $meta['end_date'],
+			'end_date'           => $end_date,
 			'all_day'            => $all_day ? 1 : 0,
 			'recurrence_id'      => null,
 			'status'             => $meta['status'] ?? 'scheduled',
@@ -258,6 +290,7 @@ class IndexBuilder {
 			'type_term_ids'      => $this->get_type_term_ids( $post_id ),
 			'featured'           => ! empty( $meta['featured'] ) ? 1 : 0,
 			'hide_from_listings' => ! empty( $meta['hide_from_listings'] ) ? 1 : 0,
+			'ongoing'            => $ongoing ? 1 : 0,
 		];
 	}
 
@@ -278,6 +311,7 @@ class IndexBuilder {
 			'status'             => get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled',
 			'featured'           => (bool) get_post_meta( $post_id, 'blockendar_featured', true ),
 			'hide_from_listings' => (bool) get_post_meta( $post_id, 'blockendar_hide_from_listings', true ),
+			'ongoing'            => (bool) get_post_meta( $post_id, 'blockendar_ongoing', true ),
 		];
 	}
 

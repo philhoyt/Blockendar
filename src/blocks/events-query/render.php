@@ -24,10 +24,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Blockendar\Blocks\FilterContext;
 use Blockendar\DB\EventIndex;
 
-$type_ids        = array_filter( array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) ) );
-$per_page        = max( 1, min( 50, (int) ( $attributes['perPage'] ?? 10 ) ) );
-$show_past       = ! empty( $attributes['showPast'] );
-$order           = 'DESC' === ( $attributes['order'] ?? 'ASC' ) ? 'DESC' : 'ASC';
+$type_ids = array_filter( array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) ) );
+// An ID in both lists is dropped from the exclusions: the explicit allowlist wins.
+// The inspector keeps the lists disjoint, but saved markup need not be.
+$exclude_type_ids = array_values(
+	array_diff(
+		array_filter( array_map( 'intval', (array) ( $attributes['excludeTypeIds'] ?? [] ) ) ),
+		$type_ids
+	)
+);
+$per_page         = max( 1, min( 50, (int) ( $attributes['perPage'] ?? 10 ) ) );
+$show_past        = ! empty( $attributes['showPast'] );
+// "" means auto: soonest first for upcoming, most recent first for past.
+$order_attr      = strtoupper( (string) ( $attributes['order'] ?? '' ) );
+$order           = in_array( $order_attr, [ 'ASC', 'DESC' ], true )
+	? $order_attr
+	: ( $show_past ? 'DESC' : 'ASC' );
 $inherit         = ! empty( $attributes['inherit'] );
 $show_pagination = ! empty( $attributes['showPagination'] );
 $related_to      = in_array( $attributes['relatedTo'] ?? 'none', [ 'none', 'type', 'venue', 'both' ], true )
@@ -83,11 +95,16 @@ if ( $show_past ) {
 	$end   = gmdate( 'Y-m-d H:i:s', strtotime( '+3 years' ) );
 }
 
+// Past means finished. The index matches by overlap, which would also catch an
+// event that started but has not ended (and every ongoing event, whose end is a
+// far-future sentinel), so past mode switches the query to "ended before now".
+$past_filter = $show_past ? [ 'ended_before' => $now ] : [];
+
 // Read active URL filters (only applied in standard query mode — not inherit/relatedTo).
 $url_filters = FilterContext::get_active_filters( $query_id );
 
 $index     = new EventIndex();
-$base_args = [
+$base_args = $past_filter + [
 	'per_page' => $per_page + 1,
 	'page'     => $current_page,
 	'orderby'  => 'start_datetime',
@@ -110,7 +127,7 @@ if ( $inherit ) {
 	}
 	// WP_Post (singular) and post type archives: no additional filter.
 
-	$inherit_filters = [
+	$inherit_filters = $past_filter + [
 		'type_term_id'  => $inherit_type,
 		'venue_term_id' => $inherit_venue,
 		'per_page'      => $per_page,
@@ -184,6 +201,8 @@ if ( $inherit ) {
 
 	// Apply date range filter. When showPast is false the effective start is
 	// max(now, filter_date_start) so past dates cannot sneak in via the URL.
+	// In past mode the range narrows the "ended before now" set: the event must
+	// have finished inside it. It never switches the query back to overlap.
 	if ( null !== $url_filters['date_start'] ) {
 		$filter_start = $url_filters['date_start'] . ' 00:00:00';
 		$start        = $show_past ? $filter_start : max( $now, $filter_start );
@@ -192,13 +211,14 @@ if ( $inherit ) {
 		$end = $url_filters['date_end'] . ' 23:59:59';
 	}
 
-	$standard_filters = [
-		'type_term_id'  => ! empty( $effective_type_ids ) ? $effective_type_ids : null,
-		'venue_term_id' => $url_filters['venue_id'],
-		'per_page'      => $per_page,
-		'page'          => $current_page,
-		'orderby'       => 'start_datetime',
-		'order'         => $order,
+	$standard_filters = $past_filter + [
+		'type_term_id'         => ! empty( $effective_type_ids ) ? $effective_type_ids : null,
+		'exclude_type_term_id' => ! empty( $exclude_type_ids ) ? $exclude_type_ids : null,
+		'venue_term_id'        => $url_filters['venue_id'],
+		'per_page'             => $per_page,
+		'page'                 => $current_page,
+		'orderby'              => 'start_datetime',
+		'order'                => $order,
 	];
 	$events           = $index->get_events_in_range( $start, $end, $standard_filters );
 

@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 1.2.0
+Stable tag: 1.3.1
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -84,6 +84,23 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 1.3.1 =
+* Fixed: "Show past" listed events that had started but not finished, so an exhibit still open for another month appeared under past events. Past now means the event has ended, ongoing events never appear there, and past listings default to most recent first unless the block sets an order.
+* Fixed: a single-event block placed on a page, in a template part, or rendered outside a post (for example from WP-CLI) caused a fatal error. Those blocks now render nothing when there is no event to show.
+* Fixed: rebuilding an event's index rows appended instead of replacing them, so a site indexed twice listed every event twice. Rebuilding is now safe to repeat.
+* Fixed: after updating the plugin, event type and venue archive URLs could resolve to the wrong page until rewrite rules were flushed by hand. Rules are now flushed once on the first load after an update.
+* Fixed: the "Events base slug" setting was saved but never applied. It now sets the URL base for single events, the events archive, and the type, venue and tag archives, and rewrite rules refresh automatically when it changes.
+* The event index is rebuilt and rewrite rules are flushed automatically on first load after upgrading.
+
+= 1.3.0 =
+* Added: an "Ongoing, no end date" toggle in the event editor, for events with no announced end such as long-running exhibits. Ongoing events stay in upcoming listings until you set an end date or unpublish them, and are kept out of past listings.
+* Added: the Event Date & Time block shows only the start for ongoing events, with an optional "Ongoing label" setting that prints in place of the end date (for example "Opened September 13 – Ongoing").
+* Added: an "Exclude Event Types" filter on the Events Query block, so a listing can show everything except one type without naming every other type.
+* Changed: the REST API returns "ongoing": true with null end fields for ongoing events, the Calendar View shows them on their start day, and the iCal feed and per-event .ics downloads emit a VEVENT with no DTEND rather than a made-up end.
+* Changed: the admin Events list shows "Ongoing" in the End Date column for these events.
+* Changed: the countdown block treats a started ongoing event as in progress indefinitely; it never reports the event as passed.
+* Database schema upgraded to version 3. The event index is rebuilt automatically on first load after upgrading.
 
 = 1.2.0 =
 * Added: a separate event template per layout. List and grid can now show different blocks, added from the Events Query block's Layout settings. Splitting is opt-in per block, so existing content keeps rendering exactly as it did.
@@ -217,6 +234,12 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.3.1 =
+Fixes past listings showing events that are still running, a fatal error when a single-event block renders outside an event, duplicate index rows, and stale archive URLs after an update. Rewrite rules are flushed and the index rebuilt automatically on first load — no manual action required.
+
+= 1.3.0 =
+Database schema upgraded to version 3 to support ongoing events. The event index will be rebuilt automatically on first load after upgrading — no manual action required.
 
 = 1.2.0 =
 The view switcher's "Default view" setting has been removed. The starting layout now comes from the Events Query block it belongs to, which is what the results already followed — any block where the two disagreed will now match. No action required.

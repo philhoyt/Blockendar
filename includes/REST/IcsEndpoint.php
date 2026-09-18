@@ -96,6 +96,7 @@ class IcsEndpoint {
 		$start_time = get_post_meta( $post_id, 'blockendar_start_time', true ) ?: '00:00:00';
 		$end_time   = get_post_meta( $post_id, 'blockendar_end_time', true ) ?: $start_time;
 		$all_day    = (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
+		$ongoing    = (bool) get_post_meta( $post_id, 'blockendar_ongoing', true );
 		$tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 		$title      = get_the_title( $post_id );
 		$url        = get_permalink( $post_id );
@@ -128,7 +129,8 @@ class IcsEndpoint {
 			"UID:$uid",
 			"DTSTAMP:$now",
 			$all_day ? "DTSTART;VALUE=DATE:$dtstart" : "DTSTART:$dtstart",
-			$all_day ? "DTEND;VALUE=DATE:$dtend" : "DTEND:$dtend",
+			// RFC 5545 permits DTSTART without DTEND; ongoing events have no end date.
+			$ongoing ? null : ( $all_day ? "DTEND;VALUE=DATE:$dtend" : "DTEND:$dtend" ),
 			'SUMMARY:' . $this->escape_ical( $title ),
 			'URL:' . $this->escape_ical( $url ),
 			'END:VEVENT',
@@ -140,7 +142,7 @@ class IcsEndpoint {
 		header( 'Cache-Control: no-cache, must-revalidate' );
 
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo implode( "\r\n", $lines );
+		echo implode( "\r\n", array_filter( $lines, 'is_string' ) );
 		exit;
 	}
 

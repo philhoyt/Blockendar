@@ -20,6 +20,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 class EventIndex {
 
 	/**
+	 * Sentinel end_datetime / end_date written for ongoing events (no end date).
+	 *
+	 * Far enough in the future that every overlap query treats the event as still
+	 * running. Consumers must branch on the `ongoing` column, never on this value.
+	 */
+	public const ONGOING_END      = '9999-12-31 00:00:00';
+	public const ONGOING_END_DATE = '9999-12-31';
+
+	/**
 	 * Object cache group for index reads.
 	 *
 	 * Invalidation is incremental: every cache key embeds the group's
@@ -67,6 +76,11 @@ class EventIndex {
 	 *     @type string    $status         Event status (default: scheduled).
 	 *     @type bool      $featured       Filter by featured flag.
 	 *     @type bool      $hide_hidden    Exclude hide_from_listings events (default true).
+	 *     @type bool|null $ongoing        true = only ongoing events, false = exclude them, null = no filter.
+	 *     @type string    $ended_before   UTC datetime. When set, "past" semantics replace the overlap
+	 *                                     match: the event must have ended at or before this cutoff
+	 *                                     (and within the window), and ongoing events are excluded.
+	 *     @type int|int[] $exclude_type_term_id Exclude events carrying any of these event type terms.
 	 *     @type int       $per_page       Results per page (default 100).
 	 *     @type int       $page           1-based page number (default 1).
 	 *     @type string    $orderby        start_datetime|end_datetime|post_title (default: start_datetime).
@@ -88,26 +102,39 @@ class EventIndex {
 		$posts_table  = $wpdb->posts;
 
 		$defaults = [
-			'venue_term_id' => null,
-			'type_term_id'  => null,
-			'status'        => null,
-			'featured'      => null,
-			'hide_hidden'   => true,
-			'per_page'      => 100,
-			'page'          => 1,
-			'orderby'       => 'start_datetime',
-			'order'         => 'ASC',
+			'venue_term_id'        => null,
+			'type_term_id'         => null,
+			'exclude_type_term_id' => null,
+			'status'               => null,
+			'featured'             => null,
+			'hide_hidden'          => true,
+			'ongoing'              => null,
+			'ended_before'         => null,
+			'per_page'             => 100,
+			'page'                 => 1,
+			'orderby'              => 'start_datetime',
+			'order'                => 'ASC',
 		];
 
 		$filters = wp_parse_args( $filters, $defaults );
 		$where   = [];
 		$params  = [];
 
-		// Date range — events that overlap the requested window.
-		$where[]  = 'e.start_datetime < %s';
-		$params[] = $end;
-		$where[]  = 'e.end_datetime > %s';
-		$params[] = $start;
+		if ( null !== $filters['ended_before'] ) {
+			// Past mode — the event has finished, and finished inside the window.
+			// A narrower $end tightens the cutoff; $start bounds how far back to look.
+			$where[]  = 'e.end_datetime <= %s';
+			$params[] = min( $end, (string) $filters['ended_before'] );
+			$where[]  = 'e.end_datetime > %s';
+			$params[] = $start;
+			$where[]  = 'e.ongoing = 0';
+		} else {
+			// Date range — events that overlap the requested window.
+			$where[]  = 'e.start_datetime < %s';
+			$params[] = $end;
+			$where[]  = 'e.end_datetime > %s';
+			$params[] = $start;
+		}
 
 		// Only published posts.
 		$where[] = "p.post_status = 'publish'";
@@ -144,6 +171,19 @@ class EventIndex {
 			}
 		}
 
+		// Event type exclusion — same junction subquery, negated.
+		if ( null !== $filters['exclude_type_term_id'] ) {
+			$exclude_ids = array_filter( array_map( 'absint', (array) $filters['exclude_type_term_id'] ) );
+
+			if ( ! empty( $exclude_ids ) ) {
+				$type_terms_table = Schema::type_terms_table();
+				$placeholders     = implode( ', ', array_fill( 0, count( $exclude_ids ), '%d' ) );
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$where[] = "e.id NOT IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
+				$params  = array_merge( $params, $exclude_ids );
+			}
+		}
+
 		// Featured filter — denormalised column.
 		if ( true === $filters['featured'] ) {
 			$where[] = 'e.featured = 1';
@@ -152,6 +192,11 @@ class EventIndex {
 		// Hide hidden events — denormalised column.
 		if ( $filters['hide_hidden'] ) {
 			$where[] = 'e.hide_from_listings = 0';
+		}
+
+		// Ongoing filter — unlike `featured`, false is meaningful here.
+		if ( null !== $filters['ongoing'] ) {
+			$where[] = $filters['ongoing'] ? 'e.ongoing = 1' : 'e.ongoing = 0';
 		}
 
 		// ORDER BY — whitelist columns to prevent injection.
@@ -175,7 +220,7 @@ class EventIndex {
 			"SELECT e.id, e.post_id, e.start_datetime, e.end_datetime, e.start_date,
 			        e.end_date, e.all_day, e.recurrence_id, e.status,
 			        e.venue_term_id, e.type_term_ids, e.featured, e.hide_from_listings,
-			        p.post_title, p.post_name, p.guid
+			        e.ongoing, p.post_title, p.post_name, p.guid
 			FROM   {$events_table} e
 			JOIN   {$posts_table} p ON p.ID = e.post_id
 			{$where_sql}
@@ -215,22 +260,33 @@ class EventIndex {
 		$posts_table  = $wpdb->posts;
 
 		$defaults = [
-			'venue_term_id' => null,
-			'type_term_id'  => null,
-			'status'        => null,
-			'featured'      => null,
-			'hide_hidden'   => true,
+			'venue_term_id'        => null,
+			'type_term_id'         => null,
+			'exclude_type_term_id' => null,
+			'status'               => null,
+			'featured'             => null,
+			'hide_hidden'          => true,
+			'ongoing'              => null,
+			'ended_before'         => null,
 		];
 
 		$filters = wp_parse_args( $filters, $defaults );
 		$where   = [];
 		$params  = [];
 
-		$where[]  = 'e.start_datetime < %s';
-		$params[] = $end;
-		$where[]  = 'e.end_datetime > %s';
-		$params[] = $start;
-		$where[]  = "p.post_status = 'publish'";
+		if ( null !== $filters['ended_before'] ) {
+			$where[]  = 'e.end_datetime <= %s';
+			$params[] = min( $end, (string) $filters['ended_before'] );
+			$where[]  = 'e.end_datetime > %s';
+			$params[] = $start;
+			$where[]  = 'e.ongoing = 0';
+		} else {
+			$where[]  = 'e.start_datetime < %s';
+			$params[] = $end;
+			$where[]  = 'e.end_datetime > %s';
+			$params[] = $start;
+		}
+		$where[] = "p.post_status = 'publish'";
 
 		if ( null !== $filters['status'] ) {
 			$where[]  = 'e.status = %s';
@@ -257,12 +313,27 @@ class EventIndex {
 			}
 		}
 
+		if ( null !== $filters['exclude_type_term_id'] ) {
+			$exclude_ids = array_filter( array_map( 'absint', (array) $filters['exclude_type_term_id'] ) );
+			if ( ! empty( $exclude_ids ) ) {
+				$type_terms_table = Schema::type_terms_table();
+				$placeholders     = implode( ', ', array_fill( 0, count( $exclude_ids ), '%d' ) );
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$where[] = "e.id NOT IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
+				$params  = array_merge( $params, $exclude_ids );
+			}
+		}
+
 		if ( true === $filters['featured'] ) {
 			$where[] = 'e.featured = 1';
 		}
 
 		if ( $filters['hide_hidden'] ) {
 			$where[] = 'e.hide_from_listings = 0';
+		}
+
+		if ( null !== $filters['ongoing'] ) {
+			$where[] = $filters['ongoing'] ? 'e.ongoing = 1' : 'e.ongoing = 0';
 		}
 
 		$where_sql = 'WHERE ' . implode( ' AND ', $where );
@@ -540,6 +611,7 @@ class EventIndex {
 	 *     @type array  $type_term_ids      Optional array of event type term IDs.
 	 *     @type int    $featured           1 if event is featured, 0 otherwise.
 	 *     @type int    $hide_from_listings 1 if event should be hidden from listings.
+	 *     @type int    $ongoing            1 if the event has no end date (sentinel end).
 	 * }
 	 * @return int|false Inserted row ID or false on failure.
 	 */
@@ -565,9 +637,10 @@ class EventIndex {
 				: null,
 			'featured'           => isset( $data['featured'] ) ? (int) $data['featured'] : 0,
 			'hide_from_listings' => isset( $data['hide_from_listings'] ) ? (int) $data['hide_from_listings'] : 0,
+			'ongoing'            => isset( $data['ongoing'] ) ? (int) $data['ongoing'] : 0,
 		];
 
-		$formats = [ '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%d', '%d' ];
+		$formats = [ '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%d', '%d', '%d' ];
 
 		$result = $wpdb->insert( Schema::events_table(), $row, $formats );
 

@@ -11,13 +11,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
-$post_id    = $block->context['postId'] ?? get_the_ID();
+$post_id = blockendar_block_event_id( $block );
+
+if ( ! $post_id ) {
+	return;
+}
+
 $occurrence = blockendar_resolve_occurrence( $post_id );
 $start_date = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
 $end_date   = $occurrence ? $occurrence->end_date : get_post_meta( $post_id, 'blockendar_end_date', true );
 $all_day    = $occurrence ? (bool) $occurrence->all_day : (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
+$ongoing    = $occurrence ? ! empty( $occurrence->ongoing ) : (bool) get_post_meta( $post_id, 'blockendar_ongoing', true );
 $start_time = get_post_meta( $post_id, 'blockendar_start_time', true );
 $end_time   = get_post_meta( $post_id, 'blockendar_end_time', true );
+
+// Google/Outlook deep links require an end, and the index holds a far-future
+// sentinel for ongoing events. Use the start day instead: timed events run to
+// 23:59 that day, all-day events cover the start day only. The iCal link goes
+// through the REST endpoint, which omits DTEND for ongoing events.
+if ( $ongoing ) {
+	$end_date = $start_date;
+	$end_time = $all_day ? '' : '23:59';
+}
 $tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 $title      = get_the_title( $post_id );
 $detail_url = get_permalink( $post_id );

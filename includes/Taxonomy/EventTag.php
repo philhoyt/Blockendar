@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\Admin\SettingsPage;
 use Blockendar\CPT\EventPostType;
 
 /**
@@ -60,7 +61,7 @@ class EventTag {
 			'show_in_rest'      => true,
 			'rest_base'         => 'event-tags',
 			'rewrite'           => [
-				'slug'       => 'events/tag',
+				'slug'       => SettingsPage::events_slug() . '/tag',
 				'with_front' => false,
 			],
 		];
@@ -69,16 +70,19 @@ class EventTag {
 	}
 
 	/**
-	 * Explicitly register top-priority rewrite rules for the events/tag/* path.
+	 * Explicitly register top-priority rewrite rules for the {events_slug}/tag/* path.
 	 */
 	public function add_rewrite_rules(): void {
+		// sanitize_title() limits the slug to [a-z0-9-], so it is regex-safe as is.
+		$base = SettingsPage::events_slug();
+
 		add_rewrite_rule(
-			'^events/tag/([^/]+)/page/([0-9]{1,})/?$',
+			'^' . $base . '/tag/([^/]+)/page/([0-9]{1,})/?$',
 			'index.php?event_tag=$matches[1]&paged=$matches[2]',
 			'top'
 		);
 		add_rewrite_rule(
-			'^events/tag/([^/]+)/?$',
+			'^' . $base . '/tag/([^/]+)/?$',
 			'index.php?event_tag=$matches[1]',
 			'top'
 		);

@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\DB\EventIndex;
+
 /**
  * Generates iCal (.ics) content from event index rows.
  *
@@ -88,6 +90,7 @@ class Exporter {
 	private function build_vevent( object $row ): array {
 		$post_id     = (int) $row->post_id;
 		$all_day     = (bool) $row->all_day;
+		$ongoing     = ! empty( $row->ongoing );
 		$uid         = "blockendar-{$post_id}-{$row->start_date}@" . wp_parse_url( home_url(), PHP_URL_HOST );
 		$url         = get_permalink( $post_id );
 		$summary     = $this->escape_text( $row->post_title );
@@ -99,14 +102,20 @@ class Exporter {
 		$lines[] = 'UID:' . $uid;
 		$lines[] = 'DTSTAMP:' . gmdate( 'Ymd\THis\Z' );
 
+		// RFC 5545 permits a VEVENT with DTSTART only; ongoing events have no end
+		// date, so emit none rather than the index's sentinel.
 		if ( $all_day ) {
 			$lines[] = 'DTSTART;VALUE=DATE:' . str_replace( '-', '', $row->start_date );
-			// iCal all-day end is exclusive, so add one day.
-			$end_exclusive = gmdate( 'Ymd', strtotime( $row->end_date . ' +1 day' ) );
-			$lines[]       = 'DTEND;VALUE=DATE:' . $end_exclusive;
+			if ( ! $ongoing ) {
+				// iCal all-day end is exclusive, so add one day.
+				$end_exclusive = gmdate( 'Ymd', strtotime( $row->end_date . ' +1 day' ) );
+				$lines[]       = 'DTEND;VALUE=DATE:' . $end_exclusive;
+			}
 		} else {
 			$lines[] = 'DTSTART:' . $this->utc_to_ical( $row->start_datetime );
-			$lines[] = 'DTEND:' . $this->utc_to_ical( $row->end_datetime );
+			if ( ! $ongoing ) {
+				$lines[] = 'DTEND:' . $this->utc_to_ical( $row->end_datetime );
+			}
 		}
 
 		$lines[] = 'SUMMARY:' . $summary;
@@ -203,16 +212,25 @@ class Exporter {
 		}
 
 		$all_day    = (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
+		$ongoing    = (bool) get_post_meta( $post_id, 'blockendar_ongoing', true );
 		$start_time = get_post_meta( $post_id, 'blockendar_start_time', true ) ?: '00:00';
 		$end_time   = get_post_meta( $post_id, 'blockendar_end_time', true ) ?: $start_time;
 		$tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 		$status     = get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled';
 
+		if ( ! $ongoing && empty( $end_date ) ) {
+			return null;
+		}
+
 		try {
 			$tz       = new \DateTimeZone( $tz_str );
 			$utc      = new \DateTimeZone( 'UTC' );
 			$start_dt = ( new \DateTimeImmutable( "{$start_date} {$start_time}:00", $tz ) )->setTimezone( $utc );
-			$end_dt   = ( new \DateTimeImmutable( "{$end_date} {$end_time}:00", $tz ) )->setTimezone( $utc );
+			// Ongoing events have no end date; build_vevent() never reads the end
+			// for them, so mirror the index sentinel rather than parsing an empty date.
+			$end_dt = $ongoing
+				? new \DateTimeImmutable( EventIndex::ONGOING_END, $utc )
+				: ( new \DateTimeImmutable( "{$end_date} {$end_time}:00", $tz ) )->setTimezone( $utc );
 		} catch ( \Exception ) {
 			return null;
 		}
@@ -224,10 +242,11 @@ class Exporter {
 			'post_id'        => $post_id,
 			'post_title'     => $post->post_title,
 			'start_date'     => $start_date,
-			'end_date'       => $end_date,
+			'end_date'       => $ongoing ? EventIndex::ONGOING_END_DATE : $end_date,
 			'start_datetime' => $start_dt->format( 'Y-m-d H:i:s' ),
 			'end_datetime'   => $end_dt->format( 'Y-m-d H:i:s' ),
 			'all_day'        => $all_day ? 1 : 0,
+			'ongoing'        => $ongoing ? 1 : 0,
 			'status'         => $status,
 			'venue_term_id'  => $venue_term_id,
 		];

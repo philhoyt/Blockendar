@@ -209,6 +209,19 @@ class EventMeta {
 				'show_in_rest'      => true,
 			]
 		);
+
+		register_post_meta(
+			$post_type,
+			'blockendar_ongoing',
+			[
+				'type'              => 'boolean',
+				'description'       => 'Event has no end date and stays in listings until one is set.',
+				'single'            => true,
+				'default'           => false,
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
+			]
+		);
 	}
 
 	/**

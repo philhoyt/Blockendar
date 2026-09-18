@@ -11,8 +11,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
-$post_id = $block->context['postId'] ?? get_the_ID();
-$status  = get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled';
+$post_id = blockendar_block_event_id( $block );
+
+if ( ! $post_id ) {
+	return;
+}
+
+$status = get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled';
 
 if ( 'scheduled' === $status ) {
 	return;

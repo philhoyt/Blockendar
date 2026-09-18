@@ -32,6 +32,7 @@ use Blockendar\Blocks\TemplateRegistrar;
 use Blockendar\Admin\EventColumns;
 use Blockendar\Admin\SettingsPage;
 use Blockendar\Admin\VenueGeocode;
+use Blockendar\Upgrader;
 use Blockendar\CLI\RebuildIndexCommand;
 
 /**
@@ -60,6 +61,9 @@ class Plugin {
 		// Schema upgrades must run after Generator is registered so that
 		// recurring events are correctly handled during any post-upgrade rebuild.
 		Schema::maybe_upgrade();
+
+		// Version change → flush rewrite rules once (updates never re-activate).
+		( new Upgrader() )->register();
 
 		// Background rebuild triggered by a schema upgrade (fires via WP-Cron).
 		add_action(

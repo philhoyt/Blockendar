@@ -125,6 +125,7 @@ function EventPreview( { blocks } ) {
 export function Edit( { attributes, setAttributes, clientId } ) {
 	const {
 		typeIds,
+		excludeTypeIds,
 		perPage,
 		showPast,
 		order,
@@ -256,11 +257,31 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 			: undefined,
 	} );
 
+	// An empty order means auto: ASC for upcoming, DESC for past. The toggle
+	// shows the direction that is actually in effect.
+	const effectiveOrderDesc = order ? order === 'DESC' : showPast;
+
+	// A term can be included or excluded, never both: checking it in one list
+	// removes it from the other.
 	const toggleType = ( termId, checked ) => {
 		setAttributes( {
 			typeIds: checked
 				? [ ...typeIds, termId ]
 				: typeIds.filter( ( id ) => id !== termId ),
+			excludeTypeIds: checked
+				? excludeTypeIds.filter( ( id ) => id !== termId )
+				: excludeTypeIds,
+		} );
+	};
+
+	const toggleExcludeType = ( termId, checked ) => {
+		setAttributes( {
+			excludeTypeIds: checked
+				? [ ...excludeTypeIds, termId ]
+				: excludeTypeIds.filter( ( id ) => id !== termId ),
+			typeIds: checked
+				? typeIds.filter( ( id ) => id !== termId )
+				: typeIds,
 		} );
 	};
 
@@ -463,7 +484,11 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 						/>
 						<ToggleControl
 							label={ __( 'Reverse order', 'blockendar' ) }
-							checked={ order === 'DESC' }
+							help={ __(
+								'Upcoming events list soonest first; past events list most recent first.',
+								'blockendar'
+							) }
+							checked={ effectiveOrderDesc }
 							onChange={ ( val ) =>
 								setAttributes( { order: val ? 'DESC' : 'ASC' } )
 							}
@@ -535,6 +560,35 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 									checked={ typeIds.includes( term.id ) }
 									onChange={ ( checked ) =>
 										toggleType( term.id, checked )
+									}
+									__nextHasNoMarginBottom
+								/>
+							) ) }
+						</VStack>
+					</PanelBody>
+				) }
+
+				{ ! inherit && relatedTo === 'none' && terms?.length > 0 && (
+					<PanelBody
+						title={ __( 'Exclude Event Types', 'blockendar' ) }
+						initialOpen={ false }
+					>
+						<VStack spacing={ 2 }>
+							<p className="components-base-control__help">
+								{ __(
+									'Hide events with any of these types. Useful for showing everything except one type, such as exhibits.',
+									'blockendar'
+								) }
+							</p>
+							{ terms.map( ( term ) => (
+								<CheckboxControl
+									key={ term.id }
+									label={ term.name }
+									checked={ excludeTypeIds.includes(
+										term.id
+									) }
+									onChange={ ( checked ) =>
+										toggleExcludeType( term.id, checked )
 									}
 									__nextHasNoMarginBottom
 								/>

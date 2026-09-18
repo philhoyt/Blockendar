@@ -156,16 +156,16 @@ class CalendarController extends AbstractController {
 		$cost     = get_post_meta( $post_id, 'blockendar_cost', true );
 		$featured = (bool) get_post_meta( $post_id, 'blockendar_featured', true );
 
+		$ongoing = ! empty( $row->ongoing );
+
 		// FullCalendar expects ISO 8601. Convert UTC to the site timezone so startStr is correct.
 		$start = $this->to_iso8601( $row->start_datetime, (bool) $row->all_day, $row->start_date );
-		$end   = $this->to_iso8601( $row->end_datetime, (bool) $row->all_day, $row->end_date );
 
-		return [
+		$event = [
 			'id'            => "blockendar_{$post_id}_{$row->start_date}",
 			'post_id'       => $post_id,
 			'title'         => html_entity_decode( $row->post_title, ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
 			'start'         => $start,
-			'end'           => $end,
 			'allDay'        => (bool) $row->all_day,
 			'url'           => add_query_arg( 'occurrence_date', $row->start_date, get_permalink( $post_id ) ),
 			'color'         => $color,
@@ -175,8 +175,17 @@ class CalendarController extends AbstractController {
 				'types'    => $types,
 				'cost'     => $cost,
 				'featured' => $featured,
+				'ongoing'  => $ongoing,
 			],
 		];
+
+		// Ongoing events carry a sentinel end in the index; give FullCalendar no
+		// end at all so the chip renders on the start day only.
+		if ( ! $ongoing ) {
+			$event['end'] = $this->to_iso8601( $row->end_datetime, (bool) $row->all_day, $row->end_date );
+		}
+
+		return $event;
 	}
 
 	/**

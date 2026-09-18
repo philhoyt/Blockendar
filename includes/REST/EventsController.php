@@ -295,7 +295,6 @@ class EventsController extends AbstractController {
 			return new WP_Error( 'blockendar_save_failed', __( 'Failed to save recurrence rule.', 'blockendar' ), [ 'status' => 500 ] );
 		}
 
-		$this->index->delete_by_post_id( $post_id );
 		$this->builder->build_for_post( $post_id );
 
 		$rule = $this->rules->get( $post_id );
@@ -316,7 +315,6 @@ class EventsController extends AbstractController {
 		}
 
 		$this->rules->delete( $post_id );
-		$this->index->delete_by_post_id( $post_id );
 		$this->builder->build_for_post( $post_id );
 
 		return $this->respond( [ 'recurrence' => null ], 200 );
@@ -437,16 +435,19 @@ class EventsController extends AbstractController {
 	 * @param object $row Index table row joined with wp_posts.
 	 */
 	private function format_event_row( object $row ): array {
+		$ongoing = ! empty( $row->ongoing );
+
 		return [
 			'id'             => (int) $row->id,
 			'post_id'        => (int) $row->post_id,
 			'title'          => $row->post_title,
 			'url'            => get_permalink( (int) $row->post_id ),
 			'start_datetime' => $row->start_datetime,
-			'end_datetime'   => $row->end_datetime,
+			'end_datetime'   => $ongoing ? null : $row->end_datetime,
 			'start_date'     => $row->start_date,
-			'end_date'       => $row->end_date,
+			'end_date'       => $ongoing ? null : $row->end_date,
 			'all_day'        => (bool) $row->all_day,
+			'ongoing'        => $ongoing,
 			'status'         => $row->status,
 			'venue_term_id'  => $row->venue_term_id ? (int) $row->venue_term_id : null,
 			'type_term_ids'  => $row->type_term_ids ? json_decode( $row->type_term_ids, true ) : [],
@@ -459,14 +460,17 @@ class EventsController extends AbstractController {
 	 * @param object $row Index table row.
 	 */
 	private function format_instance_row( object $row ): array {
+		$ongoing = ! empty( $row->ongoing );
+
 		return [
 			'id'             => (int) $row->id,
 			'post_id'        => (int) $row->post_id,
 			'start_datetime' => $row->start_datetime,
-			'end_datetime'   => $row->end_datetime,
+			'end_datetime'   => $ongoing ? null : $row->end_datetime,
 			'start_date'     => $row->start_date,
-			'end_date'       => $row->end_date,
+			'end_date'       => $ongoing ? null : $row->end_date,
 			'all_day'        => (bool) $row->all_day,
+			'ongoing'        => $ongoing,
 			'status'         => $row->status,
 			'recurrence_id'  => $row->recurrence_id ? (int) $row->recurrence_id : null,
 		];
@@ -510,6 +514,7 @@ class EventsController extends AbstractController {
 			'blockendar_registration_url',
 			'blockendar_featured',
 			'blockendar_hide_from_listings',
+			'blockendar_ongoing',
 		];
 
 		$meta = [];

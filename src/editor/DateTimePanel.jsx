@@ -17,10 +17,12 @@ import {
 	DatePicker,
 	RadioControl,
 	Button,
+	Notice,
 	__experimentalVStack as VStack,
 	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
+import { getOngoingMetaUpdates } from './ongoing';
 
 const {
 	timezones = [],
@@ -343,7 +345,7 @@ function ruleToPreset( r ) {
 // RecurrenceSection — rendered inside DateTimePanel
 // ---------------------------------------------------------------------------
 
-function RecurrenceSection( { postId, startDate } ) {
+function RecurrenceSection( { postId, startDate, ongoing } ) {
 	const [ preset, setPreset ] = useState( 'none' );
 	const [ endType, setEndType ] = useState( 'never' );
 	const [ untilDate, setUntilDate ] = useState( '' );
@@ -429,6 +431,24 @@ function RecurrenceSection( { postId, startDate } ) {
 	}, [ isSaving, postId ] );
 
 	const freqOptions = buildFreqOptions( startDate );
+
+	// Ongoing events are never recurring. Keep this section mounted so the
+	// loaded rule survives a round trip, but replace the controls with a notice
+	// when a rule exists — the server ignores it while the event is ongoing.
+	if ( ongoing ) {
+		if ( preset === 'none' ) {
+			return null;
+		}
+
+		return (
+			<Notice status="warning" isDismissible={ false }>
+				{ __(
+					'This event has a repeat rule, which is ignored while it is marked ongoing. Turn off "Ongoing, no end date" to use it again.',
+					'blockendar'
+				) }
+			</Notice>
+		);
+	}
 
 	// Core save logic — accepts explicit values so it can be called from
 	// onChange handlers (before React state has updated) as well as the button.
@@ -618,6 +638,7 @@ export function DateTimePanel() {
 	) }`;
 
 	const allDay = !! meta.blockendar_all_day;
+	const ongoing = !! meta.blockendar_ongoing;
 	const startDate = meta.blockendar_start_date ?? '';
 	const endDate = meta.blockendar_end_date ?? '';
 	const startTime = meta.blockendar_start_time || '09:00';
@@ -638,7 +659,11 @@ export function DateTimePanel() {
 	// When start date changes, pull end date forward if it would precede start.
 	const handleStartDateChange = ( val ) => {
 		const updates = { blockendar_start_date: val };
-		if ( ! endDate || endDate === startDate || val > endDate ) {
+		// Ongoing events keep an empty end; the toggle seeds it when turned off.
+		if (
+			! ongoing &&
+			( ! endDate || endDate === startDate || val > endDate )
+		) {
 			updates.blockendar_end_date = val;
 		}
 		setMeta( updates );
@@ -699,7 +724,7 @@ export function DateTimePanel() {
 					</BaseControl>
 				) }
 
-				{ ! allDay && (
+				{ ! allDay && ! ongoing && (
 					<div
 						style={ {
 							textAlign: 'center',
@@ -712,7 +737,7 @@ export function DateTimePanel() {
 					</div>
 				) }
 
-				{ ! allDay && (
+				{ ! allDay && ! ongoing && (
 					<BaseControl
 						id="blockendar-end-time"
 						label={ __( 'End Time', 'blockendar' ) }
@@ -725,16 +750,35 @@ export function DateTimePanel() {
 					</BaseControl>
 				) }
 
-				<BaseControl
-					id="blockendar-end-date"
-					label={ __( 'End Date', 'blockendar' ) }
+				{ ! ongoing && (
+					<BaseControl
+						id="blockendar-end-date"
+						label={ __( 'End Date', 'blockendar' ) }
+						__nextHasNoMarginBottom
+					>
+						<DateInput
+							value={ endDate }
+							onChange={ handleEndDateChange }
+						/>
+					</BaseControl>
+				) }
+
+				<ToggleControl
+					label={ __( 'Ongoing, no end date', 'blockendar' ) }
+					help={
+						ongoing
+							? __(
+									'Stays in listings until you set an end date or unpublish it.',
+									'blockendar'
+							  )
+							: undefined
+					}
+					checked={ ongoing }
+					onChange={ ( val ) =>
+						setMeta( getOngoingMetaUpdates( meta, val ) )
+					}
 					__nextHasNoMarginBottom
-				>
-					<DateInput
-						value={ endDate }
-						onChange={ handleEndDateChange }
-					/>
-				</BaseControl>
+				/>
 
 				<SelectControl
 					label={ __( 'Timezone', 'blockendar' ) }
@@ -756,7 +800,11 @@ export function DateTimePanel() {
 					__nextHasNoMarginBottom
 				/>
 
-				<RecurrenceSection postId={ postId } startDate={ startDate } />
+				<RecurrenceSection
+					postId={ postId }
+					startDate={ startDate }
+					ongoing={ ongoing }
+				/>
 			</VStack>
 		</PluginDocumentSettingPanel>
 	);

@@ -21,10 +21,17 @@ if ( ! defined( 'ABSPATH' ) ) {
  *     CalendarController so clicking a chip shows that specific occurrence.
  *  3. next_occurrence() fallback for bare permalink visits.
  *
- * @param int $post_id The event post ID.
+ * @param int|false|null $post_id The event post ID. get_the_ID() returns false
+ *                                outside a post context; that resolves to null.
  * @return object|null Index row, or null if no occurrence exists at all.
  */
-function blockendar_resolve_occurrence( int $post_id ): ?object {
+function blockendar_resolve_occurrence( int|false|null $post_id ): ?object {
+	$post_id = (int) $post_id;
+
+	if ( $post_id <= 0 ) {
+		return null;
+	}
+
 	// Check for occurrence injected by events-query render loop.
 	if ( isset( $GLOBALS['blockendar_current_occurrence'] ) &&
 		(int) $GLOBALS['blockendar_current_occurrence']->post_id === $post_id ) {
@@ -46,6 +53,31 @@ function blockendar_resolve_occurrence( int $post_id ): ?object {
 	}
 
 	return \Blockendar\DB\EventIndex::next_occurrence( $post_id );
+}
+
+/**
+ * Resolve the event a single-event block should render.
+ *
+ * Blocks take the post from block context (inside an events-query loop or a
+ * single event template) and fall back to the global post. Outside any post
+ * context — a block dropped on a page, a template part, do_blocks() from
+ * WP-CLI — there is nothing to render, and the block must bail rather than
+ * hand a false ID to helpers that expect an event.
+ *
+ * @param WP_Block $block   The block being rendered.
+ * @param int      $post_id Optional explicit post ID (e.g. a pinned event).
+ * @return int The event post ID, or 0 when there is no event to render.
+ */
+function blockendar_block_event_id( WP_Block $block, int $post_id = 0 ): int {
+	if ( $post_id <= 0 ) {
+		$post_id = (int) ( $block->context['postId'] ?? get_the_ID() );
+	}
+
+	if ( $post_id <= 0 || \Blockendar\CPT\EventPostType::POST_TYPE !== get_post_type( $post_id ) ) {
+		return 0;
+	}
+
+	return $post_id;
 }
 
 /**
