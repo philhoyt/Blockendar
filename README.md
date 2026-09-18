@@ -70,6 +70,14 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 1.3.1
+- Fixed: "Show past" listed events that had started but not finished — an exhibit still open for another month appeared under past events. Past now means the event has ended; ongoing events never appear there, and past listings default to most recent first.
+- Fixed: a single-event block placed on a page, in a template part, or rendered outside a post (for example from WP-CLI) caused a fatal error. Those blocks now render nothing when there is no event to show.
+- Fixed: rebuilding an event's index rows appended instead of replacing them, so a site indexed twice listed every event twice. Rebuilding is now safe to repeat.
+- Fixed: after updating the plugin, event type and venue archive URLs could resolve to the wrong page until rewrite rules were flushed by hand. Rules are now flushed once on the first load after an update.
+- Fixed: the "Events base slug" setting was saved but never applied. It now sets the URL base for single events, the events archive, and the type, venue and tag archives, and rewrite rules refresh automatically when it changes.
+- The index is rebuilt and rewrite rules are flushed automatically on first load after upgrading.
+
 ### 1.3.0
 - Added: an "Ongoing, no end date" toggle in the event editor for events with no announced end, such as long-running exhibits. Ongoing events stay in upcoming listings until you set an end date or unpublish them.
 - Added: the Event Date & Time block shows only the start for ongoing events, with an optional "Ongoing label" attribute to print in place of the end date.
