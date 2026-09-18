@@ -83,11 +83,15 @@ if ( $show_past ) {
 	$end   = gmdate( 'Y-m-d H:i:s', strtotime( '+3 years' ) );
 }
 
+// An ongoing event (no end date) carries a far-future sentinel end, so it would
+// overlap the past window too. Keep it out of past listings until it gets a real end.
+$ongoing_filter = $show_past ? [ 'ongoing' => false ] : [];
+
 // Read active URL filters (only applied in standard query mode — not inherit/relatedTo).
 $url_filters = FilterContext::get_active_filters( $query_id );
 
 $index     = new EventIndex();
-$base_args = [
+$base_args = $ongoing_filter + [
 	'per_page' => $per_page + 1,
 	'page'     => $current_page,
 	'orderby'  => 'start_datetime',
@@ -110,7 +114,7 @@ if ( $inherit ) {
 	}
 	// WP_Post (singular) and post type archives: no additional filter.
 
-	$inherit_filters = [
+	$inherit_filters = $ongoing_filter + [
 		'type_term_id'  => $inherit_type,
 		'venue_term_id' => $inherit_venue,
 		'per_page'      => $per_page,
@@ -192,7 +196,7 @@ if ( $inherit ) {
 		$end = $url_filters['date_end'] . ' 23:59:59';
 	}
 
-	$standard_filters = [
+	$standard_filters = $ongoing_filter + [
 		'type_term_id'  => ! empty( $effective_type_ids ) ? $effective_type_ids : null,
 		'venue_term_id' => $url_filters['venue_id'],
 		'per_page'      => $per_page,
