@@ -70,6 +70,11 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 1.3.2
+- Fixed: after switching the Events Query to grid with the View Switcher, clicking a pagination link loaded the next page as a list. Pagination links, filter forms and filter "clear" links now follow the chosen view.
+- Fixed: submitting the date range filter or the dropdown type filter dropped a chosen grid view even on a fresh page load, and every filter did with JavaScript off. The view now travels with every filter submission.
+- Fixed: in the type filter's list style, a date range already in the URL was lost when a type was ticked.
+
 ### 1.3.1
 - Fixed: "Show past" listed events that had started but not finished — an exhibit still open for another month appeared under past events. Past now means the event has ended; ongoing events never appear there, and past listings default to most recent first.
 - Fixed: a single-event block placed on a page, in a template part, or rendered outside a post (for example from WP-CLI) caused a fatal error. Those blocks now render nothing when there is no event to show.

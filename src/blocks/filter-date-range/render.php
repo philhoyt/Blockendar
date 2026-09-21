@@ -86,6 +86,7 @@ if ( ! empty( $active_filters['type_ids'] ) ) {
 if ( null !== $active_filters['venue_id'] ) {
 	$hidden_inputs .= '<input type="hidden" name="' . esc_attr( FilterContext::param_name( 'venue', $query_id ) ) . '" value="' . esc_attr( (string) $active_filters['venue_id'] ) . '">';
 }
+$hidden_inputs .= FilterContext::hidden_view_input( $query_id );
 
 $clear_url = esc_url( remove_query_arg( [ $param_start, $param_end, $page_param ] ) );
 

@@ -130,6 +130,32 @@ class FilterContext {
 	}
 
 	/**
+	 * A hidden input that carries the requested view through a filter form.
+	 *
+	 * The filter forms submit with GET, and a GET submission replaces the action
+	 * URL's query string with the form's own fields — which is why every filter
+	 * re-injects the others as hidden inputs. The view must travel the same way
+	 * or a filter submission silently drops the visitor back to the default
+	 * layout.
+	 *
+	 * The value is passed through exactly as requested. Only the switcher knows
+	 * its default mode, and there may be no switcher on the page at all, so the
+	 * "default view means no parameter" rule is the switcher script's to apply.
+	 *
+	 * @param string $query_id Query ID from the blockendar/queryId block context.
+	 * @return string The input markup, or an empty string when no view was requested.
+	 */
+	public static function hidden_view_input( string $query_id ): string {
+		$view = self::get_view( $query_id );
+
+		if ( null === $view ) {
+			return '';
+		}
+
+		return '<input type="hidden" name="' . esc_attr( self::param_name( 'view', $query_id ) ) . '" value="' . esc_attr( $view ) . '">';
+	}
+
+	/**
 	 * Discard non-scalar input for params that only ever carry a single value.
 	 *
 	 * A query string can always be forced into array shape — `?blockendar_venue[]=99`

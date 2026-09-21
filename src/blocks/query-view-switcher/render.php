@@ -21,7 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Blockendar\Blocks\FilterContext;
 
-$query_id   = (string) ( $block->context['blockendar/queryId'] ?? '' );
+// Normalised like the Query Filters wrapper and events-query, so the script
+// matches all three on one value.
+$query_id   = sanitize_key( (string) ( $block->context['blockendar/queryId'] ?? '' ) );
 $view_param = FilterContext::param_name( 'view', $query_id );
 $page_param = FilterContext::param_name( 'page', $query_id );
 

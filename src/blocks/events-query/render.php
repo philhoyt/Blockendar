@@ -45,8 +45,15 @@ $show_pagination = ! empty( $attributes['showPagination'] );
 $related_to      = in_array( $attributes['relatedTo'] ?? 'none', [ 'none', 'type', 'venue', 'both' ], true )
 	? ( $attributes['relatedTo'] ?? 'none' )
 	: 'none';
-$query_id        = (string) ( $block->context['blockendar/queryId'] ?? '' );
-$page_param      = FilterContext::param_name( 'page', $query_id );
+
+/*
+ * Normalised the same way the Query Filters wrapper normalises its
+ * data-blockendar-query-id, so the view switcher's script can match this query,
+ * its pagination and its filters on one value. Param names sanitise the ID
+ * themselves, so they are unaffected.
+ */
+$query_id   = sanitize_key( (string) ( $block->context['blockendar/queryId'] ?? '' ) );
+$page_param = FilterContext::param_name( 'page', $query_id );
 // phpcs:disable WordPress.Security.NonceVerification.Recommended
 $current_page = max( 1, absint( wp_unslash( $_GET[ $page_param ] ?? 1 ) ) );
 // phpcs:enable
@@ -378,7 +385,9 @@ if ( $show_pagination && $total_pages > 1 ) {
 	);
 
 	if ( $pagination ) {
-		echo '<nav class="blockendar-events-query__pagination" aria-label="' . esc_attr__( 'Events navigation', 'blockendar' ) . '">';
+		// The nav is a sibling of the results list, not a child, so it carries
+		// the query ID itself for the view switcher's script to find it.
+		echo '<nav class="blockendar-events-query__pagination" data-query-id="' . esc_attr( $query_id ) . '" aria-label="' . esc_attr__( 'Events navigation', 'blockendar' ) . '">';
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- paginate_links() output.
 		echo $pagination;
 		echo '</nav>';

@@ -54,10 +54,18 @@ import '../shared/filter-controls.css';
 					params.set( key, val );
 				} );
 
-				// Apply form data, replacing any existing values.
+				const paramName = el.dataset.paramName;
+				const checkboxes = paramName + '[]';
+
+				// The checkboxes are the one multi-value field: each ticked box
+				// contributes an ID to a comma-separated list. Every other field
+				// is single-valued and replaces what the action URL carried —
+				// joining those too turned a preserved date or view into
+				// "x,x", which the server then rejected and silently dropped.
+				params.delete( checkboxes );
+
 				for ( const [ key, val ] of data.entries() ) {
-					if ( params.has( key ) ) {
-						// Collect multi-value checkboxes as comma-separated ID list.
+					if ( key === checkboxes && params.has( key ) ) {
 						params.set( key, params.get( key ) + ',' + val );
 					} else {
 						params.set( key, val );
@@ -65,10 +73,9 @@ import '../shared/filter-controls.css';
 				}
 
 				// If no checkboxes are checked the param must be absent (not empty).
-				const paramName = el.dataset.paramName;
-				if ( paramName && ! data.has( paramName + '[]' ) ) {
+				if ( paramName && ! data.has( checkboxes ) ) {
 					params.delete( paramName );
-					params.delete( paramName + '[]' );
+					params.delete( checkboxes );
 				}
 
 				// Reset pagination.

@@ -7,11 +7,23 @@
  * This upgrades that to an in-place swap. List and grid differ only by a class
  * on the query wrapper — the events themselves render identical markup in both
  * — so there is nothing to re-fetch and no reason to reload the page.
+ *
+ * The swap has one cost: everything else on the page that navigates — the
+ * pagination links, the filter forms and their "clear" links — was rendered by
+ * the server against the URL before the swap, and still points there. Each
+ * swap therefore also rewrites those controls so the next navigation carries
+ * the chosen view, exactly as a full reload would have rendered them.
  */
+
+import { withViewParam } from '../shared/view-param';
 
 const SWITCHER = '.blockendar-view-switcher';
 const BUTTON = '.blockendar-view-switcher__button';
 const QUERY = '.blockendar-events-query';
+const PAGINATION = '.blockendar-events-query__pagination';
+const FILTER = '[data-blockendar-filter]';
+const FILTER_GROUP = '[data-blockendar-query-id]';
+const CLEAR_LINK = '.blockendar-filter__clear[href]';
 
 /**
  * Find the queries a switcher controls.
@@ -28,6 +40,43 @@ function queriesFor( switcher ) {
 
 	return Array.from( document.querySelectorAll( QUERY ) ).filter(
 		( query ) => ( query.dataset.queryId || '' ) === id
+	);
+}
+
+/**
+ * Find the pagination navs a switcher controls.
+ *
+ * The nav is a sibling of the results list rather than a child, so it carries
+ * its own query ID and is matched the same way as the list.
+ *
+ * @param {HTMLElement} switcher The switcher wrapper.
+ * @return {HTMLElement[]} Matching pagination navs, possibly empty.
+ */
+function paginationFor( switcher ) {
+	const id = switcher.dataset.queryId || '';
+
+	return Array.from( document.querySelectorAll( PAGINATION ) ).filter(
+		( nav ) => ( nav.dataset.queryId || '' ) === id
+	);
+}
+
+/**
+ * Find the filter blocks that target the same query as a switcher.
+ *
+ * Filters learn their query from the Query Filters wrapper around them, which
+ * is how their own scripts resolve it; a filter outside any wrapper matches on
+ * the empty string, the same as a switcher outside one.
+ *
+ * @param {HTMLElement} switcher The switcher wrapper.
+ * @return {HTMLElement[]} Matching filter wrappers, possibly empty.
+ */
+function filtersFor( switcher ) {
+	const id = switcher.dataset.queryId || '';
+
+	return Array.from( document.querySelectorAll( FILTER ) ).filter(
+		( filter ) =>
+			( filter.closest( FILTER_GROUP )?.dataset.blockendarQueryId ??
+				'' ) === id
 	);
 }
 
@@ -66,6 +115,66 @@ function isPaged( switcher ) {
 }
 
 /**
+ * Point every navigating control for this query at the given view.
+ *
+ * Links get the parameter rewritten. Forms get a hidden input instead: they
+ * submit with GET, which replaces the action's query string with the form's own
+ * fields, so a parameter on the action would never arrive. Both follow the
+ * server's rule that the default view is spelled as no parameter at all — the
+ * hidden input is removed rather than set to the default's name.
+ *
+ * @param {HTMLElement} switcher The switcher wrapper.
+ * @param {string}      mode     Mode key now active.
+ */
+function syncControls( switcher, mode ) {
+	const param = switcher.dataset.viewParam;
+
+	if ( ! param ) {
+		return;
+	}
+
+	const defaultView = switcher.dataset.defaultView;
+	const base = window.location.href;
+	const rewrite = ( link ) => {
+		link.href = withViewParam( link.href, param, mode, defaultView, base );
+	};
+
+	paginationFor( switcher ).forEach( ( nav ) =>
+		nav.querySelectorAll( 'a[href]' ).forEach( rewrite )
+	);
+
+	filtersFor( switcher ).forEach( ( filter ) => {
+		filter.querySelectorAll( CLEAR_LINK ).forEach( rewrite );
+
+		filter.querySelectorAll( 'form' ).forEach( ( form ) => {
+			// Looked up by name through the form's own collection rather than
+			// a selector built from the parameter, so nothing needs escaping.
+			// namedItem() hands back a RadioNodeList when several controls share
+			// the name; that has no tagName, so it is treated as "not ours".
+			const existing = form.elements.namedItem( param );
+			const input = existing?.tagName === 'INPUT' ? existing : null;
+
+			if ( mode === defaultView ) {
+				input?.remove();
+				return;
+			}
+
+			if ( input ) {
+				input.value = mode;
+				return;
+			}
+
+			const created = document.createElement( 'input' );
+
+			created.type = 'hidden';
+			created.name = param;
+			created.value = mode;
+			form.appendChild( created );
+		} );
+	} );
+}
+
+/**
  * Apply a view mode to the DOM.
  *
  * @param {HTMLElement}   switcher The switcher wrapper.
@@ -99,6 +208,8 @@ function applyView( switcher, queries, mode ) {
 		button.classList.toggle( 'is-active', isActive );
 		button.setAttribute( 'aria-current', isActive ? 'true' : 'false' );
 	} );
+
+	syncControls( switcher, mode );
 }
 
 /**
@@ -206,6 +317,9 @@ function reconcileDefault( switcher, queries ) {
 		return;
 	}
 
+	// Set before applyView() runs: syncControls() reads the default to decide
+	// whether the rendered mode means "no parameter", and on a clean URL the
+	// server-rendered controls already carry none — so this must be a no-op.
 	switcher.dataset.defaultView = rendered;
 
 	// Recompute the links so selecting the default still leaves a clean URL.
