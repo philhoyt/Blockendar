@@ -10,6 +10,7 @@
 
 const { test, expect } = require( '@playwright/test' );
 const { wpCli, wpCliId } = require( './wp-cli' );
+const { daysFromNow } = require( './dates' );
 
 const CONCERT = 'E2E Concert';
 const WORKSHOP = 'E2E Workshop';
@@ -87,9 +88,8 @@ test.beforeAll( () => {
 	concertTermId = ensureTerm( 'Concert' );
 	ensureTerm( 'Workshop' );
 
-	const year = new Date().getFullYear();
-	createEvent( CONCERT, `${ year }-09-10`, 'Concert' );
-	createEvent( WORKSHOP, `${ year }-09-20`, 'Workshop' );
+	createEvent( CONCERT, daysFromNow( 7 ), 'Concert' );
+	createEvent( WORKSHOP, daysFromNow( 14 ), 'Workshop' );
 
 	pageId = wpCliId( [
 		'post',

@@ -8,6 +8,7 @@
 
 const { test, expect } = require( '@playwright/test' );
 const { wpCli, wpCliId } = require( './wp-cli' );
+const { daysFromNow } = require( './dates' );
 
 let splitPageId;
 let sharedPageId;
@@ -46,9 +47,8 @@ function createEvent( title, ymd ) {
 }
 
 test.beforeAll( () => {
-	const year = new Date().getFullYear();
-	createEvent( 'Template Event A', `${ year }-10-05` );
-	createEvent( 'Template Event B', `${ year }-10-12` );
+	createEvent( 'Template Event A', daysFromNow( 7 ) );
+	createEvent( 'Template Event B', daysFromNow( 14 ) );
 
 	/*
 	 * List shows the title, grid shows the date — deliberately disjoint so each

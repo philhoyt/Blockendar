@@ -8,6 +8,7 @@
 
 const { test, expect } = require( '@playwright/test' );
 const { wpCli, wpCliId } = require( './wp-cli' );
+const { daysFromNow } = require( './dates' );
 
 let pageId;
 let mismatchPageId;
@@ -21,21 +22,6 @@ const PAGED_QUERY =
 	'<!-- wp:blockendar/events-query {"perPage":1,"showPagination":true} -->' +
 	QUERY_TEMPLATE +
 	'<!-- /wp:blockendar/events-query -->';
-
-/**
- * A Y-m-d date the given number of days from today.
- *
- * The query shows upcoming events only, so seeding a fixed calendar date
- * silently empties the results once that date has passed.
- *
- * @param {number} days Days from today.
- * @return {string} Y-m-d.
- */
-function daysFromNow( days ) {
-	const date = new Date();
-	date.setDate( date.getDate() + days );
-	return date.toISOString().slice( 0, 10 );
-}
 
 /**
  * Publish an indexed event on the given date.
