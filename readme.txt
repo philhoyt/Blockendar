@@ -89,6 +89,8 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * Fixed: after switching the Events Query to grid with the View Switcher, clicking a pagination link loaded the next page as a list. Pagination links, filter forms and filter "clear" links now follow the chosen view.
 * Fixed: submitting the date range filter or the dropdown type filter dropped a chosen grid view even on a fresh page load, and every filter did with JavaScript off. The view now travels with every filter submission.
 * Fixed: in the type filter's list style, a date range already in the URL was lost when a type was ticked.
+* Fixed: the filter dropdowns rendered open and then snapped shut as the page loaded. A one-line inline script now marks the page as JavaScript-capable ahead of the first filter, so the closed state is painted from the start; with JavaScript off the panels stay visible as before.
+* Fixed: filter controls in a Row shared the space evenly regardless of their labels, so "All venues" was truncated beside "All dates" and resized whenever a date range was chosen or cleared. Each control now keeps at least the width of its own label.
 
 = 1.3.1 =
 * Fixed: "Show past" listed events that had started but not finished, so an exhibit still open for another month appeared under past events. Past now means the event has ended, ongoing events never appear there, and past listings default to most recent first unless the block sets an order.
@@ -241,7 +243,7 @@ Each site in a multisite network gets its own database tables. The plugin has no
 == Upgrade Notice ==
 
 = 1.3.2 =
-Fixes the View Switcher losing the chosen grid view when you paginate or apply a filter. No manual action required.
+Fixes the View Switcher losing the chosen grid view when you paginate or apply a filter, the filter dropdowns flashing open on page load, and filter controls truncating their labels in a Row. No manual action required.
 
 = 1.3.1 =
 Fixes past listings showing events that are still running, a fatal error when a single-event block renders outside an event, duplicate index rows, and stale archive URLs after an update. Rewrite rules are flushed and the index rebuilt automatically on first load — no manual action required.

@@ -74,6 +74,8 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 - Fixed: after switching the Events Query to grid with the View Switcher, clicking a pagination link loaded the next page as a list. Pagination links, filter forms and filter "clear" links now follow the chosen view.
 - Fixed: submitting the date range filter or the dropdown type filter dropped a chosen grid view even on a fresh page load, and every filter did with JavaScript off. The view now travels with every filter submission.
 - Fixed: in the type filter's list style, a date range already in the URL was lost when a type was ticked.
+- Fixed: the filter dropdowns rendered open and then snapped shut as the page loaded. A one-line inline script now marks the page as JavaScript-capable ahead of the first filter, so the closed state is painted from the start; with JavaScript off the panels stay visible as before.
+- Fixed: filter controls in a Row shared the space evenly regardless of their labels, so "All venues" was truncated beside "All dates" and resized whenever a date range was chosen or cleared. Each control now keeps at least the width of its own label.
 
 ### 1.3.1
 - Fixed: "Show past" listed events that had started but not finished — an exhibit still open for another month appeared under past events. Past now means the event has ended; ongoing events never appear there, and past listings default to most recent first.
