@@ -37,12 +37,19 @@
  * that intrinsic size as zero, collapsing every filter to nothing. The
  * container-type was removed (no @container query used it); this gives them a
  * real basis so they share the row instead of fighting for it.
+ *
+ * The minimum is the control's own label rather than zero. With an equal
+ * basis and a zero minimum, a Row sized to its content split the space
+ * evenly whatever each label needed: "All venues" was truncated beside
+ * "All dates", and grew or shrank with the date filter's text as a range was
+ * chosen or cleared. fit-content lets each control keep its label and still
+ * gives way when the container itself is narrower than that.
  */
 .blockendar-filter-event-type,
 .blockendar-filter-venue,
 .blockendar-filter-date-range {
 	flex: 1 1 12rem;
-	min-inline-size: 0;
+	min-inline-size: fit-content;
 }
 
 /* The switcher is icon-sized; it should not stretch to fill a share of the
