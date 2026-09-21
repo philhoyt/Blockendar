@@ -548,9 +548,13 @@ test( 'the dropdown type filter keeps the view through its Apply button', async 
 	await page
 		.locator( '.blockendar-filter-event-type .blockendar-filter__trigger' )
 		.click();
+	// By name: other specs leave their own terms behind, and a term with no
+	// events would filter the results away entirely.
 	await page
-		.locator( '.blockendar-filter__panel input[type="checkbox"]' )
-		.first()
+		.locator( '.blockendar-filter__checkbox-label', {
+			hasText: 'Switcher Type',
+		} )
+		.locator( 'input[type="checkbox"]' )
 		.check();
 
 	await Promise.all( [
