@@ -85,6 +85,7 @@ if ( null !== $other_filters['date_start'] ) {
 if ( null !== $other_filters['date_end'] ) {
 	$hidden_inputs .= '<input type="hidden" name="' . esc_attr( FilterContext::param_name( 'date_end', $query_id ) ) . '" value="' . esc_attr( $other_filters['date_end'] ) . '">';
 }
+$hidden_inputs .= FilterContext::hidden_view_input( $query_id );
 
 // Unique per instance: two of these blocks can target the same query, so the
 // param name is not a safe id.
