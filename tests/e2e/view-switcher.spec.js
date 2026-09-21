@@ -14,6 +14,21 @@ let mismatchPageId;
 const created = [];
 
 /**
+ * A Y-m-d date the given number of days from today.
+ *
+ * The query shows upcoming events only, so seeding a fixed calendar date
+ * silently empties the results once that date has passed.
+ *
+ * @param {number} days Days from today.
+ * @return {string} Y-m-d.
+ */
+function daysFromNow( days ) {
+	const date = new Date();
+	date.setDate( date.getDate() + days );
+	return date.toISOString().slice( 0, 10 );
+}
+
+/**
  * Publish an indexed event on the given date.
  *
  * @param {string} title Event title.
@@ -45,9 +60,8 @@ function createEvent( title, ymd ) {
 }
 
 test.beforeAll( () => {
-	const year = new Date().getFullYear();
-	createEvent( 'Switcher Event A', `${ year }-09-05` );
-	createEvent( 'Switcher Event B', `${ year }-09-12` );
+	createEvent( 'Switcher Event A', daysFromNow( 7 ) );
+	createEvent( 'Switcher Event B', daysFromNow( 14 ) );
 
 	pageId = wpCliId( [
 		'post',
