@@ -7,6 +7,7 @@
 
 const { test, expect } = require( '@playwright/test' );
 const { wpCli, wpCliId } = require( './wp-cli' );
+const { daysFromNow } = require( './dates' );
 const { loginAsAdmin, openEditor } = require( './editor' );
 
 let postId;
@@ -14,8 +15,6 @@ let switcherPostId;
 const created = [];
 
 test.beforeAll( () => {
-	const year = new Date().getFullYear();
-
 	[ 'Editor E2E One', 'Editor E2E Two', 'Editor E2E Three' ].forEach(
 		( title, i ) => {
 			const id = wpCliId( [
@@ -27,11 +26,11 @@ test.beforeAll( () => {
 				'--porcelain',
 			] );
 
-			const day = String( 3 + i * 7 ).padStart( 2, '0' );
+			const ymd = daysFromNow( 3 + i * 7 );
 
 			Object.entries( {
-				blockendar_start_date: `${ year }-09-${ day }`,
-				blockendar_end_date: `${ year }-09-${ day }`,
+				blockendar_start_date: ymd,
+				blockendar_end_date: ymd,
 				blockendar_start_time: '19:00',
 				blockendar_end_time: '21:00',
 				blockendar_timezone: 'UTC',
