@@ -17,6 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Blockendar\Blocks\FilterContext;
+use Blockendar\Blocks\ScriptProbe;
 
 $query_id      = (string) ( $block->context['blockendar/queryId'] ?? '' );
 $display_style = in_array( $attributes['displayStyle'] ?? 'dropdown', [ 'list', 'dropdown' ], true )
@@ -128,6 +129,10 @@ $wrapper_attrs = get_block_wrapper_attributes(
 		'data-param-name'        => $param_name,
 	]
 );
+
+// Ahead of the markup, so the closed popover can be styled before the view
+// script runs instead of flashing open and collapsing.
+ScriptProbe::print_once();
 ?>
 <div <?php echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( '' !== $label ) : ?>
