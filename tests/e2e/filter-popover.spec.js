@@ -181,6 +181,75 @@ test( 'opening and closing the popover never navigates', async ( { page } ) => {
 	).toEqual( [] );
 } );
 
+test( 'the closed state is painted before the view script runs', async ( {
+	page,
+} ) => {
+	// With the view script never arriving, the page sits in exactly the state
+	// the browser paints before a deferred script executes. That paint used to
+	// show the whole list and collapse it a moment later.
+	await page.route( '**/build/blocks/**/view.js*', ( route ) =>
+		route.abort()
+	);
+	await page.goto( `/?p=${ pageId }` );
+
+	const root = page.locator( '.blockendar-filter-event-type' );
+	await expect( root ).not.toHaveClass( /is-enhanced/ );
+
+	await expect( page.locator( 'html' ) ).toHaveClass( /blockendar-js/ );
+	await expect( page.locator( '.blockendar-filter__trigger' ) ).toBeVisible();
+	await expect( page.locator( '.blockendar-filter__panel' ) ).toBeHidden();
+
+	// One probe per page, and it must precede the block it protects.
+	const order = await page.evaluate( () => {
+		const probes = Array.from( document.scripts ).filter( ( s ) =>
+			s.textContent.includes( 'blockendar-js' )
+		);
+		const block = document.querySelector( '[data-blockendar-filter]' );
+
+		// Source order: the probe's own script element must sit before the block.
+		const all = Array.from(
+			document.querySelectorAll( 'script, [data-blockendar-filter]' )
+		);
+
+		return {
+			count: probes.length,
+			precedes: all.indexOf( probes[ 0 ] ) < all.indexOf( block ),
+		};
+	} );
+
+	expect( order ).toEqual( { count: 1, precedes: true } );
+} );
+
+test( 'the list style keeps its list visible with JavaScript on', async ( {
+	page,
+} ) => {
+	const listPageId = wpCliId( [
+		'post',
+		'create',
+		'--post_type=page',
+		'--post_title=E2E Popover List Page',
+		'--post_status=publish',
+		'--post_content=<!-- wp:blockendar/filter-event-type {"displayStyle":"list","showEmptyTerms":true} /-->',
+		'--porcelain',
+	] );
+	created.push( listPageId );
+
+	await page.goto( `/?p=${ listPageId }` );
+
+	// The probe lands here too, but it only hides a panel that follows a
+	// trigger, and the list style renders neither: the list sits in the form.
+	await expect( page.locator( 'html' ) ).toHaveClass( /blockendar-js/ );
+	await expect( page.locator( '.blockendar-filter__trigger' ) ).toHaveCount(
+		0
+	);
+	await expect( page.locator( '.blockendar-filter__list' ) ).toBeVisible();
+	await expect(
+		page
+			.locator( '.blockendar-filter__list input[type="checkbox"]' )
+			.first()
+	).toBeVisible();
+} );
+
 test.describe( 'without JavaScript', () => {
 	test.use( { javaScriptEnabled: false } );
 
@@ -191,6 +260,12 @@ test.describe( 'without JavaScript', () => {
 
 		const root = page.locator( '.blockendar-filter-event-type' );
 		await expect( root ).not.toHaveClass( /is-enhanced/ );
+
+		// The probe is a script, so without JavaScript the class never lands
+		// and nothing below may depend on it.
+		await expect( page.locator( 'html' ) ).not.toHaveClass(
+			/blockendar-js/
+		);
 
 		// The stylesheet loads regardless of JavaScript, so it must not hide the
 		// controls of anyone who never ran it.

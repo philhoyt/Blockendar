@@ -6,12 +6,22 @@
  * flow position and stays visible, so a visitor whose JavaScript never runs
  * still has a working control rather than one hidden by CSS that arrived
  * regardless.
+ *
+ * The view scripts are deferred, so the browser can paint before they add
+ * that class — the panel shows open, then collapses. The closed state is
+ * therefore also applied under html.blockendar-js, which an inline script
+ * sets synchronously ahead of the first filter block (see ScriptProbe). That
+ * class proves JavaScript is running, so the panel can start closed without
+ * ever being hidden from a visitor who has none. It only reaches a panel that
+ * follows a trigger: the list display style renders no trigger and stays as
+ * it is. :where() keeps these selectors below the .is-open rule further down.
  */
 
 .blockendar-filter__trigger {
 	display: none;
 }
 
+:where(.blockendar-js) .blockendar-filter__trigger,
 .is-enhanced .blockendar-filter__trigger {
 	align-items: center;
 	cursor: pointer;
@@ -22,6 +32,7 @@
 	text-align: start;
 }
 
+:where(.blockendar-js) .blockendar-filter__trigger-icon,
 .is-enhanced .blockendar-filter__trigger-icon {
 	border-inline: 0.35em solid transparent;
 	border-block-start: 0.4em solid currentcolor;
@@ -35,6 +46,7 @@
 	transform: rotate(180deg);
 }
 
+:where(.blockendar-js) .blockendar-filter__trigger + .blockendar-filter__panel,
 .is-enhanced .blockendar-filter__panel {
 	display: none;
 }
