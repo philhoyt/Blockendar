@@ -45,14 +45,15 @@ $show_pagination = ! empty( $attributes['showPagination'] );
 $related_to      = in_array( $attributes['relatedTo'] ?? 'none', [ 'none', 'type', 'venue', 'both' ], true )
 	? ( $attributes['relatedTo'] ?? 'none' )
 	: 'none';
+
 /*
  * Normalised the same way the Query Filters wrapper normalises its
  * data-blockendar-query-id, so the view switcher's script can match this query,
  * its pagination and its filters on one value. Param names sanitise the ID
  * themselves, so they are unaffected.
  */
-$query_id        = sanitize_key( (string) ( $block->context['blockendar/queryId'] ?? '' ) );
-$page_param      = FilterContext::param_name( 'page', $query_id );
+$query_id   = sanitize_key( (string) ( $block->context['blockendar/queryId'] ?? '' ) );
+$page_param = FilterContext::param_name( 'page', $query_id );
 // phpcs:disable WordPress.Security.NonceVerification.Recommended
 $current_page = max( 1, absint( wp_unslash( $_GET[ $page_param ] ?? 1 ) ) );
 // phpcs:enable
