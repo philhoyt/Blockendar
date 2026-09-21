@@ -85,6 +85,11 @@ Each site in a multisite network gets its own database tables. The plugin has no
 
 == Changelog ==
 
+= 1.3.2 =
+* Fixed: after switching the Events Query to grid with the View Switcher, clicking a pagination link loaded the next page as a list. Pagination links, filter forms and filter "clear" links now follow the chosen view.
+* Fixed: submitting the date range filter or the dropdown type filter dropped a chosen grid view even on a fresh page load, and every filter did with JavaScript off. The view now travels with every filter submission.
+* Fixed: in the type filter's list style, a date range already in the URL was lost when a type was ticked.
+
 = 1.3.1 =
 * Fixed: "Show past" listed events that had started but not finished, so an exhibit still open for another month appeared under past events. Past now means the event has ended, ongoing events never appear there, and past listings default to most recent first unless the block sets an order.
 * Fixed: a single-event block placed on a page, in a template part, or rendered outside a post (for example from WP-CLI) caused a fatal error. Those blocks now render nothing when there is no event to show.
@@ -234,6 +239,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.3.2 =
+Fixes the View Switcher losing the chosen grid view when you paginate or apply a filter. No manual action required.
 
 = 1.3.1 =
 Fixes past listings showing events that are still running, a fatal error when a single-event block renders outside an event, duplicate index rows, and stale archive URLs after an update. Rewrite rules are flushed and the index rebuilt automatically on first load — no manual action required.
