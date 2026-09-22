@@ -141,6 +141,15 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 1.6.0
+- Added: calendar subscriptions. The Event Calendar block can show **iCalendar** and **Google Calendar** buttons that let visitors subscribe to your events, so their calendar keeps up with yours instead of taking a one-time copy. Both buttons carry whatever venue, type and featured filters the block is set to, and both are hidden while public REST access is turned off, because a private feed cannot be linked without publishing its access token. Settings > REST API shows both feed URLs with copy buttons.
+- Added: settings for how much of the calendar a subscription covers, 30 days back and 365 days ahead by default. The window moves with the date, so a subscription that worked in January still shows this month's events in June.
+- Fixed: the calendar feed at `/blockendar/v1/calendar?format=ics` returned its contents as JSON rather than iCalendar, so no calendar app could read it. The feed had never worked; it now returns a valid calendar.
+- Fixed: downloading a single event produced a different identifier than the same event in the feed, so anyone who subscribed and also downloaded an event saw it twice. Single-event downloads now also include the venue and status, and no longer produce over-long lines that stricter calendar apps reject.
+- Fixed: cancelling one occurrence of a repeating event could rewrite the rest of the series. A weekly Monday and Wednesday class lost its days, an every-third-week event became weekly, and an event with an end date failed outright. Rules already damaged this way are not repaired automatically and need checking by hand.
+- Fixed: the calendar feed URLs on the settings screen were cut off partway through, so the address could not be read or copied in full.
+- Security: a carriage return in an event title, description or venue field could add entries to an exported calendar file. Line breaks in those fields are now escaped.
+
 ### 1.5.1
 - Fixed: updating from 1.5.0 could install the companion demo plugin over Blockendar. The update checker was not told which release asset to use, so it took the first one GitHub listed, and `blockendar-demo.zip` sorted ahead of `blockendar.zip`. The update checker now matches `blockendar.zip` exactly, and the demo asset is named `blockendar_demo.zip` so it sorts last. If you were affected, reinstall Blockendar from the Releases page; your events and settings are untouched.
 
