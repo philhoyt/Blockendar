@@ -42,7 +42,7 @@ To preview the working tree instead — no Docker needed, it runs on php-wasm:
 npm run playground   # http://127.0.0.1:9400
 ```
 
-To get the same content on a site of your own, download `blockendar-demo.zip`
+To get the same content on a site of your own, download `blockendar_demo.zip`
 from the [Releases page](https://github.com/philhoyt/Blockendar/releases) and
 install it alongside Blockendar. Activating it creates 31 events, 5 venues and a
 six-page guided tour. Every date is generated when you activate it, so the demo
@@ -94,6 +94,9 @@ Two third-party requests to OpenStreetMap are possible:
 See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Policy).
 
 ## Changelog
+
+### 1.5.1
+- Fixed: updating from 1.5.0 could install the companion demo plugin over Blockendar. The update checker was not told which release asset to use, so it took the first one GitHub listed, and `blockendar-demo.zip` sorted ahead of `blockendar.zip`. The update checker now matches `blockendar.zip` exactly, and the demo asset is named `blockendar_demo.zip` so it sorts last. If you were affected, reinstall Blockendar from the Releases page; your events and settings are untouched.
 
 ### 1.5.0
 - Added: a companion demo plugin, released as `blockendar-demo.zip`. Activating it fills a site with 31 events, 6 event types, 5 venues and a six-page guided tour of the plugin's blocks. Dates are generated at activation, so the demo does not go stale.

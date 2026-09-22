@@ -295,7 +295,7 @@
 
 ## 12. Demo Companion Plugin
 
-Applies to `blockendar-demo.zip`, released alongside the main plugin.
+Applies to `blockendar_demo.zip`, released alongside the main plugin. The asset is named with an underscore so it sorts after `blockendar.zip`; see QA 12.15.
 
 | # | Test | Status | Notes |
 |---|------|--------|-------|
@@ -313,7 +313,8 @@ Applies to `blockendar-demo.zip`, released alongside the main plugin.
 | 12.11 | Re-seeding without a reset is refused rather than duplicating content | 🔲 | |
 | 12.12 | `wp blockendar-demo seed` and `wp blockendar-demo reset` match the admin buttons | 🔲 | |
 | 12.13 | Deleting the demo plugin cleans up even with Blockendar already deactivated | 🔲 | |
-| 12.14 | Playground badge URL boots to a populated front page | 🔲 | |
+| 12.14 | Playground badge URL boots to a populated front page | ✅ | Verified on v1.5.0. |
+| 12.15 | `blockendar.zip` is assets[0] on every release, and PUC updates install Blockendar (not the demo) | 🔲 | Regression from v1.5.0. Check with `gh api repos/philhoyt/Blockendar/releases/latest --jq '.assets[0].name'`. |
 
 ---
 

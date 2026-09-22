@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -74,7 +74,7 @@ Event metadata is stored in standard WordPress post meta. All date/time data is 
 
 = How do I try it without setting up events first? =
 
-Download `blockendar-demo.zip` from the Releases page and install it alongside Blockendar. Activating it creates 31 events, 5 venues and a six-page guided tour of the plugin's blocks. Every date is generated at activation, so the demo is always current.
+Download `blockendar_demo.zip` from the Releases page and install it alongside Blockendar. Activating it creates 31 events, 5 venues and a six-page guided tour of the plugin's blocks. Every date is generated at activation, so the demo is always current.
 
 Manage it from Tools > Blockendar Demo, or with `wp blockendar-demo seed` and `wp blockendar-demo reset`. Reset removes only what the demo created and restores your previous front page setting.
 
@@ -90,6 +90,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 1.5.1 =
+* Fixed: updating from 1.5.0 could install the companion demo plugin over Blockendar. The update checker was not told which release asset to use, so it took the first one GitHub listed, and `blockendar-demo.zip` sorted ahead of `blockendar.zip`. The update checker now matches `blockendar.zip` exactly, and the demo asset is named `blockendar_demo.zip` so it sorts last. If you were affected, reinstall Blockendar from the Releases page; your events and settings are untouched.
 
 = 1.5.0 =
 * Added: a companion demo plugin, released as `blockendar-demo.zip`. Activating it fills a site with 31 events, 6 event types, 5 venues and a six-page guided tour of the plugin's blocks. Dates are generated at activation, so the demo does not go stale.
@@ -263,6 +266,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.5.1 =
+Fixes an update that could replace Blockendar with the companion demo plugin. Update as soon as possible. If you were already affected, reinstall Blockendar from the Releases page — your events and settings are untouched.
 
 = 1.5.0 =
 Adds an optional companion demo plugin, downloaded separately. Blockendar itself is unchanged, so no action is required.

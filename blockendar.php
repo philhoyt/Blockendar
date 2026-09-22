@@ -3,7 +3,7 @@
  * Plugin Name:       Blockendar - Events and Calendars
  * Plugin URI:        https://github.com/philhoyt/Blockendar
  * Description:       A block-native WordPress events plugin. No shortcodes. No legacy widgets. The block editor is the UI.
- * Version:           1.5.0
+ * Version:           1.5.1
  * Requires at least: 6.8
  * Requires PHP:      8.1
  * Author:            philhoyt
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'BLOCKENDAR_VERSION', '1.5.0' );
+define( 'BLOCKENDAR_VERSION', '1.5.1' );
 define( 'BLOCKENDAR_FILE', __FILE__ );
 define( 'BLOCKENDAR_DIR', plugin_dir_path( __FILE__ ) );
 
@@ -63,7 +63,18 @@ $blockendar_update_checker = PucFactory::buildUpdateChecker(
 	__FILE__,
 	'blockendar'
 );
-$blockendar_update_checker->getVcsApi()->enableReleaseAssets();
+
+/*
+ * Match only this plugin's own zip.
+ *
+ * Without a filter, PUC accepts every asset on the release and downloads
+ * $matchingAssets[0] — the first one GitHub's API returns, which is name-sorted.
+ * When the companion demo zip was attached to the v1.5.0 release it sorted ahead
+ * of blockendar.zip ('-' is 0x2D, '.' is 0x2E) and updates installed the demo
+ * plugin over Blockendar. The demo asset is also named so it sorts last, which
+ * protects installs still running the unfiltered 1.5.0 code.
+ */
+$blockendar_update_checker->getVcsApi()->enableReleaseAssets( '/^blockendar\.zip$/' );
 
 // Activation / deactivation hooks — registered before the plugin loads.
 register_activation_hook(

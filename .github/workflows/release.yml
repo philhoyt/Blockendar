@@ -34,8 +34,15 @@ jobs:
       - name: Create plugin zip
         run: npm run plugin-zip
 
+      # Renamed so it sorts AFTER blockendar.zip in GitHub's asset list.
+      # PUC takes assets[0] when no name filter is set, and installs still
+      # running the unfiltered 1.5.0 code would otherwise pull the demo zip.
+      # The zip's internal root folder stays blockendar-demo/, so the plugin
+      # still installs to wp-content/plugins/blockendar-demo/.
       - name: Create demo plugin zip
-        run: npm run plugin-zip:demo
+        run: |
+          npm run plugin-zip:demo
+          mv demo-plugin/blockendar-demo.zip demo-plugin/blockendar_demo.zip
 
       - name: Extract changelog
         run: |
@@ -47,6 +54,6 @@ jobs:
         with:
           files: |
             blockendar.zip
-            demo-plugin/blockendar-demo.zip
+            demo-plugin/blockendar_demo.zip
             readme.txt
           body_path: changelog_body.txt
