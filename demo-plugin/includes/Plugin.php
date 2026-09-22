@@ -34,6 +34,9 @@ class Plugin {
 	 * Attach hooks.
 	 */
 	public function boot(): void {
+		// enforce() must run before render_notice() so a refusal notice is
+		// available on the same page load.
+		add_action( 'admin_init', [ Dependency::class, 'enforce' ] );
 		add_action( 'admin_notices', [ Dependency::class, 'render_notice' ] );
 
 		// Priority 99: the main plugin registers its post type, taxonomies and

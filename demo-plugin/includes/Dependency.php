@@ -65,19 +65,45 @@ class Dependency {
 	}
 
 	/**
-	 * Refuse activation: record the reason and deactivate self.
+	 * Record why activation should be refused.
 	 *
-	 * Runs inside the activation hook, so the notice has to survive the redirect
-	 * that follows. A transient does; an admin_notices callback registered here
-	 * would not.
+	 * Deliberately does NOT deactivate here. activate_plugin() fires the
+	 * activation hook BEFORE it writes the active_plugins option, so calling
+	 * deactivate_plugins() at this point removes an entry that has not been
+	 * added yet — core then adds it and the plugin stays active. The actual
+	 * deactivation happens in enforce(), on the next admin_init.
+	 *
+	 * The notice has to survive the redirect that follows activation, so it goes
+	 * in a transient; an admin_notices callback registered here would not.
 	 */
 	public static function halt_activation(): void {
 		set_transient( self::NOTICE_KEY, self::failure_reason(), MINUTE_IN_SECONDS );
+	}
+
+	/**
+	 * Deactivate this plugin whenever Blockendar is missing or too old.
+	 *
+	 * Hooked to admin_init, which is late enough that active_plugins reflects
+	 * reality. This covers both a fresh activation without Blockendar and
+	 * Blockendar being deactivated later, leaving this plugin stranded.
+	 */
+	public static function enforce(): void {
+		if ( self::is_satisfied() ) {
+			return;
+		}
 
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		deactivate_plugins( plugin_basename( BLOCKENDAR_DEMO_FILE ) );
 
-		// Suppress the "Plugin activated." notice that would otherwise contradict us.
+		$basename = plugin_basename( BLOCKENDAR_DEMO_FILE );
+
+		if ( ! is_plugin_active( $basename ) ) {
+			return;
+		}
+
+		set_transient( self::NOTICE_KEY, self::failure_reason(), MINUTE_IN_SECONDS );
+		deactivate_plugins( $basename );
+
+		// Suppress the "Plugin activated." notice that would contradict us.
 		unset( $_GET['activate'] );
 	}
 

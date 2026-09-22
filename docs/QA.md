@@ -299,7 +299,8 @@ Applies to `blockendar-demo.zip`, released alongside the main plugin.
 
 | # | Test | Status | Notes |
 |---|------|--------|-------|
-| 12.1 | Activating the demo plugin with Blockendar inactive shows a notice and self-deactivates (no fatal) | 🔲 | |
+| 12.1 | Activating the demo plugin with Blockendar inactive shows a notice and self-deactivates (no fatal) | ✅ | Verified in Playground 2026-09-22. Deactivation happens on the next `admin_init`, not in the activation hook — `activate_plugin()` writes `active_plugins` *after* firing the hook, so deactivating there leaves the plugin active. |
+| 12.1b | Deactivating Blockendar while the demo plugin is active also self-deactivates the demo | ✅ | Same `admin_init` guard. |
 | 12.2 | Activating with Blockendar active seeds automatically | 🔲 | |
 | 12.3 | 31 events exist, all with start dates inside ±180 days of activation | 🔲 | |
 | 12.4 | All six tour pages render, each linking the other five | 🔲 | |
