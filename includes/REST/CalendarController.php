@@ -86,6 +86,10 @@ class CalendarController extends AbstractController {
 						'default' => 'json',
 						'enum'    => [ 'json', 'ics' ],
 					],
+					'download' => [
+						'type'    => 'boolean',
+						'default' => false,
+					],
 				],
 			]
 		);
@@ -125,7 +129,7 @@ class CalendarController extends AbstractController {
 		$rows = $this->index->get_events_in_range( $start, $end, $filters );
 
 		if ( 'ics' === $request->get_param( 'format' ) ) {
-			return $this->serve_ics( $rows );
+			return $this->serve_ics( $rows, $request );
 		}
 
 		$events = array_map( [ $this, 'format_for_fullcalendar' ], $rows );
@@ -303,19 +307,51 @@ class CalendarController extends AbstractController {
 	 *
 	 * @param object[] $rows Index rows.
 	 */
-	private function serve_ics( array $rows ): WP_REST_Response {
+	private function serve_ics( array $rows, WP_REST_Request $request ): WP_REST_Response {
 		$exporter = new Exporter();
 		$ics      = $exporter->generate_feed( $rows );
 
 		$response = new WP_REST_Response( $ics );
 		$response->header( 'Content-Type', 'text/calendar; charset=utf-8' );
-		$response->header( 'Content-Disposition', 'attachment; filename="blockendar-events.ics"' );
+
+		// A subscription is fetched by a calendar client, not saved by a person,
+		// so the feed is served inline unless a download was explicitly asked for.
+		$response->header(
+			'Content-Disposition',
+			$request->get_param( 'download' )
+				? 'attachment; filename="blockendar-events.ics"'
+				: 'inline'
+		);
+
+		$response->header( 'Cache-Control', $this->feed_cache_control( $request ) );
 
 		// Mark the response so rest_pre_serve_request() knows to emit the body
 		// verbatim rather than letting the server JSON-encode it.
 		$this->serving_ics = true;
 
 		return $response;
+	}
+
+	/**
+	 * Cache-Control value for a feed response.
+	 *
+	 * An open feed is the same for everyone and can sit in a shared cache. Any
+	 * response that needed a token or a login is specific to whoever asked for
+	 * it — and a token travels in the URL — so those must never be stored by an
+	 * intermediary and handed to the next caller.
+	 *
+	 * @param WP_REST_Request $request Current request.
+	 */
+	private function feed_cache_control( WP_REST_Request $request ): string {
+		$settings  = get_option( 'blockendar_settings', [] );
+		$is_public = ! isset( $settings['rest_public'] ) || (bool) $settings['rest_public'];
+		$has_token = '' !== (string) ( $request->get_param( 'token' ) ?? '' );
+
+		if ( $is_public && ! $has_token ) {
+			return 'public, max-age=3600';
+		}
+
+		return 'private, no-store';
 	}
 
 	/**
