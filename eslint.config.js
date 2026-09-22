@@ -12,7 +12,17 @@ const wpScriptsConfig = require( '@wordpress/scripts/config/eslint.config.cjs' )
 module.exports = [
 	// Vendored third-party code is not ours to lint.
 	{
-		ignores: [ 'lib/**', 'build/**', 'vendor/**', 'node_modules/**' ],
+		// plans/ is git-ignored scratch space and can hold vendored third-party
+		// sources; linting it added ~20 minutes to every run.
+		ignores: [
+			'lib/**',
+			'build/**',
+			'vendor/**',
+			'node_modules/**',
+			'plans/**',
+			'test-results/**',
+			'playwright-report/**',
+		],
 	},
 
 	...wpScriptsConfig,

@@ -4,3 +4,6 @@ vendor/
 
 # Vendored third-party library — not ours to restyle.
 lib/plugin-update-checker/
+
+# Local planning notes (git-ignored). Can hold vendored third-party sources.
+plans/
