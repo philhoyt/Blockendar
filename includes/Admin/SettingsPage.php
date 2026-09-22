@@ -36,6 +36,42 @@ class SettingsPage {
 		add_action( 'init', [ $this, 'register_setting' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue' ] );
 		add_action( 'rest_api_init', [ $this, 'register_rebuild_stats_endpoint' ] );
+		add_action( 'admin_notices', [ $this, 'maybe_show_truncation_notice' ] );
+	}
+
+	/**
+	 * Warn on the settings screen when the calendar feed was cut short.
+	 *
+	 * The feed itself says so in X-WR-CALDESC, but nobody reads a subscribed
+	 * calendar's description, so the site owner is told here as well.
+	 */
+	public function maybe_show_truncation_notice(): void {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			return;
+		}
+
+		$screen = get_current_screen();
+
+		if ( ! $screen || 'blockendar_event_page_' . self::MENU_SLUG !== $screen->id ) {
+			return;
+		}
+
+		$flag = get_transient( 'blockendar_ics_truncated' );
+
+		if ( ! is_array( $flag ) ) {
+			return;
+		}
+
+		printf(
+			'<div class="notice notice-warning"><p>%s</p></div>',
+			esc_html(
+				sprintf(
+					/* translators: %d: number of events the feed was limited to. */
+					__( 'The calendar subscription feed was cut short at %d events. Subscribers are not seeing everything. Narrow the subscription window, or raise the limit with the blockendar_ics_max_events filter.', 'blockendar' ),
+					(int) ( $flag['count'] ?? 0 )
+				)
+			)
+		);
 	}
 
 	/**

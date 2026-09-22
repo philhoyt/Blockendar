@@ -127,18 +127,21 @@ class CalendarController extends AbstractController {
 			return $end;
 		}
 
+		$ceiling = $is_ics ? $this->ics_max_events() : EventIndex::DEFAULT_MAX_PER_PAGE;
+
 		$filters = [
 			'venue_term_id' => $this->parse_id_list( $request->get_param( 'venue' ) ),
 			'type_term_id'  => $this->parse_id_list( $request->get_param( 'type' ) ),
 			'featured'      => $request->get_param( 'featured' ) ? rest_sanitize_boolean( $request->get_param( 'featured' ) ) : null,
-			'per_page'      => 500,
+			'per_page'      => $ceiling,
+			'max_per_page'  => $ceiling,
 			'page'          => 1,
 		];
 
 		$rows = $this->index->get_events_in_range( $start, $end, $filters );
 
-		if ( 'ics' === $request->get_param( 'format' ) ) {
-			return $this->serve_ics( $rows, $request );
+		if ( $is_ics ) {
+			return $this->serve_ics( $rows, $request, count( $rows ) >= $ceiling );
 		}
 
 		$events = array_map( [ $this, 'format_for_fullcalendar' ], $rows );
@@ -149,6 +152,52 @@ class CalendarController extends AbstractController {
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	/**
+	 * Maximum number of events a single feed response may carry.
+	 *
+	 * iCalendar has no pagination, so this is a hard ceiling rather than a page
+	 * size: everything past it is absent from the feed entirely.
+	 */
+	private function ics_max_events(): int {
+		/**
+		 * Filters the maximum number of events included in one iCalendar feed.
+		 *
+		 * Raising this raises peak memory and response time for the feed, since
+		 * every row is rendered into the response body at once.
+		 *
+		 * @param int $max Default ceiling, 2000 events.
+		 */
+		$max = (int) apply_filters( 'blockendar_ics_max_events', 2000 );
+
+		return max( 1, $max );
+	}
+
+	/**
+	 * Record that a feed response hit the ceiling.
+	 *
+	 * A calendar that is quietly missing its later events is worse than one
+	 * that says it was cut short, so this leaves a marker the settings screen
+	 * can surface. Written only on the truncating request, and only when no
+	 * marker is already set, so an open endpoint cannot be used to force
+	 * repeated writes.
+	 *
+	 * @param int $count Number of events actually returned.
+	 */
+	private function flag_truncation( int $count ): void {
+		if ( false !== get_transient( 'blockendar_ics_truncated' ) ) {
+			return;
+		}
+
+		set_transient(
+			'blockendar_ics_truncated',
+			[
+				'count' => $count,
+				'time'  => time(),
+			],
+			WEEK_IN_SECONDS
+		);
+	}
 
 	/**
 	 * The rolling window a subscribed feed covers when no range was requested.
@@ -353,9 +402,13 @@ class CalendarController extends AbstractController {
 	 *
 	 * @param object[] $rows Index rows.
 	 */
-	private function serve_ics( array $rows, WP_REST_Request $request ): WP_REST_Response {
+	private function serve_ics( array $rows, WP_REST_Request $request, bool $truncated = false ): WP_REST_Response {
+		if ( $truncated ) {
+			$this->flag_truncation( count( $rows ) );
+		}
+
 		$exporter = new Exporter();
-		$ics      = $exporter->generate_feed( $rows );
+		$ics      = $exporter->generate_feed( $rows, '', $truncated );
 
 		$response = new WP_REST_Response( $ics );
 		$response->header( 'Content-Type', 'text/calendar; charset=utf-8' );

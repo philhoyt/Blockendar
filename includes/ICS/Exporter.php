@@ -32,11 +32,12 @@ class Exporter {
 	/**
 	 * Generate an iCal feed string from an array of index rows.
 	 *
-	 * @param object[] $rows  Index rows joined with wp_posts.
-	 * @param string   $title Optional calendar title.
+	 * @param object[] $rows      Index rows joined with wp_posts.
+	 * @param string   $title     Optional calendar title.
+	 * @param bool     $truncated Whether the row set hit the feed's ceiling.
 	 * @return string Full VCALENDAR iCal content.
 	 */
-	public function generate_feed( array $rows, string $title = '' ): string {
+	public function generate_feed( array $rows, string $title = '', bool $truncated = false ): string {
 		if ( '' === $title ) {
 			$title = get_bloginfo( 'name' ) . ' Events';
 		}
@@ -64,6 +65,18 @@ class Exporter {
 		$lines[] = 'X-WR-TIMEZONE:UTC';
 		$lines[] = 'REFRESH-INTERVAL;VALUE=DURATION:' . $refresh;
 		$lines[] = 'X-PUBLISHED-TTL:' . $refresh;
+
+		// Say so in the feed itself when events were dropped. A subscriber whose
+		// calendar is quietly missing its later dates has no other way to tell.
+		if ( $truncated ) {
+			$lines[] = 'X-WR-CALDESC:' . $this->escape_text(
+				sprintf(
+					/* translators: %d: number of events included in the feed. */
+					__( 'This feed was truncated at %d events. Later events are not included.', 'blockendar' ),
+					count( $rows )
+				)
+			);
+		}
 
 		foreach ( $rows as $row ) {
 			$lines = array_merge( $lines, $this->build_vevent( $row ) );
