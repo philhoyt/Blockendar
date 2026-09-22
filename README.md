@@ -8,7 +8,8 @@ A block-native WordPress events plugin.
 
 - **Block-based event editor** — Date & time, recurrence, venue, cost, registration, and status managed through dedicated block editor sidebar panels
 - **Recurring events** — Full recurrence rule support (daily, weekly, monthly, yearly) with exceptions, custom additions, and a rolling horizon cron job
-- **Calendar View block** — Interactive FullCalendar-powered calendar with day, week, and month views; exposes a valid iCal feed
+- **Calendar View block** — Interactive FullCalendar-powered calendar with day, week, and month views; exposes a valid iCal feed and an opt-in subscribe button
+- **Calendar subscriptions** — A live `webcal://` feed people can subscribe to in Apple Calendar, Google Calendar, or Outlook; it rolls forward with the date rather than going stale
 - **Events Query block** — Flexible query block for custom event displays; shows individual occurrences of recurring events with correct dates and occurrence-aware links
 - **7 single-event blocks** — Date/time, venue, cost, status, countdown, map, add-to-calendar
 - **Custom database layer** — All date range queries run against a dedicated indexed table (`{prefix}blockendar_events`)
@@ -75,6 +76,35 @@ its own zip.
 - **CPT:** `blockendar_event` (authoring only — never queried by date via `WP_Query`)
 - **Taxonomies:** `event_type` (hierarchical), `event_tag` (flat), `event_venue` (hierarchical)
 - **DB tables:** `{prefix}blockendar_events` (occurrence index), `{prefix}blockendar_recurrence` (RRULE storage)
+
+### Calendar subscriptions
+
+The calendar feed is served from `GET /wp-json/blockendar/v1/calendar?format=ics`.
+The same URL with a `webcal://` scheme is what calendar apps expect; both forms
+are shown under **Events → Settings → REST API**.
+
+Requested without `start` and `end`, the feed returns a window relative to the
+moment of the request — 30 days back and 365 days ahead by default — so a
+subscription keeps moving instead of freezing on the range it was first fetched
+with. Both bounds are configurable in settings. The feed cannot show events
+further ahead than the recurrence horizon has generated.
+
+The subscribe button on the Calendar View block inherits that block's venue,
+type, and featured filters, so a filtered calendar hands out a matching feed. It
+is hidden whenever **Public REST endpoints** is turned off, because linking a
+private feed would mean publishing its token.
+
+Four filters are available:
+
+| Filter | Purpose |
+|--------|---------|
+| `blockendar_ics_window` | The `[ start, end ]` window a subscribed feed covers |
+| `blockendar_ics_max_events` | Ceiling on events in one feed (default 2000) |
+| `blockendar_ics_refresh_interval` | Refresh hint as an iCalendar duration (default `PT1H`) |
+| `blockendar_ics_calendar_name` | The calendar name shown in a subscriber app |
+
+iCalendar has no pagination, so events past the ceiling are simply absent. A feed
+that hits it says so in `X-WR-CALDESC` and raises a notice on the settings screen.
 
 ## Privacy
 
