@@ -167,12 +167,15 @@ class Content {
 				$this->event_card()
 			);
 
+		// query-filters saves <InnerBlocks.Content /> — no wrapper element — and
+		// its render.php emits the wrapping div server-side. Adding one here
+		// would double-wrap the block and fail validation in the editor.
 		return $this->intro(
 			'Filters, view switching and pagination',
 			'The filter blocks live inside an <strong>Events Query Filters</strong> wrapper, which also contains the query itself — that is how the filters know which query to narrow. Filtering happens through URL parameters, so it works with JavaScript disabled.'
 		)
 			. "\n\n" . '<!-- wp:blockendar/query-filters {"queryId":"tour"} -->' . "\n"
-			. '<div class="wp-block-blockendar-query-filters">' . "\n" . $inner . "\n" . '</div>' . "\n"
+			. $inner . "\n"
 			. '<!-- /wp:blockendar/query-filters -->';
 	}
 
