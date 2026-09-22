@@ -36,6 +36,12 @@ A block-native WordPress events plugin.
 The [Playground demo](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/philhoyt/Blockendar/main/_playground/blueprint.json)
 runs the plugin in your browser with no install.
 
+To preview the working tree instead — no Docker needed, it runs on php-wasm:
+
+```bash
+npm run playground   # http://127.0.0.1:9400
+```
+
 To get the same content on a site of your own, download `blockendar-demo.zip`
 from the [Releases page](https://github.com/philhoyt/Blockendar/releases) and
 install it alongside Blockendar. Activating it creates 31 events, 5 venues and a
