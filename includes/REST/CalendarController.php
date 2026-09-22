@@ -99,15 +99,24 @@ class CalendarController extends AbstractController {
 	 * GET /blockendar/v1/calendar
 	 */
 	public function get_calendar_feed( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		// Default window: current month ± some buffer. FullCalendar always sends start+end.
+		$is_ics = 'ics' === $request->get_param( 'format' );
+
+		// A subscribed client fetches the same URL forever, so the feed's default
+		// window has to be relative to the request rather than a fixed span, or
+		// the calendar silently stops moving. The JSON path keeps its own
+		// defaults: FullCalendar always sends start and end explicitly.
+		[ $default_start, $default_end ] = $is_ics
+			? $this->subscription_window()
+			: [ gmdate( 'Y-m-01 00:00:00' ), gmdate( 'Y-m-d 23:59:59', strtotime( 'last day of +1 month' ) ) ];
+
 		$start = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'start' ) ?? '' ),
-			gmdate( 'Y-m-01 00:00:00' )
+			$default_start
 		);
 
 		$end = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'end' ) ?? '' ),
-			gmdate( 'Y-m-d 23:59:59', strtotime( 'last day of +1 month' ) )
+			$default_end
 		);
 
 		if ( is_wp_error( $start ) ) {
@@ -140,6 +149,43 @@ class CalendarController extends AbstractController {
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	/**
+	 * The rolling window a subscribed feed covers when no range was requested.
+	 *
+	 * Computed in UTC, matching how the index stores datetimes, and snapped to
+	 * whole days so an all-day event sitting on either edge is not clipped by a
+	 * mid-day boundary.
+	 *
+	 * @return string[] Tuple of [ start, end ] as 'Y-m-d H:i:s' UTC strings.
+	 */
+	private function subscription_window(): array {
+		$settings = get_option( 'blockendar_settings', [] );
+		$past     = max( 0, min( 3650, (int) ( $settings['subscribe_past_days'] ?? 30 ) ) );
+		$future   = max( 1, min( 3650, (int) ( $settings['subscribe_future_days'] ?? 365 ) ) );
+
+		$now    = time();
+		$window = [
+			gmdate( 'Y-m-d 00:00:00', $now - ( $past * DAY_IN_SECONDS ) ),
+			gmdate( 'Y-m-d 23:59:59', $now + ( $future * DAY_IN_SECONDS ) ),
+		];
+
+		/**
+		 * Filters the rolling window used for a subscribed iCalendar feed.
+		 *
+		 * @param string[] $window Tuple of [ start, end ], 'Y-m-d H:i:s' in UTC.
+		 * @param int      $past   Configured days of history.
+		 * @param int      $future Configured days ahead.
+		 */
+		$filtered = array_values( (array) apply_filters( 'blockendar_ics_window', $window, $past, $future ) );
+
+		// A filter returning something unusable must not take the feed down.
+		if ( 2 !== count( $filtered ) ) {
+			return $window;
+		}
+
+		return [ (string) $filtered[0], (string) $filtered[1] ];
+	}
 
 	/**
 	 * Parse a comma-separated ID string into an array of positive integers.
