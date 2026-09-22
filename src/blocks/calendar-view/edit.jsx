@@ -79,6 +79,8 @@ export function Edit( { attributes, setAttributes } ) {
 		firstDay,
 		showSubscribe,
 		subscribeLabel,
+		subscribeIcal,
+		subscribeGoogle,
 	} = attributes;
 
 	const blockProps = useBlockProps( {
@@ -229,15 +231,56 @@ export function Edit( { attributes, setAttributes } ) {
 						/>
 
 						{ showSubscribe && (
-							<TextControl
-								label={ __( 'Button label', 'blockendar' ) }
-								value={ subscribeLabel }
-								placeholder={ __( 'Subscribe', 'blockendar' ) }
-								onChange={ ( val ) =>
-									setAttributes( { subscribeLabel: val } )
-								}
-								__nextHasNoMarginBottom
-							/>
+							<>
+								<ToggleControl
+									label={ __( 'iCalendar', 'blockendar' ) }
+									help={ __(
+										'Opens in Apple Calendar, Outlook, and most other calendar apps.',
+										'blockendar'
+									) }
+									checked={ subscribeIcal }
+									onChange={ ( val ) =>
+										setAttributes( {
+											subscribeIcal: val,
+										} )
+									}
+								/>
+
+								<ToggleControl
+									label={ __(
+										'Google Calendar',
+										'blockendar'
+									) }
+									help={ __(
+										'Google fetches the feed from its own servers, so this needs the site to be reachable over HTTPS.',
+										'blockendar'
+									) }
+									checked={ subscribeGoogle }
+									onChange={ ( val ) =>
+										setAttributes( {
+											subscribeGoogle: val,
+										} )
+									}
+								/>
+
+								<TextControl
+									label={ __(
+										'Label before the buttons',
+										'blockendar'
+									) }
+									value={ subscribeLabel }
+									placeholder={ __(
+										'Optional, e.g. Subscribe:',
+										'blockendar'
+									) }
+									onChange={ ( val ) =>
+										setAttributes( {
+											subscribeLabel: val,
+										} )
+									}
+									__nextHasNoMarginBottom
+								/>
+							</>
 						) }
 					</VStack>
 				</PanelBody>

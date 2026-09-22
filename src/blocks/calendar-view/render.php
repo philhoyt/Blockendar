@@ -74,36 +74,55 @@ foreach ( $data_attrs as $key => $value ) {
  * would need its token in this href, and that token is a bearer credential
  * that must never reach public markup.
  */
+$subscribe_ical   = ! empty( $attributes['subscribeIcal'] ?? true );
+$subscribe_google = ! empty( $attributes['subscribeGoogle'] ?? true );
+
 $show_subscribe = ! empty( $attributes['showSubscribe'] )
+	&& ( $subscribe_ical || $subscribe_google )
 	&& \Blockendar\ICS\FeedUrl::is_publicly_readable();
 
-$subscribe_url = '';
+$subscribe_filters = [
+	'venue_ids' => $venue_ids,
+	'type_ids'  => $type_ids,
+	'featured'  => ! empty( $attributes['featuredOnly'] ),
+];
 
-if ( $show_subscribe ) {
-	$subscribe_url = \Blockendar\ICS\FeedUrl::build(
-		[
-			'venue_ids' => $venue_ids,
-			'type_ids'  => $type_ids,
-			'featured'  => ! empty( $attributes['featuredOnly'] ),
-		],
-		true
-	);
-}
+/*
+ * The two services want opposite things. Apple and Outlook follow webcal://,
+ * which hands the link to a calendar app. Google rejects a webcal link in its
+ * own UI but requires one inside the cid parameter of its subscribe URL.
+ */
+$ical_url   = $show_subscribe ? \Blockendar\ICS\FeedUrl::build( $subscribe_filters, true ) : '';
+$google_url = $show_subscribe ? \Blockendar\ICS\FeedUrl::google_subscribe_url( $subscribe_filters ) : '';
 
 $subscribe_label = trim( (string) ( $attributes['subscribeLabel'] ?? '' ) );
-
-if ( '' === $subscribe_label ) {
-	$subscribe_label = __( 'Subscribe', 'blockendar' );
-}
 ?>
 <div <?php echo get_block_wrapper_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?><?php echo $data_attr_str; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above ?>>
 </div>
 <?php if ( $show_subscribe ) : ?>
-	<p class="blockendar-calendar-subscribe">
-		<a
-			class="blockendar-calendar-subscribe__link"
-			href="<?php echo esc_url( $subscribe_url, [ 'webcal', 'http', 'https' ] ); ?>">
-			<?php echo esc_html( $subscribe_label ); ?>
-		</a>
-	</p>
+	<div class="blockendar-calendar-subscribe">
+		<?php if ( '' !== $subscribe_label ) : ?>
+			<span class="blockendar-calendar-subscribe__label">
+				<?php echo esc_html( $subscribe_label ); ?>
+			</span>
+		<?php endif; ?>
+
+		<?php if ( $subscribe_ical ) : ?>
+			<a
+				class="blockendar-calendar-subscribe__link"
+				href="<?php echo esc_url( $ical_url, [ 'webcal', 'http', 'https' ] ); ?>">
+				<?php esc_html_e( 'iCalendar', 'blockendar' ); ?>
+			</a>
+		<?php endif; ?>
+
+		<?php if ( $subscribe_google ) : ?>
+			<a
+				class="blockendar-calendar-subscribe__link"
+				href="<?php echo esc_url( $google_url ); ?>"
+				target="_blank"
+				rel="noopener noreferrer">
+				<?php esc_html_e( 'Google Calendar', 'blockendar' ); ?>
+			</a>
+		<?php endif; ?>
+	</div>
 <?php endif; ?>

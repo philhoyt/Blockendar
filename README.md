@@ -89,10 +89,26 @@ subscription keeps moving instead of freezing on the range it was first fetched
 with. Both bounds are configurable in settings. The feed cannot show events
 further ahead than the recurrence horizon has generated.
 
-The subscribe button on the Calendar View block inherits that block's venue,
-type, and featured filters, so a filtered calendar hands out a matching feed. It
-is hidden whenever **Public REST endpoints** is turned off, because linking a
+The Calendar View block can show two subscribe buttons, each toggleable:
+**iCalendar** for Apple Calendar, Outlook and most other apps, and **Google
+Calendar** for a one-click add. Both inherit the block's venue, type and
+featured filters, so a filtered calendar hands out a matching feed. Both are
+hidden whenever **Public REST endpoints** is turned off, because linking a
 private feed would mean publishing its token.
+
+The two services want opposite things, which is why the settings screen offers
+both URL forms:
+
+| Destination | Scheme | Notes |
+|-------------|--------|-------|
+| Apple Calendar, Outlook | `webcal://` | Handed to the OS, which opens a calendar app |
+| Google, pasted into **From URL** | `https://` | Google rejects a `webcal://` link here |
+| Google, one-click button | `https://www.google.com/calendar/render?cid=` + encoded `webcal://` URL | Google rejects an `https://` cid |
+
+Google fetches the feed from its own servers, so a Google subscription needs the
+site reachable over HTTPS, and needs `robots.txt` not to block the feed path.
+Google also polls on its own schedule, often every 8-24 hours, regardless of the
+`REFRESH-INTERVAL` the feed advertises.
 
 Four filters are available:
 

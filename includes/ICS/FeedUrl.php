@@ -65,7 +65,10 @@ class FeedUrl {
 			$token    = (string) ( $settings['rest_feed_token'] ?? '' );
 
 			if ( '' !== $token ) {
-				$args['token'] = $token;
+				// add_query_arg() does not encode values, and the token is
+				// whatever someone typed into the settings field. An ampersand
+				// or a space in it would otherwise split the query string.
+				$args['token'] = rawurlencode( $token );
 			}
 		}
 
@@ -76,6 +79,29 @@ class FeedUrl {
 		}
 
 		return $url;
+	}
+
+	/**
+	 * Build a one-click "subscribe in Google Calendar" URL.
+	 *
+	 * Google's cid parameter wants the webcal:// form. Handing it an https://
+	 * URL is rejected, which is the opposite of what the Feed URL field on the
+	 * settings screen is for — that one is pasted into Google's own
+	 * "From URL" box, which wants https:// and rejects webcal://.
+	 *
+	 * The value is percent-encoded. Most published examples do not bother,
+	 * because they point at a bare .ics path with no query string; ours always
+	 * carries at least format=ics, and an unencoded ampersand would end the cid
+	 * early and silently drop every filter after it.
+	 *
+	 * Google fetches the feed itself, so the site must be reachable over HTTPS
+	 * and must not block the path in robots.txt.
+	 *
+	 * @param array $filters Optional venue_ids / type_ids / featured filters.
+	 * @return string The Google Calendar subscribe URL.
+	 */
+	public static function google_subscribe_url( array $filters = [] ): string {
+		return 'https://www.google.com/calendar/render?cid=' . rawurlencode( self::build( $filters, true ) );
 	}
 
 	/**

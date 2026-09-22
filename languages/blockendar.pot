@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-22T19:10:51+00:00\n"
+"POT-Creation-Date: 2026-09-22T19:47:17+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: blockendar\n"
@@ -466,7 +466,7 @@ msgid "New Venue Name"
 msgstr ""
 
 #: includes/Taxonomy/Venue.php:51
-#: src/blocks/calendar-view/edit.jsx:309
+#: src/blocks/calendar-view/edit.jsx:352
 msgid "Venues"
 msgstr ""
 
@@ -477,14 +477,18 @@ msgid "Add to Calendar"
 msgstr ""
 
 #: src/blocks/add-to-calendar/render.php:94
+#: src/blocks/calendar-view/render.php:124
 #: src/blocks/add-to-calendar/edit.jsx:40
 #: src/blocks/add-to-calendar/edit.jsx:87
+#: src/blocks/calendar-view/edit.jsx:250
 msgid "Google Calendar"
 msgstr ""
 
 #: src/blocks/add-to-calendar/render.php:103
+#: src/blocks/calendar-view/render.php:114
 #: src/blocks/add-to-calendar/edit.jsx:48
 #: src/blocks/add-to-calendar/edit.jsx:94
+#: src/blocks/calendar-view/edit.jsx:236
 msgid "iCalendar"
 msgstr ""
 
@@ -498,12 +502,6 @@ msgstr ""
 #: src/blocks/add-to-calendar/edit.jsx:64
 #: src/blocks/add-to-calendar/edit.jsx:108
 msgid "Outlook Live"
-msgstr ""
-
-#: src/blocks/calendar-view/render.php:96
-#: src/blocks/calendar-view/edit.jsx:215
-#: src/blocks/calendar-view/edit.jsx:235
-msgid "Subscribe"
 msgstr ""
 
 #: src/blocks/event-cost/render.php:71
@@ -638,7 +636,7 @@ msgstr ""
 #: src/blocks/filter-event-type/render.php:211
 #: src/blocks/filter-venue/render.php:196
 #: src/admin/sections/ImportSection.jsx:170
-#: src/admin/sections/RestApiSection.jsx:202
+#: src/admin/sections/RestApiSection.jsx:204
 msgid "Clear"
 msgstr ""
 
@@ -694,7 +692,7 @@ msgstr ""
 
 #: src/admin/sections/CalendarSection.jsx:15
 #: src/blocks/calendar-view/edit.jsx:25
-#: src/blocks/calendar-view/edit.jsx:284
+#: src/blocks/calendar-view/edit.jsx:327
 #: src/editor/DateTimePanel.jsx:205
 msgid "Sunday"
 msgstr ""
@@ -728,7 +726,7 @@ msgid "Calendar Display"
 msgstr ""
 
 #: src/admin/sections/CalendarSection.jsx:32
-#: src/blocks/calendar-view/edit.jsx:189
+#: src/blocks/calendar-view/edit.jsx:191
 msgid "Default view"
 msgstr ""
 
@@ -737,7 +735,7 @@ msgid "The view shown when a visitor first loads the calendar block."
 msgstr ""
 
 #: src/admin/sections/CalendarSection.jsx:44
-#: src/blocks/calendar-view/edit.jsx:201
+#: src/blocks/calendar-view/edit.jsx:203
 msgid "First day of week"
 msgstr ""
 
@@ -1015,76 +1013,76 @@ msgstr ""
 msgid "Generation strategy"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:63
+#: src/admin/sections/RestApiSection.jsx:64
 msgid "Copied"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:63
+#: src/admin/sections/RestApiSection.jsx:65
 msgid "Copy"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:87
+#: src/admin/sections/RestApiSection.jsx:89
 #: src/admin/SettingsApp.jsx:35
 msgid "REST API"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:90
+#: src/admin/sections/RestApiSection.jsx:92
 msgid "Public REST endpoints"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:102
+#: src/admin/sections/RestApiSection.jsx:104
 msgid "Calendar subscription"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:106
+#: src/admin/sections/RestApiSection.jsx:108
 msgid "Subscription link (webcal)"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:108
+#: src/admin/sections/RestApiSection.jsx:110
 msgid "Share this to let people subscribe. Most desktop and mobile calendar apps open a webcal link directly."
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:115
+#: src/admin/sections/RestApiSection.jsx:117
 msgid "Feed URL (https)"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:117
+#: src/admin/sections/RestApiSection.jsx:119
 msgid "The same feed over https. Use this for Google Calendar, which asks for an https URL rather than a webcal link."
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:124
+#: src/admin/sections/RestApiSection.jsx:126
 msgid "Include past events for"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:132
+#: src/admin/sections/RestApiSection.jsx:134
 msgid "Days of history the subscription includes. Keeps recently finished events visible in a subscriber calendar."
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:140
+#: src/admin/sections/RestApiSection.jsx:142
 msgid "Include upcoming events for"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:150
+#: src/admin/sections/RestApiSection.jsx:152
 msgid "Days ahead the subscription covers. The feed cannot show events further out than the recurring event horizon has generated."
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:161
+#: src/admin/sections/RestApiSection.jsx:163
 msgid "Calendar feed token (optional)"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:183
+#: src/admin/sections/RestApiSection.jsx:185
 msgid "Hide"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:184
+#: src/admin/sections/RestApiSection.jsx:186
 msgid "Show"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:193
+#: src/admin/sections/RestApiSection.jsx:195
 msgid "Generate"
 msgstr ""
 
-#: src/admin/sections/RestApiSection.jsx:209
+#: src/admin/sections/RestApiSection.jsx:211
 msgid "The REST API is public, so this token is not currently required to read the feed."
 msgstr ""
 
@@ -1113,7 +1111,6 @@ msgid "Save Settings"
 msgstr ""
 
 #: src/blocks/add-to-calendar/edit.jsx:28
-#: src/blocks/calendar-view/edit.jsx:233
 #: src/blocks/event-cost/edit.jsx:136
 msgid "Button label"
 msgstr ""
@@ -1134,75 +1131,95 @@ msgstr ""
 msgid "List"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:116
+#: src/blocks/calendar-view/edit.jsx:118
 msgid "Filter"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:124
+#: src/blocks/calendar-view/edit.jsx:126
 msgid "Event type"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:132
+#: src/blocks/calendar-view/edit.jsx:134
 msgid "No event types found."
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:145
+#: src/blocks/calendar-view/edit.jsx:147
 msgid "Venue"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:153
+#: src/blocks/calendar-view/edit.jsx:155
 msgid "No venues found."
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:161
+#: src/blocks/calendar-view/edit.jsx:163
 msgid "Featured events only"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:170
+#: src/blocks/calendar-view/edit.jsx:172
 #: src/blocks/event-cost/edit.jsx:111
 #: src/blocks/event-datetime/edit.jsx:113
 #: src/blocks/event-venue/edit.jsx:62
 msgid "Display"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:176
+#: src/blocks/calendar-view/edit.jsx:178
 msgid "Enabled views"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:220
+#: src/blocks/calendar-view/edit.jsx:217
+msgid "Subscribe"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:222
 msgid "Show subscribe button"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:221
+#: src/blocks/calendar-view/edit.jsx:223
 msgid "Adds a link that opens this calendar in a visitor calendar app, carrying the filters set above. The button is hidden on the front end while public REST access is turned off in Blockendar settings, because a private feed cannot be linked without exposing its token."
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:250
+#: src/blocks/calendar-view/edit.jsx:237
+msgid "Opens in Apple Calendar, Outlook, and most other calendar apps."
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:254
+msgid "Google fetches the feed from its own servers, so this needs the site to be reachable over HTTPS."
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:267
+msgid "Label before the buttons"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:272
+msgid "Optional, e.g. Subscribe:"
+msgstr ""
+
+#: src/blocks/calendar-view/edit.jsx:293
 msgid "Event Calendar"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:257
+#: src/blocks/calendar-view/edit.jsx:300
 msgid "Views"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:279
+#: src/blocks/calendar-view/edit.jsx:322
 msgid "First day"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:291
+#: src/blocks/calendar-view/edit.jsx:334
 msgid "Event types"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:295
-#: src/blocks/calendar-view/edit.jsx:313
+#: src/blocks/calendar-view/edit.jsx:338
+#: src/blocks/calendar-view/edit.jsx:356
 msgid "All"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:327
+#: src/blocks/calendar-view/edit.jsx:370
 msgid "Featured only"
 msgstr ""
 
-#: src/blocks/calendar-view/edit.jsx:334
+#: src/blocks/calendar-view/edit.jsx:377
 msgid "The interactive calendar renders on the frontend."
 msgstr ""
 

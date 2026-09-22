@@ -24,13 +24,15 @@ class FeedUrlTest extends TestCase {
 		Monkey\Functions\when( 'rest_url' )->justReturn( self::BASE );
 		Monkey\Functions\when( 'get_option' )->justReturn( [] );
 
-		// Stand-in for add_query_arg that appends in the given order.
+		// Stand-in for add_query_arg. Like the real thing, it does not encode
+		// values — verified against WordPress 7.1.2 — so callers stay
+		// responsible for encoding anything that needs it.
 		Monkey\Functions\when( 'add_query_arg' )->alias(
 			function ( $args, $url ) {
 				$pairs = [];
 
 				foreach ( $args as $key => $value ) {
-					$pairs[] = rawurlencode( (string) $key ) . '=' . rawurlencode( (string) $value );
+					$pairs[] = $key . '=' . $value;
 				}
 
 				return $url . '?' . implode( '&', $pairs );
@@ -64,10 +66,10 @@ class FeedUrlTest extends TestCase {
 		);
 
 		// parse_id_list() splits on commas; venue[0]=12 would match nothing.
-		$this->assertStringContainsString( 'venue=12%2C7', $url );
-		$this->assertStringContainsString( 'type=5%2C9', $url );
+		$this->assertStringContainsString( 'venue=12,7', $url );
+		$this->assertStringContainsString( 'type=5,9', $url );
 		$this->assertStringContainsString( 'featured=1', $url );
-		$this->assertStringNotContainsString( 'venue%5B0%5D', $url );
+		$this->assertStringNotContainsString( 'venue[0]', $url );
 	}
 
 	public function test_empty_filters_are_omitted_entirely(): void {
@@ -111,6 +113,43 @@ class FeedUrlTest extends TestCase {
 		Monkey\Functions\when( 'get_option' )->justReturn( [ 'rest_feed_token' => '' ] );
 
 		$this->assertStringNotContainsString( 'token', FeedUrl::build( [], false, true ) );
+	}
+
+	/**
+	 * Google's cid wants the webcal:// form — an https:// cid is rejected —
+	 * and the value has to be encoded or the first ampersand ends the
+	 * parameter and every filter after it is silently dropped.
+	 */
+	public function test_the_google_subscribe_url_carries_an_encoded_webcal_cid(): void {
+		$url = FeedUrl::google_subscribe_url(
+			[
+				'venue_ids' => [ 12, 7 ],
+				'type_ids'  => [ 5 ],
+			]
+		);
+
+		$this->assertStringStartsWith( 'https://www.google.com/calendar/render?cid=', $url );
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url
+		parse_str( (string) parse_url( $url, PHP_URL_QUERY ), $query );
+
+		$this->assertSame(
+			[ 'cid' ],
+			array_keys( $query ),
+			'Filters leaked out of the cid into the Google URL, so they would be lost.'
+		);
+
+		$this->assertStringStartsWith( 'webcal://', $query['cid'] );
+		$this->assertStringContainsString( 'venue=12,7', $query['cid'] );
+		$this->assertStringContainsString( 'type=5', $query['cid'] );
+	}
+
+	public function test_the_google_subscribe_url_never_carries_the_token(): void {
+		Monkey\Functions\when( 'get_option' )->justReturn(
+			[ 'rest_feed_token' => 'SECRET' ]
+		);
+
+		$this->assertStringNotContainsString( 'SECRET', FeedUrl::google_subscribe_url() );
 	}
 
 	public function test_public_readability_follows_the_rest_public_setting(): void {

@@ -229,7 +229,15 @@
 }
 
 .blockendar-calendar-subscribe {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
 	margin: 1rem 0 0;
+}
+
+.blockendar-calendar-subscribe__label {
+	font-size: 0.875rem;
 }
 
 .blockendar-calendar-subscribe__link {

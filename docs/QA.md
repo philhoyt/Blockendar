@@ -295,7 +295,9 @@ particular wants the `https://` form rather than the `webcal://` link.
 | 10a.3 | Events appear at the correct local times in both | 🔲 | |
 | 10a.4 | Editing an event updates it in a subscribed client, rather than adding a duplicate | 🔲 | Non-recurring events; UID is stable, SEQUENCE rises |
 | 10a.5 | An event added after subscribing shows up on the next refresh | 🔲 | Clients poll on their own schedule, often 8-24h |
-| 10a.6 | The subscribe button carries the block's venue/type filters | 🔲 | |
+| 10a.6 | The subscribe buttons carry the block's venue/type filters | 🔲 | |
+| 10a.9 | The front-end **Google Calendar** button adds the calendar in one click | 🔲 | Needs a logged-in Google account |
+| 10a.10 | The front-end **iCalendar** button opens the OS calendar app | 🔲 | |
 | 10a.7 | With **Public REST endpoints** off, no subscribe button renders and the token is absent from page source | 🔲 | Covered by E2E, worth confirming by eye |
 | 10a.8 | A feed at the event ceiling shows the truncation notice on the settings screen | 🔲 | |
 

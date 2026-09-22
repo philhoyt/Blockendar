@@ -66,6 +66,14 @@
 		"subscribeLabel": {
 			"type": "string",
 			"default": ""
+		},
+		"subscribeIcal": {
+			"type": "boolean",
+			"default": true
+		},
+		"subscribeGoogle": {
+			"type": "boolean",
+			"default": true
 		}
 	},
 	"render": "file:./render.php",
