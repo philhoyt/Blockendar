@@ -227,3 +227,22 @@
 		padding: 0;
 	}
 }
+
+.blockendar-calendar-subscribe {
+	margin: 1rem 0 0;
+}
+
+.blockendar-calendar-subscribe__link {
+	display: inline-block;
+	padding: 0.5rem 1rem;
+	border: 1px solid currentcolor;
+	border-radius: 4px;
+	text-decoration: none;
+	font-size: 0.875rem;
+	line-height: 1.4;
+}
+
+.blockendar-calendar-subscribe__link:hover,
+.blockendar-calendar-subscribe__link:focus {
+	background: rgba(0, 0, 0, 0.05);
+}

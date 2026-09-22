@@ -58,6 +58,14 @@
 		"firstDay": {
 			"type": "integer",
 			"default": 0
+		},
+		"showSubscribe": {
+			"type": "boolean",
+			"default": false
+		},
+		"subscribeLabel": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"render": "file:./render.php",

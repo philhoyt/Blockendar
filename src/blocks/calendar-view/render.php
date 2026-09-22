@@ -65,6 +65,45 @@ $data_attr_str = '';
 foreach ( $data_attrs as $key => $value ) {
 	$data_attr_str .= ' ' . $key . '="' . esc_attr( $value ) . '"';
 }
+
+/*
+ * Subscribe link. Built from the filters resolved above, so a calendar scoped
+ * to a taxonomy archive hands out a feed scoped the same way.
+ *
+ * Suppressed entirely unless the feed is publicly readable: a private feed
+ * would need its token in this href, and that token is a bearer credential
+ * that must never reach public markup.
+ */
+$show_subscribe = ! empty( $attributes['showSubscribe'] )
+	&& \Blockendar\ICS\FeedUrl::is_publicly_readable();
+
+$subscribe_url = '';
+
+if ( $show_subscribe ) {
+	$subscribe_url = \Blockendar\ICS\FeedUrl::build(
+		[
+			'venue_ids' => $venue_ids,
+			'type_ids'  => $type_ids,
+			'featured'  => ! empty( $attributes['featuredOnly'] ),
+		],
+		true
+	);
+}
+
+$subscribe_label = trim( (string) ( $attributes['subscribeLabel'] ?? '' ) );
+
+if ( '' === $subscribe_label ) {
+	$subscribe_label = __( 'Subscribe', 'blockendar' );
+}
 ?>
 <div <?php echo get_block_wrapper_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?><?php echo $data_attr_str; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above ?>>
 </div>
+<?php if ( $show_subscribe ) : ?>
+	<p class="blockendar-calendar-subscribe">
+		<a
+			class="blockendar-calendar-subscribe__link"
+			href="<?php echo esc_url( $subscribe_url, [ 'webcal', 'http', 'https' ] ); ?>">
+			<?php echo esc_html( $subscribe_label ); ?>
+		</a>
+	</p>
+<?php endif; ?>
