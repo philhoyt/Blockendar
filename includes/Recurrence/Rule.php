@@ -180,4 +180,30 @@ class Rule {
 			)
 		);
 	}
+
+	/**
+	 * Render this rule back into the shape RuleRepository::upsert() stores.
+	 *
+	 * Casting a Rule with (array) does not round-trip: the constructor reads
+	 * `interval_val` but exposes `$interval`, and the list properties are
+	 * arrays while storage holds comma-separated strings. Feeding a raw cast
+	 * back into upsert() silently reset the interval and wiped byday,
+	 * bymonthday and bysetpos, and threw on a rule that had an until date.
+	 *
+	 * @return array Data keyed as upsert() expects.
+	 */
+	public function to_db_array(): array {
+		return [
+			'post_id'      => $this->post_id,
+			'frequency'    => $this->frequency,
+			'interval_val' => $this->interval,
+			'byday'        => implode( ',', $this->byday ),
+			'bymonthday'   => implode( ',', $this->bymonthday ),
+			'bysetpos'     => implode( ',', $this->bysetpos ),
+			'until_date'   => $this->until_date?->format( 'Y-m-d' ),
+			'count'        => $this->count,
+			'exceptions'   => $this->exceptions,
+			'additions'    => $this->additions,
+		];
+	}
 }

@@ -54,7 +54,7 @@ class RuleRepository {
 		$row = [
 			'post_id'      => $post_id,
 			'frequency'    => sanitize_text_field( $data['frequency'] ?? 'weekly' ),
-			'interval_val' => max( 1, (int) ( $data['interval_val'] ?? 1 ) ),
+			'interval_val' => max( 1, (int) ( $data['interval_val'] ?? $data['interval'] ?? 1 ) ),
 			'byday'        => $this->sanitize_csv( $data['byday'] ?? null, Rule::WEEKDAYS ),
 			'bymonthday'   => $this->sanitize_int_csv( $data['bymonthday'] ?? null, -31, 31 ),
 			'bysetpos'     => $this->sanitize_int_csv( $data['bysetpos'] ?? null, -366, 366 ),
@@ -122,7 +122,7 @@ class RuleRepository {
 		return $this->upsert(
 			$post_id,
 			array_merge(
-				(array) $rule,
+				$rule->to_db_array(),
 				[
 					'exceptions' => $exceptions,
 				]
@@ -153,7 +153,7 @@ class RuleRepository {
 		return $this->upsert(
 			$post_id,
 			array_merge(
-				(array) $rule,
+				$rule->to_db_array(),
 				[
 					'additions' => $additions,
 				]
@@ -165,30 +165,62 @@ class RuleRepository {
 	// Sanitizers
 	// -------------------------------------------------------------------------
 
+	/**
+	 * Coerce a list-ish value into a comma-separated string.
+	 *
+	 * upsert() is public and its list fields are stored as CSV, but callers
+	 * reasonably hand over arrays — Rule exposes them that way. A bare
+	 * (string) cast on an array yields the literal 'Array', which then fails
+	 * every allowlist and silently erased the stored rule.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	private function to_csv( mixed $value ): ?string {
+		if ( is_array( $value ) ) {
+			return implode( ',', array_map( 'strval', $value ) );
+		}
+
+		if ( null === $value || ! is_scalar( $value ) ) {
+			return null;
+		}
+
+		return (string) $value;
+	}
+
 	private function sanitize_csv( mixed $value, array $allowlist ): ?string {
+		$value = $this->to_csv( $value );
+
 		if ( null === $value || '' === $value ) {
 			return null;
 		}
 
-		$parts   = array_map( 'trim', explode( ',', (string) $value ) );
+		$parts   = array_map( 'trim', explode( ',', $value ) );
 		$allowed = array_filter( $parts, fn( $v ) => in_array( $v, $allowlist, true ) );
 
 		return ! empty( $allowed ) ? implode( ',', $allowed ) : null;
 	}
 
 	private function sanitize_int_csv( mixed $value, int $min, int $max ): ?string {
+		$value = $this->to_csv( $value );
+
 		if ( null === $value || '' === $value ) {
 			return null;
 		}
 
-		$parts   = array_map( 'intval', explode( ',', (string) $value ) );
+		$parts   = array_map( 'intval', explode( ',', $value ) );
 		$allowed = array_filter( $parts, fn( $v ) => $v >= $min && $v <= $max && 0 !== $v );
 
 		return ! empty( $allowed ) ? implode( ',', $allowed ) : null;
 	}
 
 	private function sanitize_date( mixed $value ): ?string {
-		if ( null === $value || '' === $value ) {
+		// Rule exposes until_date as a DateTimeImmutable, which has no string
+		// cast; reaching (string) on one throws rather than storing a date.
+		if ( $value instanceof \DateTimeInterface ) {
+			return $value->format( 'Y-m-d' );
+		}
+
+		if ( null === $value || '' === $value || ! is_scalar( $value ) ) {
 			return null;
 		}
 
