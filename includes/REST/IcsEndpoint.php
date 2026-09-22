@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Blockendar\CPT\EventPostType;
+use Blockendar\ICS\Exporter;
 
 /**
  * Serves .ics (iCalendar) files for individual events.
@@ -80,85 +81,33 @@ class IcsEndpoint {
 	 * @param \WP_REST_Request $request
 	 */
 	public function serve_ics( \WP_REST_Request $request ): void {
-		$post_id = $request->get_param( 'id' );
+		$post_id = (int) $request->get_param( 'id' );
 		$post    = get_post( $post_id );
 
-		if ( ! $post || $post->post_type !== EventPostType::POST_TYPE || $post->post_status !== 'publish' ) {
+		if ( ! $post || $post->post_type !== EventPostType::POST_TYPE || 'publish' !== $post->post_status ) {
 			wp_die( esc_html__( 'Event not found.', 'blockendar' ), 404 );
 		}
 
-		$start_date = get_post_meta( $post_id, 'blockendar_start_date', true );
-		if ( ! $start_date ) {
+		/*
+		 * Built by the same Exporter the feed uses. It previously assembled its
+		 * own VEVENT, which gave the same event a different UID here than in the
+		 * feed — a client holding both saw two unrelated events — and skipped
+		 * line folding, venue, status and revision properties.
+		 */
+		$ics = ( new Exporter() )->generate_single( $post_id );
+
+		if ( null === $ics ) {
 			wp_die( esc_html__( 'Event has no date.', 'blockendar' ), 404 );
 		}
 
-		$end_date   = get_post_meta( $post_id, 'blockendar_end_date', true ) ?: $start_date;
-		$start_time = get_post_meta( $post_id, 'blockendar_start_time', true ) ?: '00:00:00';
-		$end_time   = get_post_meta( $post_id, 'blockendar_end_time', true ) ?: $start_time;
-		$all_day    = (bool) get_post_meta( $post_id, 'blockendar_all_day', true );
-		$ongoing    = (bool) get_post_meta( $post_id, 'blockendar_ongoing', true );
-		$tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
-		$title      = get_the_title( $post_id );
-		$url        = get_permalink( $post_id );
-		$uid        = $post_id . '@' . wp_parse_url( home_url(), PHP_URL_HOST );
-
-		$fmt = function ( string $date, string $time ) use ( $tz_str, $all_day ): string {
-			if ( $all_day ) {
-				return str_replace( '-', '', $date );
-			}
-			try {
-				$dt = new \DateTimeImmutable( "$date $time", new \DateTimeZone( $tz_str ) );
-				return $dt->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'Ymd\THis\Z' );
-			} catch ( \Exception ) {
-				return str_replace( '-', '', $date );
-			}
-		};
-
-		$dtstart = $fmt( $start_date, $start_time );
-		$dtend   = $fmt( $end_date, $end_time );
-		$now     = ( new \DateTimeImmutable( 'now', new \DateTimeZone( 'UTC' ) ) )->format( 'Ymd\THis\Z' );
-		$slug    = get_post_field( 'post_name', $post_id );
-
-		$lines = [
-			'BEGIN:VCALENDAR',
-			'VERSION:2.0',
-			'PRODID:-//Blockendar//Blockendar//EN',
-			'CALSCALE:GREGORIAN',
-			'METHOD:PUBLISH',
-			'BEGIN:VEVENT',
-			"UID:$uid",
-			"DTSTAMP:$now",
-			$all_day ? "DTSTART;VALUE=DATE:$dtstart" : "DTSTART:$dtstart",
-			// RFC 5545 permits DTSTART without DTEND; ongoing events have no end date.
-			$ongoing ? null : ( $all_day ? "DTEND;VALUE=DATE:$dtend" : "DTEND:$dtend" ),
-			'SUMMARY:' . $this->escape_ical( $title ),
-			'URL:' . $this->escape_ical( $url ),
-			'END:VEVENT',
-			'END:VCALENDAR',
-		];
+		$slug = get_post_field( 'post_name', $post_id );
 
 		header( 'Content-Type: text/calendar; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $slug ) . '.ics"' );
 		header( 'Cache-Control: no-cache, must-revalidate' );
 
-		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo implode( "\r\n", array_filter( $lines, 'is_string' ) );
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- iCalendar body, escaped by Exporter per RFC 5545.
+		echo $ics;
 		exit;
-	}
-
-	/**
-	 * Escape special iCalendar characters.
-	 *
-	 * CR is normalised to \n first: a raw CR would end the content line early
-	 * and let the remainder be parsed as additional iCalendar properties.
-	 */
-	private function escape_ical( string $value ): string {
-		$value = str_replace( [ "\r\n", "\r" ], "\n", $value );
-
-		return str_replace(
-			[ '\\', ',', ';', "\n" ],
-			[ '\\\\', '\\,', '\\;', '\\n' ],
-			$value
-		);
 	}
 }
