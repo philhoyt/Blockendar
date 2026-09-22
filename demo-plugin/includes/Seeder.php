@@ -76,35 +76,41 @@ class Seeder {
 			'settings_keys' => [],
 		];
 
-		$type_ids  = $this->seed_event_types( $state );
-		$venue_ids = $this->seed_venues( $state );
-
 		$created = 0;
+		$pages   = 0;
 
-		foreach ( $this->event_fixtures() as $fixture ) {
-			$post_id = $this->create_event( $fixture, $type_ids, $venue_ids, $state );
+		// Whatever happens, record what was created. A seed that dies part-way
+		// through would otherwise leave orphaned events and terms that reset()
+		// has no way to find.
+		try {
+			$type_ids  = $this->seed_event_types( $state );
+			$venue_ids = $this->seed_venues( $state );
 
-			if ( $post_id ) {
+			foreach ( $this->event_fixtures() as $fixture ) {
+				$post_id = $this->create_event( $fixture, $type_ids, $venue_ids, $state );
+
+				if ( $post_id ) {
+					++$created;
+				}
+			}
+
+			foreach ( Fixtures::recurring() as $series ) {
+				$post_id = $this->create_event( $series['event'], $type_ids, $venue_ids, $state );
+
+				if ( ! $post_id ) {
+					continue;
+				}
+
+				$this->create_recurrence( $post_id, $series['rule'] );
 				++$created;
 			}
+
+			$state['settings_keys'] = $this->seed_settings();
+
+			$pages = ( new Pages() )->create( $state );
+		} finally {
+			update_option( Plugin::STATE_OPTION, $state, false );
 		}
-
-		foreach ( Fixtures::recurring() as $series ) {
-			$post_id = $this->create_event( $series['event'], $type_ids, $venue_ids, $state );
-
-			if ( ! $post_id ) {
-				continue;
-			}
-
-			$this->create_recurrence( $post_id, $series['rule'] );
-			++$created;
-		}
-
-		$state['settings_keys'] = $this->seed_settings();
-
-		$pages = ( new Pages() )->create( $state );
-
-		update_option( Plugin::STATE_OPTION, $state, false );
 
 		flush_rewrite_rules();
 
@@ -365,7 +371,10 @@ class Seeder {
 		$post_id = (int) $post_id;
 		$all_day = ! empty( $fixture['all_day'] );
 		$start   = $this->valid_date( $fixture['start_date'] ?? '' );
-		$end     = $this->valid_date( $fixture['end_date'] ?? '' ) ?: $start;
+
+		// A missing end date means a single-day event, not "today".
+		$end_raw = (string) ( $fixture['end_date'] ?? '' );
+		$end     = '' === $end_raw ? $start : $this->valid_date( $end_raw );
 
 		$meta = [
 			'blockendar_start_date'         => $start,
