@@ -55,21 +55,15 @@ class Exporter {
 
 		$refresh = $this->refresh_interval();
 
-		$lines   = [];
-		$lines[] = 'BEGIN:VCALENDAR';
-		$lines[] = 'VERSION:2.0';
-		$lines[] = 'PRODID:-//Blockendar//Blockendar Events//EN';
-		$lines[] = 'CALSCALE:GREGORIAN';
-		$lines[] = 'METHOD:PUBLISH';
-		$lines[] = 'X-WR-CALNAME:' . $this->escape_text( $title );
-		$lines[] = 'X-WR-TIMEZONE:UTC';
-		$lines[] = 'REFRESH-INTERVAL;VALUE=DURATION:' . $refresh;
-		$lines[] = 'X-PUBLISHED-TTL:' . $refresh;
+		$header   = [];
+		$header[] = 'X-WR-CALNAME:' . $this->escape_text( $title );
+		$header[] = 'REFRESH-INTERVAL;VALUE=DURATION:' . $refresh;
+		$header[] = 'X-PUBLISHED-TTL:' . $refresh;
 
 		// Say so in the feed itself when events were dropped. A subscriber whose
 		// calendar is quietly missing its later dates has no other way to tell.
 		if ( $truncated ) {
-			$lines[] = 'X-WR-CALDESC:' . $this->escape_text(
+			$header[] = 'X-WR-CALDESC:' . $this->escape_text(
 				sprintf(
 					/* translators: %d: number of events included in the feed. */
 					__( 'This feed was truncated at %d events. Later events are not included.', 'blockendar' ),
@@ -77,6 +71,27 @@ class Exporter {
 				)
 			);
 		}
+
+		return $this->wrap( $rows, $header );
+	}
+
+	/**
+	 * Assemble a VCALENDAR around a set of rows.
+	 *
+	 * @param object[] $rows   Index rows to render as VEVENTs.
+	 * @param string[] $header Extra calendar-level properties.
+	 * @return string Full VCALENDAR content, folded.
+	 */
+	private function wrap( array $rows, array $header = [] ): string {
+		$lines   = [];
+		$lines[] = 'BEGIN:VCALENDAR';
+		$lines[] = 'VERSION:2.0';
+		$lines[] = 'PRODID:-//Blockendar//Blockendar Events//EN';
+		$lines[] = 'CALSCALE:GREGORIAN';
+		$lines[] = 'METHOD:PUBLISH';
+		$lines[] = 'X-WR-TIMEZONE:UTC';
+
+		$lines = array_merge( $lines, $header );
 
 		foreach ( $rows as $row ) {
 			$lines = array_merge( $lines, $this->build_vevent( $row ) );
@@ -236,7 +251,12 @@ class Exporter {
 			return null;
 		}
 
-		return $this->generate_feed( [ $row ], get_the_title( $post ) );
+		/*
+		 * No X-WR-CALNAME and no refresh hint. This file is imported once, not
+		 * polled, and naming a calendar after a single event leads some clients
+		 * to offer to create one rather than adding to an existing calendar.
+		 */
+		return $this->wrap( [ $row ] );
 	}
 
 	// -------------------------------------------------------------------------
@@ -441,8 +461,9 @@ class Exporter {
 		$tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 		$status     = get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled';
 
+		// A missing end date means a single-day event, not an unexportable one.
 		if ( ! $ongoing && empty( $end_date ) ) {
-			return null;
+			$end_date = $start_date;
 		}
 
 		try {
