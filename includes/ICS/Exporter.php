@@ -25,6 +25,11 @@ use Blockendar\DB\EventIndex;
 class Exporter {
 
 	/**
+	 * Maximum octets in a single physical content line (RFC 5545 §3.1).
+	 */
+	private const MAX_OCTETS = 75;
+
+	/**
 	 * Generate an iCal feed string from an array of index rows.
 	 *
 	 * @param object[] $rows  Index rows joined with wp_posts.
@@ -51,7 +56,89 @@ class Exporter {
 
 		$lines[] = 'END:VCALENDAR';
 
+		$lines = array_map( [ $this, 'fold_line' ], $lines );
+
 		return implode( "\r\n", $lines ) . "\r\n";
+	}
+
+	/**
+	 * Fold a single logical content line to RFC 5545 §3.1 limits.
+	 *
+	 * Physical lines are capped at 75 octets. Continuation lines are introduced
+	 * by CRLF plus one space, and that space counts toward the limit, so they
+	 * carry one octet less content than the first line.
+	 *
+	 * Public so it can be unit tested directly.
+	 *
+	 * @param string $line One logical content line, unfolded.
+	 * @return string The same line, folded where necessary.
+	 */
+	public function fold_line( string $line ): string {
+		if ( strlen( $line ) <= self::MAX_OCTETS ) {
+			return $line;
+		}
+
+		$folded = '';
+		$pos    = 0;
+		$len    = strlen( $line );
+		$limit  = self::MAX_OCTETS;
+
+		while ( $pos < $len ) {
+			$take = min( $limit, $len - $pos );
+
+			if ( $pos + $take < $len ) {
+				$take = $this->safe_split_length( $line, $pos, $take );
+			}
+
+			$folded .= ( '' === $folded ? '' : "\r\n " ) . substr( $line, $pos, $take );
+			$pos    += $take;
+
+			// Continuation lines spend one octet on the leading space.
+			$limit = self::MAX_OCTETS - 1;
+		}
+
+		return $folded;
+	}
+
+	/**
+	 * Pull a proposed fold point back to a safe boundary.
+	 *
+	 * Backs off while the split would land inside a UTF-8 multi-octet sequence
+	 * or between a backslash and the character it escapes. Unfolding restores
+	 * the octet stream either way, but some consumers parse folded lines
+	 * individually, so neither is worth risking.
+	 *
+	 * @param string $line Full logical line.
+	 * @param int    $pos  Offset of the current chunk.
+	 * @param int    $take Proposed chunk length in octets.
+	 * @return int Adjusted chunk length, always at least 1.
+	 */
+	private function safe_split_length( string $line, int $pos, int $take ): int {
+		while ( $take > 1 ) {
+			$splits_utf8 = ( ord( $line[ $pos + $take ] ) & 0xC0 ) === 0x80;
+
+			if ( ! $splits_utf8 && ! $this->ends_with_open_escape( substr( $line, $pos, $take ) ) ) {
+				break;
+			}
+
+			--$take;
+		}
+
+		return $take;
+	}
+
+	/**
+	 * Whether a chunk ends on a backslash that still needs its escaped char.
+	 *
+	 * An odd number of trailing backslashes means the last one opens an escape
+	 * sequence whose target sits in the next chunk.
+	 *
+	 * @param string $chunk Candidate chunk.
+	 */
+	private function ends_with_open_escape( string $chunk ): bool {
+		$trailing = strlen( $chunk ) - strlen( rtrim( $chunk, '\\' ) );
+
+		return 1 === $trailing % 2;
 	}
 
 	/**
