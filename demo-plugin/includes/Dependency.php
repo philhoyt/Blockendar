@@ -39,15 +39,25 @@ class Dependency {
 	 * Human-readable reason the dependency is unmet, or '' when satisfied.
 	 */
 	public static function failure_reason(): string {
-		if ( ! defined( 'BLOCKENDAR_VERSION' ) ) {
+		return self::evaluate( defined( 'BLOCKENDAR_VERSION' ) ? (string) BLOCKENDAR_VERSION : null );
+	}
+
+	/**
+	 * The decision itself, separated from reading the constant so it can be
+	 * tested against versions other than whatever is currently loaded.
+	 *
+	 * @param string|null $version Active Blockendar version, or null if absent.
+	 */
+	public static function evaluate( ?string $version ): string {
+		if ( null === $version || '' === $version ) {
 			return 'Blockendar Demo Content requires the Blockendar plugin to be installed and active.';
 		}
 
-		if ( version_compare( (string) BLOCKENDAR_VERSION, BLOCKENDAR_DEMO_MIN_BLOCKENDAR, '<' ) ) {
+		if ( version_compare( $version, BLOCKENDAR_DEMO_MIN_BLOCKENDAR, '<' ) ) {
 			return sprintf(
 				'Blockendar Demo Content requires Blockendar %1$s or newer. Version %2$s is active.',
 				BLOCKENDAR_DEMO_MIN_BLOCKENDAR,
-				(string) BLOCKENDAR_VERSION
+				$version
 			);
 		}
 
