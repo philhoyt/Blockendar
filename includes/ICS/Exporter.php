@@ -25,16 +25,35 @@ use Blockendar\DB\EventIndex;
 class Exporter {
 
 	/**
+	 * Maximum octets in a single physical content line (RFC 5545 §3.1).
+	 */
+	private const MAX_OCTETS = 75;
+
+	/**
 	 * Generate an iCal feed string from an array of index rows.
 	 *
-	 * @param object[] $rows  Index rows joined with wp_posts.
-	 * @param string   $title Optional calendar title.
+	 * @param object[] $rows      Index rows joined with wp_posts.
+	 * @param string   $title     Optional calendar title.
+	 * @param bool     $truncated Whether the row set hit the feed's ceiling.
 	 * @return string Full VCALENDAR iCal content.
 	 */
-	public function generate_feed( array $rows, string $title = '' ): string {
+	public function generate_feed( array $rows, string $title = '', bool $truncated = false ): string {
 		if ( '' === $title ) {
 			$title = get_bloginfo( 'name' ) . ' Events';
 		}
+
+		/**
+		 * Filters the calendar name advertised in the feed (X-WR-CALNAME).
+		 *
+		 * The returned value is escaped before output, so a filter cannot
+		 * inject additional iCalendar properties.
+		 *
+		 * @param string   $title Calendar name, already reflecting active filters.
+		 * @param object[] $rows  Index rows being exported.
+		 */
+		$title = (string) apply_filters( 'blockendar_ics_calendar_name', $title, $rows );
+
+		$refresh = $this->refresh_interval();
 
 		$lines   = [];
 		$lines[] = 'BEGIN:VCALENDAR';
@@ -44,6 +63,20 @@ class Exporter {
 		$lines[] = 'METHOD:PUBLISH';
 		$lines[] = 'X-WR-CALNAME:' . $this->escape_text( $title );
 		$lines[] = 'X-WR-TIMEZONE:UTC';
+		$lines[] = 'REFRESH-INTERVAL;VALUE=DURATION:' . $refresh;
+		$lines[] = 'X-PUBLISHED-TTL:' . $refresh;
+
+		// Say so in the feed itself when events were dropped. A subscriber whose
+		// calendar is quietly missing its later dates has no other way to tell.
+		if ( $truncated ) {
+			$lines[] = 'X-WR-CALDESC:' . $this->escape_text(
+				sprintf(
+					/* translators: %d: number of events included in the feed. */
+					__( 'This feed was truncated at %d events. Later events are not included.', 'blockendar' ),
+					count( $rows )
+				)
+			);
+		}
 
 		foreach ( $rows as $row ) {
 			$lines = array_merge( $lines, $this->build_vevent( $row ) );
@@ -51,7 +84,136 @@ class Exporter {
 
 		$lines[] = 'END:VCALENDAR';
 
+		$lines = array_map( [ $this, 'fold_line' ], $lines );
+
 		return implode( "\r\n", $lines ) . "\r\n";
+	}
+
+	/**
+	 * Refresh interval advertised to subscribing clients.
+	 *
+	 * Clients treat this as a hint only — Google Calendar in particular polls
+	 * on its own schedule — but Apple Calendar honours it reasonably closely.
+	 *
+	 * @return string A valid iCalendar duration.
+	 */
+	private function refresh_interval(): string {
+		$default = 'PT1H';
+
+		/**
+		 * Filters how often subscribing clients are asked to refresh the feed.
+		 *
+		 * Must be a valid iCalendar duration (RFC 5545 §3.3.6), e.g. 'PT30M',
+		 * 'PT6H', 'P1D'. Anything else falls back to the default, since this
+		 * value is written straight into two calendar properties.
+		 *
+		 * @param string $default Default interval, 'PT1H'.
+		 */
+		$value = (string) apply_filters( 'blockendar_ics_refresh_interval', $default );
+
+		return $this->is_valid_duration( $value ) ? $value : $default;
+	}
+
+	/**
+	 * Whether a string is a valid iCalendar duration value.
+	 *
+	 * The D modifier matters: without it '$' also matches before a trailing
+	 * newline, which would let "PT1H\n" through and break the content line.
+	 *
+	 * @param string $value Candidate duration.
+	 */
+	private function is_valid_duration( string $value ): bool {
+		if ( '' === $value || strlen( $value ) > 20 ) {
+			return false;
+		}
+
+		if ( ! preg_match( '/^[+-]?P(?:\d+W|(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+S)?)?)$/D', $value ) ) {
+			return false;
+		}
+
+		// Reject 'P', 'PT' and 'P1DT' — a duration needs at least one value,
+		// and a 'T' must be followed by a time component.
+		return (bool) preg_match( '/\d/', $value ) && ! str_ends_with( $value, 'T' );
+	}
+
+	/**
+	 * Fold a single logical content line to RFC 5545 §3.1 limits.
+	 *
+	 * Physical lines are capped at 75 octets. Continuation lines are introduced
+	 * by CRLF plus one space, and that space counts toward the limit, so they
+	 * carry one octet less content than the first line.
+	 *
+	 * Public so it can be unit tested directly.
+	 *
+	 * @param string $line One logical content line, unfolded.
+	 * @return string The same line, folded where necessary.
+	 */
+	public function fold_line( string $line ): string {
+		if ( strlen( $line ) <= self::MAX_OCTETS ) {
+			return $line;
+		}
+
+		$folded = '';
+		$pos    = 0;
+		$len    = strlen( $line );
+		$limit  = self::MAX_OCTETS;
+
+		while ( $pos < $len ) {
+			$take = min( $limit, $len - $pos );
+
+			if ( $pos + $take < $len ) {
+				$take = $this->safe_split_length( $line, $pos, $take );
+			}
+
+			$folded .= ( '' === $folded ? '' : "\r\n " ) . substr( $line, $pos, $take );
+			$pos    += $take;
+
+			// Continuation lines spend one octet on the leading space.
+			$limit = self::MAX_OCTETS - 1;
+		}
+
+		return $folded;
+	}
+
+	/**
+	 * Pull a proposed fold point back to a safe boundary.
+	 *
+	 * Backs off while the split would land inside a UTF-8 multi-octet sequence
+	 * or between a backslash and the character it escapes. Unfolding restores
+	 * the octet stream either way, but some consumers parse folded lines
+	 * individually, so neither is worth risking.
+	 *
+	 * @param string $line Full logical line.
+	 * @param int    $pos  Offset of the current chunk.
+	 * @param int    $take Proposed chunk length in octets.
+	 * @return int Adjusted chunk length, always at least 1.
+	 */
+	private function safe_split_length( string $line, int $pos, int $take ): int {
+		while ( $take > 1 ) {
+			$splits_utf8 = ( ord( $line[ $pos + $take ] ) & 0xC0 ) === 0x80;
+
+			if ( ! $splits_utf8 && ! $this->ends_with_open_escape( substr( $line, $pos, $take ) ) ) {
+				break;
+			}
+
+			--$take;
+		}
+
+		return $take;
+	}
+
+	/**
+	 * Whether a chunk ends on a backslash that still needs its escaped char.
+	 *
+	 * An odd number of trailing backslashes means the last one opens an escape
+	 * sequence whose target sits in the next chunk.
+	 *
+	 * @param string $chunk Candidate chunk.
+	 */
+	private function ends_with_open_escape( string $chunk ): bool {
+		$trailing = strlen( $chunk ) - strlen( rtrim( $chunk, '\\' ) );
+
+		return 1 === $trailing % 2;
 	}
 
 	/**
@@ -91,7 +253,7 @@ class Exporter {
 		$post_id     = (int) $row->post_id;
 		$all_day     = (bool) $row->all_day;
 		$ongoing     = ! empty( $row->ongoing );
-		$uid         = "blockendar-{$post_id}-{$row->start_date}@" . wp_parse_url( home_url(), PHP_URL_HOST );
+		$uid         = $this->build_uid( $row );
 		$url         = get_permalink( $post_id );
 		$summary     = $this->escape_text( $row->post_title );
 		$description = $this->escape_text( wp_strip_all_tags( get_the_excerpt( $post_id ) ) );
@@ -101,6 +263,13 @@ class Exporter {
 		$lines[] = 'BEGIN:VEVENT';
 		$lines[] = 'UID:' . $uid;
 		$lines[] = 'DTSTAMP:' . gmdate( 'Ymd\THis\Z' );
+		$lines[] = 'SEQUENCE:' . $this->build_sequence( $row );
+
+		$modified = (string) ( $row->post_modified_gmt ?? '' );
+
+		if ( '' !== $modified ) {
+			$lines[] = 'LAST-MODIFIED:' . $this->utc_to_ical( $modified );
+		}
 
 		// RFC 5545 permits a VEVENT with DTSTART only; ongoing events have no end
 		// date, so emit none rather than the index's sentinel.
@@ -148,6 +317,54 @@ class Exporter {
 	}
 
 	/**
+	 * Build the UID for an occurrence.
+	 *
+	 * A non-recurring event keeps one UID for its whole life, so moving it to a
+	 * new date updates the entry a subscriber already has instead of leaving the
+	 * old time behind as a second event.
+	 *
+	 * Occurrences of a recurring event stay keyed by date: with one standalone
+	 * VEVENT per occurrence and no RRULE, the date is the only thing that tells
+	 * one instance from another. Moving a single occurrence of a series is
+	 * therefore still seen as a delete plus an add. Emitting RRULE with
+	 * RECURRENCE-ID would fix that, and is deliberately out of scope here.
+	 *
+	 * @param object $row Index row.
+	 */
+	private function build_uid( object $row ): string {
+		$post_id = (int) $row->post_id;
+		$host    = wp_parse_url( home_url(), PHP_URL_HOST );
+
+		if ( ! empty( $row->recurrence_id ) ) {
+			return "blockendar-{$post_id}-{$row->start_date}@{$host}";
+		}
+
+		return "blockendar-{$post_id}@{$host}";
+	}
+
+	/**
+	 * Build the SEQUENCE for an occurrence.
+	 *
+	 * RFC 5545 wants a non-negative integer that only ever grows as an event is
+	 * revised; clients use it to decide whether an incoming copy is newer than
+	 * the one they hold. Seconds elapsed between creation and last modification
+	 * satisfies that without storing a counter: it is 0 for an untouched event
+	 * and rises with every subsequent edit.
+	 *
+	 * @param object $row Index row.
+	 */
+	private function build_sequence( object $row ): int {
+		$created  = strtotime( (string) ( $row->post_date_gmt ?? '' ) );
+		$modified = strtotime( (string) ( $row->post_modified_gmt ?? '' ) );
+
+		if ( ! $created || ! $modified || $modified <= $created ) {
+			return 0;
+		}
+
+		return $modified - $created;
+	}
+
+	/**
 	 * Convert a UTC datetime string (Y-m-d H:i:s) to iCal UTC format (Ymd\THis\Z).
 	 */
 	private function utc_to_ical( string $utc_datetime ): string {
@@ -188,8 +405,14 @@ class Exporter {
 
 	/**
 	 * Escape text for iCal property values (RFC 5545 §3.3.11).
+	 *
+	 * Line breaks are normalised to \n escapes first. A raw CR left in a value
+	 * would terminate the content line early and let the rest of the string be
+	 * read as further iCalendar properties, so CRLF and bare CR are collapsed
+	 * before anything else is escaped.
 	 */
 	private function escape_text( string $value ): string {
+		$value = str_replace( [ "\r\n", "\r" ], "\n", $value );
 		$value = str_replace( '\\', '\\\\', $value );
 		$value = str_replace( ';', '\;', $value );
 		$value = str_replace( ',', '\,', $value );
@@ -239,16 +462,18 @@ class Exporter {
 		$venue_term_id = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? $terms[0]->term_id : null;
 
 		return (object) [
-			'post_id'        => $post_id,
-			'post_title'     => $post->post_title,
-			'start_date'     => $start_date,
-			'end_date'       => $ongoing ? EventIndex::ONGOING_END_DATE : $end_date,
-			'start_datetime' => $start_dt->format( 'Y-m-d H:i:s' ),
-			'end_datetime'   => $end_dt->format( 'Y-m-d H:i:s' ),
-			'all_day'        => $all_day ? 1 : 0,
-			'ongoing'        => $ongoing ? 1 : 0,
-			'status'         => $status,
-			'venue_term_id'  => $venue_term_id,
+			'post_id'           => $post_id,
+			'post_title'        => $post->post_title,
+			'start_date'        => $start_date,
+			'end_date'          => $ongoing ? EventIndex::ONGOING_END_DATE : $end_date,
+			'start_datetime'    => $start_dt->format( 'Y-m-d H:i:s' ),
+			'end_datetime'      => $end_dt->format( 'Y-m-d H:i:s' ),
+			'all_day'           => $all_day ? 1 : 0,
+			'ongoing'           => $ongoing ? 1 : 0,
+			'status'            => $status,
+			'venue_term_id'     => $venue_term_id,
+			'post_date_gmt'     => $post->post_date_gmt,
+			'post_modified_gmt' => $post->post_modified_gmt,
 		];
 	}
 }

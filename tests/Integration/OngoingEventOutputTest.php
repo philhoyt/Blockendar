@@ -179,8 +179,13 @@ class OngoingEventOutputTest extends WP_UnitTestCase {
 
 		$by_uid = [];
 		foreach ( $vevents as $vevent ) {
-			$post_id            = (int) preg_replace( '/^.*UID:blockendar-(\d+)-.*$/s', '$1', $vevent );
-			$by_uid[ $post_id ] = $vevent;
+			// A non-recurring UID is blockendar-{id}@host; a recurring occurrence
+			// carries its date as blockendar-{id}-{Y-m-d}@host.
+			preg_match( '/UID:blockendar-(\d+)(?:-\d{4}-\d{2}-\d{2})?@/', $vevent, $m );
+
+			$this->assertNotEmpty( $m, 'Could not read a post ID out of the VEVENT UID.' );
+
+			$by_uid[ (int) $m[1] ] = $vevent;
 		}
 
 		$this->assertStringContainsString( 'DTSTART:20250913T100000Z', $by_uid[ $this->ongoing_id ] );

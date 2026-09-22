@@ -270,7 +270,7 @@
 
 ---
 
-## 10. iCalendar Export
+## 10. iCalendar Export and Subscriptions
 
 | # | Test | Status | Notes |
 |---|------|--------|-------|
@@ -280,6 +280,26 @@
 | 10.4 | All-day events use date-only `DTSTART;VALUE=DATE` format | 🔲 | |
 | 10.5 | Timed events use UTC `DTSTART` with Z suffix | 🔲 | |
 | 10.6 | Event titles with special characters are correctly escaped | 🔲 | |
+
+### 10a. Live subscription
+
+Google and Apple both fetch the feed from their own servers, so these need a
+publicly reachable HTTPS host — a staging site or an ngrok tunnel.
+`http://localhost:8890` cannot be reached by either service, and Google in
+particular wants the `https://` form rather than the `webcal://` link.
+
+| # | Test | Status | Notes |
+|---|------|--------|-------|
+| 10a.1 | Subscribing to the webcal link in Apple Calendar succeeds | 🔲 | |
+| 10a.2 | Subscribing to the https URL in Google Calendar succeeds | 🔲 | |
+| 10a.3 | Events appear at the correct local times in both | 🔲 | |
+| 10a.4 | Editing an event updates it in a subscribed client, rather than adding a duplicate | 🔲 | Non-recurring events; UID is stable, SEQUENCE rises |
+| 10a.5 | An event added after subscribing shows up on the next refresh | 🔲 | Clients poll on their own schedule, often 8-24h |
+| 10a.6 | The subscribe buttons carry the block's venue/type filters | 🔲 | |
+| 10a.9 | The front-end **Google Calendar** button adds the calendar in one click | 🔲 | Needs a logged-in Google account |
+| 10a.10 | The front-end **iCalendar** button opens the OS calendar app | 🔲 | |
+| 10a.7 | With **Public REST endpoints** off, no subscribe button renders and the token is absent from page source | 🔲 | Covered by E2E, worth confirming by eye |
+| 10a.8 | A feed at the event ceiling shows the truncation notice on the settings screen | 🔲 | |
 
 ---
 

@@ -58,6 +58,22 @@
 		"firstDay": {
 			"type": "integer",
 			"default": 0
+		},
+		"showSubscribe": {
+			"type": "boolean",
+			"default": false
+		},
+		"subscribeLabel": {
+			"type": "string",
+			"default": ""
+		},
+		"subscribeIcal": {
+			"type": "boolean",
+			"default": true
+		},
+		"subscribeGoogle": {
+			"type": "boolean",
+			"default": true
 		}
 	},
 	"render": "file:./render.php",

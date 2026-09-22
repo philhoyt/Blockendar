@@ -7,6 +7,7 @@ import {
 	CheckboxControl,
 	ToggleControl,
 	SelectControl,
+	TextControl,
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
@@ -76,6 +77,10 @@ export function Edit( { attributes, setAttributes } ) {
 		enabledViews,
 		defaultView,
 		firstDay,
+		showSubscribe,
+		subscribeLabel,
+		subscribeIcal,
+		subscribeGoogle,
 	} = attributes;
 
 	const blockProps = useBlockProps( {
@@ -205,6 +210,78 @@ export function Edit( { attributes, setAttributes } ) {
 							}
 							__nextHasNoMarginBottom
 						/>
+					</VStack>
+				</PanelBody>
+
+				<PanelBody
+					title={ __( 'Subscribe', 'blockendar' ) }
+					initialOpen={ false }
+				>
+					<VStack spacing={ 3 }>
+						<ToggleControl
+							label={ __( 'Show subscribe button', 'blockendar' ) }
+							help={ __(
+								'Adds a link that opens this calendar in a visitor calendar app, carrying the filters set above. The button is hidden on the front end while public REST access is turned off in Blockendar settings, because a private feed cannot be linked without exposing its token.',
+								'blockendar'
+							) }
+							checked={ showSubscribe }
+							onChange={ ( val ) =>
+								setAttributes( { showSubscribe: val } )
+							}
+						/>
+
+						{ showSubscribe && (
+							<>
+								<ToggleControl
+									label={ __( 'iCalendar', 'blockendar' ) }
+									help={ __(
+										'Opens in Apple Calendar, Outlook, and most other calendar apps.',
+										'blockendar'
+									) }
+									checked={ subscribeIcal }
+									onChange={ ( val ) =>
+										setAttributes( {
+											subscribeIcal: val,
+										} )
+									}
+								/>
+
+								<ToggleControl
+									label={ __(
+										'Google Calendar',
+										'blockendar'
+									) }
+									help={ __(
+										'Google fetches the feed from its own servers, so this needs the site to be reachable over HTTPS.',
+										'blockendar'
+									) }
+									checked={ subscribeGoogle }
+									onChange={ ( val ) =>
+										setAttributes( {
+											subscribeGoogle: val,
+										} )
+									}
+								/>
+
+								<TextControl
+									label={ __(
+										'Label before the buttons',
+										'blockendar'
+									) }
+									value={ subscribeLabel }
+									placeholder={ __(
+										'Optional, e.g. Subscribe:',
+										'blockendar'
+									) }
+									onChange={ ( val ) =>
+										setAttributes( {
+											subscribeLabel: val,
+										} )
+									}
+									__nextHasNoMarginBottom
+								/>
+							</>
+						) }
 					</VStack>
 				</PanelBody>
 			</InspectorControls>

@@ -547,7 +547,7 @@ The following are explicitly deferred to keep v1 focused and shippable:
 - Email notifications or reminders
 - Waiting lists
 - Seating charts or venue room layouts
-- iCalendar feed import (export only in v1)
+- iCalendar feed import (export and subscription only — the feed is read-only)
 - WooCommerce integration for paid tickets
 - Event series (distinct from recurrence — e.g. a named multi-week course)
 

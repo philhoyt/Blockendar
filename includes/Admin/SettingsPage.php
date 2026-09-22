@@ -36,6 +36,42 @@ class SettingsPage {
 		add_action( 'init', [ $this, 'register_setting' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue' ] );
 		add_action( 'rest_api_init', [ $this, 'register_rebuild_stats_endpoint' ] );
+		add_action( 'admin_notices', [ $this, 'maybe_show_truncation_notice' ] );
+	}
+
+	/**
+	 * Warn on the settings screen when the calendar feed was cut short.
+	 *
+	 * The feed itself says so in X-WR-CALDESC, but nobody reads a subscribed
+	 * calendar's description, so the site owner is told here as well.
+	 */
+	public function maybe_show_truncation_notice(): void {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			return;
+		}
+
+		$screen = get_current_screen();
+
+		if ( ! $screen || 'blockendar_event_page_' . self::MENU_SLUG !== $screen->id ) {
+			return;
+		}
+
+		$flag = get_transient( 'blockendar_ics_truncated' );
+
+		if ( ! is_array( $flag ) ) {
+			return;
+		}
+
+		printf(
+			'<div class="notice notice-warning"><p>%s</p></div>',
+			esc_html(
+				sprintf(
+					/* translators: %d: number of events the feed was limited to. */
+					__( 'The calendar subscription feed was cut short at %d events. Subscribers are not seeing everything. Narrow the subscription window, or raise the limit with the blockendar_ics_max_events filter.', 'blockendar' ),
+					(int) ( $flag['count'] ?? 0 )
+				)
+			)
+		);
 	}
 
 	/**
@@ -133,6 +169,10 @@ class SettingsPage {
 			'version'            => BLOCKENDAR_VERSION,
 			'siteTimezone'       => $site_timezone,
 			'generalSettingsUrl' => esc_url( admin_url( 'options-general.php' ) ),
+			// Token-free base URLs. The settings UI appends the token itself when
+			// one is needed, so the field stays live as the token is edited.
+			'feedUrl'            => \Blockendar\ICS\FeedUrl::build(),
+			'feedUrlWebcal'      => \Blockendar\ICS\FeedUrl::build( [], true ),
 		];
 
 		wp_add_inline_script(
@@ -216,6 +256,8 @@ class SettingsPage {
 			// Recurring events.
 			'horizon_days'           => max( 30, min( 3650, (int) ( $raw['horizon_days'] ?? $d['horizon_days'] ) ) ),
 			'max_instances'          => max( 1, min( 3650, (int) ( $raw['max_instances'] ?? $d['max_instances'] ) ) ),
+			'subscribe_past_days'    => max( 0, min( 3650, (int) ( $raw['subscribe_past_days'] ?? $d['subscribe_past_days'] ) ) ),
+			'subscribe_future_days'  => max( 1, min( 3650, (int) ( $raw['subscribe_future_days'] ?? $d['subscribe_future_days'] ) ) ),
 			'generation_strategy'    => in_array( $raw['generation_strategy'] ?? '', [ 'on_save', 'cron' ], true )
 				? $raw['generation_strategy'] : $d['generation_strategy'],
 
@@ -256,6 +298,8 @@ class SettingsPage {
 			'currency_position'      => 'before',
 			'horizon_days'           => 365,
 			'max_instances'          => 3650,
+			'subscribe_past_days'    => 30,
+			'subscribe_future_days'  => 365,
 			'generation_strategy'    => 'on_save',
 			'rest_public'            => true,
 			'rest_feed_token'        => '',
@@ -287,6 +331,8 @@ class SettingsPage {
 			],
 			'horizon_days'           => [ 'type' => 'integer' ],
 			'max_instances'          => [ 'type' => 'integer' ],
+			'subscribe_past_days'    => [ 'type' => 'integer' ],
+			'subscribe_future_days'  => [ 'type' => 'integer' ],
 			'generation_strategy'    => [
 				'type' => 'string',
 				'enum' => [ 'on_save', 'cron' ],

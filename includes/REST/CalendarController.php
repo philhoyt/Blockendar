@@ -29,8 +29,27 @@ class CalendarController extends AbstractController {
 
 	private EventIndex $index;
 
+	/**
+	 * Whether the current request is being served as an iCalendar feed.
+	 *
+	 * @var bool
+	 */
+	private bool $serving_ics = false;
+
 	public function __construct() {
 		$this->index = new EventIndex();
+	}
+
+	/**
+	 * Attach hooks.
+	 *
+	 * Extends the base registration with the filter that writes the iCalendar
+	 * body directly, bypassing JSON encoding.
+	 */
+	public function register(): void {
+		parent::register();
+
+		add_filter( 'rest_pre_serve_request', [ $this, 'serve_raw_ics' ], 10, 3 );
 	}
 
 	/**
@@ -67,6 +86,10 @@ class CalendarController extends AbstractController {
 						'default' => 'json',
 						'enum'    => [ 'json', 'ics' ],
 					],
+					'download' => [
+						'type'    => 'boolean',
+						'default' => false,
+					],
 				],
 			]
 		);
@@ -76,15 +99,24 @@ class CalendarController extends AbstractController {
 	 * GET /blockendar/v1/calendar
 	 */
 	public function get_calendar_feed( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		// Default window: current month ± some buffer. FullCalendar always sends start+end.
+		$is_ics = 'ics' === $request->get_param( 'format' );
+
+		// A subscribed client fetches the same URL forever, so the feed's default
+		// window has to be relative to the request rather than a fixed span, or
+		// the calendar silently stops moving. The JSON path keeps its own
+		// defaults: FullCalendar always sends start and end explicitly.
+		[ $default_start, $default_end ] = $is_ics
+			? $this->subscription_window()
+			: [ gmdate( 'Y-m-01 00:00:00' ), gmdate( 'Y-m-d 23:59:59', strtotime( 'last day of +1 month' ) ) ];
+
 		$start = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'start' ) ?? '' ),
-			gmdate( 'Y-m-01 00:00:00' )
+			$default_start
 		);
 
 		$end = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'end' ) ?? '' ),
-			gmdate( 'Y-m-d 23:59:59', strtotime( 'last day of +1 month' ) )
+			$default_end
 		);
 
 		if ( is_wp_error( $start ) ) {
@@ -95,18 +127,32 @@ class CalendarController extends AbstractController {
 			return $end;
 		}
 
+		$ceiling = $is_ics ? $this->ics_max_events() : EventIndex::DEFAULT_MAX_PER_PAGE;
+
+		// Fetch one row past the ceiling on the feed path. Without it, a feed
+		// holding exactly the ceiling would be indistinguishable from one that
+		// was cut short, and would warn about dropping events it never had.
+		$fetch = $is_ics ? $ceiling + 1 : $ceiling;
+
 		$filters = [
 			'venue_term_id' => $this->parse_id_list( $request->get_param( 'venue' ) ),
 			'type_term_id'  => $this->parse_id_list( $request->get_param( 'type' ) ),
 			'featured'      => $request->get_param( 'featured' ) ? rest_sanitize_boolean( $request->get_param( 'featured' ) ) : null,
-			'per_page'      => 500,
+			'per_page'      => $fetch,
+			'max_per_page'  => $fetch,
 			'page'          => 1,
 		];
 
 		$rows = $this->index->get_events_in_range( $start, $end, $filters );
 
-		if ( 'ics' === $request->get_param( 'format' ) ) {
-			return $this->serve_ics( $rows );
+		if ( $is_ics ) {
+			$truncated = count( $rows ) > $ceiling;
+
+			if ( $truncated ) {
+				$rows = array_slice( $rows, 0, $ceiling );
+			}
+
+			return $this->serve_ics( $rows, $request, $truncated );
 		}
 
 		$events = array_map( [ $this, 'format_for_fullcalendar' ], $rows );
@@ -117,6 +163,89 @@ class CalendarController extends AbstractController {
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	/**
+	 * Maximum number of events a single feed response may carry.
+	 *
+	 * iCalendar has no pagination, so this is a hard ceiling rather than a page
+	 * size: everything past it is absent from the feed entirely.
+	 */
+	private function ics_max_events(): int {
+		/**
+		 * Filters the maximum number of events included in one iCalendar feed.
+		 *
+		 * Raising this raises peak memory and response time for the feed, since
+		 * every row is rendered into the response body at once.
+		 *
+		 * @param int $max Default ceiling, 2000 events.
+		 */
+		$max = (int) apply_filters( 'blockendar_ics_max_events', 2000 );
+
+		return max( 1, $max );
+	}
+
+	/**
+	 * Record that a feed response hit the ceiling.
+	 *
+	 * A calendar that is quietly missing its later events is worse than one
+	 * that says it was cut short, so this leaves a marker the settings screen
+	 * can surface. Written only on the truncating request, and only when no
+	 * marker is already set, so an open endpoint cannot be used to force
+	 * repeated writes.
+	 *
+	 * @param int $count Number of events actually returned.
+	 */
+	private function flag_truncation( int $count ): void {
+		if ( false !== get_transient( 'blockendar_ics_truncated' ) ) {
+			return;
+		}
+
+		set_transient(
+			'blockendar_ics_truncated',
+			[
+				'count' => $count,
+				'time'  => time(),
+			],
+			WEEK_IN_SECONDS
+		);
+	}
+
+	/**
+	 * The rolling window a subscribed feed covers when no range was requested.
+	 *
+	 * Computed in UTC, matching how the index stores datetimes, and snapped to
+	 * whole days so an all-day event sitting on either edge is not clipped by a
+	 * mid-day boundary.
+	 *
+	 * @return string[] Tuple of [ start, end ] as 'Y-m-d H:i:s' UTC strings.
+	 */
+	private function subscription_window(): array {
+		$settings = get_option( 'blockendar_settings', [] );
+		$past     = max( 0, min( 3650, (int) ( $settings['subscribe_past_days'] ?? 30 ) ) );
+		$future   = max( 1, min( 3650, (int) ( $settings['subscribe_future_days'] ?? 365 ) ) );
+
+		$now    = time();
+		$window = [
+			gmdate( 'Y-m-d 00:00:00', $now - ( $past * DAY_IN_SECONDS ) ),
+			gmdate( 'Y-m-d 23:59:59', $now + ( $future * DAY_IN_SECONDS ) ),
+		];
+
+		/**
+		 * Filters the rolling window used for a subscribed iCalendar feed.
+		 *
+		 * @param string[] $window Tuple of [ start, end ], 'Y-m-d H:i:s' in UTC.
+		 * @param int      $past   Configured days of history.
+		 * @param int      $future Configured days ahead.
+		 */
+		$filtered = array_values( (array) apply_filters( 'blockendar_ics_window', $window, $past, $future ) );
+
+		// A filter returning something unusable must not take the feed down.
+		if ( 2 !== count( $filtered ) ) {
+			return $window;
+		}
+
+		return [ (string) $filtered[0], (string) $filtered[1] ];
+	}
 
 	/**
 	 * Parse a comma-separated ID string into an array of positive integers.
@@ -284,14 +413,98 @@ class CalendarController extends AbstractController {
 	 *
 	 * @param object[] $rows Index rows.
 	 */
-	private function serve_ics( array $rows ): WP_REST_Response {
+	private function serve_ics( array $rows, WP_REST_Request $request, bool $truncated = false ): WP_REST_Response {
+		if ( $truncated ) {
+			$this->flag_truncation( count( $rows ) );
+		}
+
 		$exporter = new Exporter();
-		$ics      = $exporter->generate_feed( $rows );
+		$ics      = $exporter->generate_feed( $rows, '', $truncated );
 
 		$response = new WP_REST_Response( $ics );
 		$response->header( 'Content-Type', 'text/calendar; charset=utf-8' );
-		$response->header( 'Content-Disposition', 'attachment; filename="blockendar-events.ics"' );
+
+		// A subscription is fetched by a calendar client, not saved by a person,
+		// so the feed is served inline unless a download was explicitly asked for.
+		$response->header(
+			'Content-Disposition',
+			$request->get_param( 'download' )
+				? 'attachment; filename="blockendar-events.ics"'
+				: 'inline'
+		);
+
+		$response->header( 'Cache-Control', $this->feed_cache_control( $request ) );
+
+		// Mark the response so rest_pre_serve_request() knows to emit the body
+		// verbatim rather than letting the server JSON-encode it.
+		$this->serving_ics = true;
 
 		return $response;
+	}
+
+	/**
+	 * Cache-Control value for a feed response.
+	 *
+	 * An open feed is the same for everyone and can sit in a shared cache. Any
+	 * response that needed a token or a login is specific to whoever asked for
+	 * it — and a token travels in the URL — so those must never be stored by an
+	 * intermediary and handed to the next caller.
+	 *
+	 * @param WP_REST_Request $request Current request.
+	 */
+	private function feed_cache_control( WP_REST_Request $request ): string {
+		$settings  = get_option( 'blockendar_settings', [] );
+		$is_public = ! isset( $settings['rest_public'] ) || (bool) $settings['rest_public'];
+		$has_token = '' !== (string) ( $request->get_param( 'token' ) ?? '' );
+
+		if ( $is_public && ! $has_token ) {
+			return 'public, max-age=3600';
+		}
+
+		return 'private, no-store';
+	}
+
+	/**
+	 * Emit the iCalendar body verbatim.
+	 *
+	 * A WP_REST_Response holding a raw string is JSON-encoded by the server,
+	 * which turns the feed into a quoted string with literal \r\n escapes that
+	 * no calendar client can parse. Taking over the write here is the documented
+	 * way to bypass that; headers set on the response have already been sent by
+	 * the time this filter runs.
+	 *
+	 * @param bool  $served  Whether the request was already served.
+	 * @param mixed $result  Response to send.
+	 * @param mixed $request Current request.
+	 * @return bool True when this filter wrote the body itself.
+	 */
+	public function serve_raw_ics( bool $served, $result, $request ): bool {
+		if ( $served || ! $this->serving_ics ) {
+			return $served;
+		}
+
+		if ( ! $result instanceof WP_REST_Response || ! $request instanceof WP_REST_Request ) {
+			return $served;
+		}
+
+		// Only ever take over our own feed route.
+		if ( '/' . self::NAMESPACE . '/calendar' !== $request->get_route() ) {
+			return $served;
+		}
+
+		if ( 'ics' !== $request->get_param( 'format' ) ) {
+			return $served;
+		}
+
+		$body = $result->get_data();
+
+		if ( ! is_string( $body ) ) {
+			return $served;
+		}
+
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- iCalendar body, escaped by Exporter per RFC 5545.
+		echo $body;
+
+		return true;
 	}
 }

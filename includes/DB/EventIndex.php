@@ -29,6 +29,15 @@ class EventIndex {
 	public const ONGOING_END_DATE = '9999-12-31';
 
 	/**
+	 * Default upper bound on rows returned by a single range query.
+	 *
+	 * Guards against a caller asking for an unbounded result set. Callers that
+	 * genuinely need a larger batch raise it per query via the `max_per_page`
+	 * filter rather than this ceiling being lifted for everyone.
+	 */
+	public const DEFAULT_MAX_PER_PAGE = 500;
+
+	/**
 	 * Object cache group for index reads.
 	 *
 	 * Invalidation is incremental: every cache key embeds the group's
@@ -82,6 +91,9 @@ class EventIndex {
 	 *                                     (and within the window), and ongoing events are excluded.
 	 *     @type int|int[] $exclude_type_term_id Exclude events carrying any of these event type terms.
 	 *     @type int       $per_page       Results per page (default 100).
+	 *     @type int       $max_per_page   Upper bound on per_page (default 500). Raised only by
+	 *                                     callers that genuinely need a bigger single batch, such
+	 *                                     as the iCalendar feed, which cannot paginate.
 	 *     @type int       $page           1-based page number (default 1).
 	 *     @type string    $orderby        start_datetime|end_datetime|post_title (default: start_datetime).
 	 *     @type string    $order          ASC|DESC (default: ASC).
@@ -111,6 +123,7 @@ class EventIndex {
 			'ongoing'              => null,
 			'ended_before'         => null,
 			'per_page'             => 100,
+			'max_per_page'         => self::DEFAULT_MAX_PER_PAGE,
 			'page'                 => 1,
 			'orderby'              => 'start_datetime',
 			'order'                => 'ASC',
@@ -209,7 +222,8 @@ class EventIndex {
 		$orderby = 'post_title' === $orderby ? "p.post_title $order" : "e.$orderby $order";
 
 		// Pagination.
-		$per_page = max( 1, min( 500, (int) $filters['per_page'] ) );
+		$ceiling  = max( 1, (int) $filters['max_per_page'] );
+		$per_page = max( 1, min( $ceiling, (int) $filters['per_page'] ) );
 		$page     = max( 1, (int) $filters['page'] );
 		$offset   = ( $page - 1 ) * $per_page;
 
@@ -220,7 +234,8 @@ class EventIndex {
 			"SELECT e.id, e.post_id, e.start_datetime, e.end_datetime, e.start_date,
 			        e.end_date, e.all_day, e.recurrence_id, e.status,
 			        e.venue_term_id, e.type_term_ids, e.featured, e.hide_from_listings,
-			        e.ongoing, p.post_title, p.post_name, p.guid
+			        e.ongoing, p.post_title, p.post_name, p.guid,
+			        p.post_date_gmt, p.post_modified_gmt
 			FROM   {$events_table} e
 			JOIN   {$posts_table} p ON p.ID = e.post_id
 			{$where_sql}
