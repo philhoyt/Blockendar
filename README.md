@@ -70,6 +70,10 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 1.3.3
+- Fixed: an open filter dropdown could be painted underneath content further down the page when a page builder wraps blocks in groups with their own stacking context (Advanced Columns and similar). The open panel now uses the browser's top layer, so nothing on the page can cover or clip it.
+- Fixed: a filter's dropdown was only as wide as its button, so a venue such as "Online / Livestream" wrapped at the first word. The panel now widens to fit its options, at least as wide as the button and never wider than the screen.
+
 ### 1.3.2
 - Fixed: after switching the Events Query to grid with the View Switcher, clicking a pagination link loaded the next page as a list. Pagination links, filter forms and filter "clear" links now follow the chosen view.
 - Fixed: submitting the date range filter or the dropdown type filter dropped a chosen grid view even on a fresh page load, and every filter did with JavaScript off. The view now travels with every filter submission.
