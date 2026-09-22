@@ -216,6 +216,8 @@ class SettingsPage {
 			// Recurring events.
 			'horizon_days'           => max( 30, min( 3650, (int) ( $raw['horizon_days'] ?? $d['horizon_days'] ) ) ),
 			'max_instances'          => max( 1, min( 3650, (int) ( $raw['max_instances'] ?? $d['max_instances'] ) ) ),
+			'subscribe_past_days'    => max( 0, min( 3650, (int) ( $raw['subscribe_past_days'] ?? $d['subscribe_past_days'] ) ) ),
+			'subscribe_future_days'  => max( 1, min( 3650, (int) ( $raw['subscribe_future_days'] ?? $d['subscribe_future_days'] ) ) ),
 			'generation_strategy'    => in_array( $raw['generation_strategy'] ?? '', [ 'on_save', 'cron' ], true )
 				? $raw['generation_strategy'] : $d['generation_strategy'],
 
@@ -256,6 +258,8 @@ class SettingsPage {
 			'currency_position'      => 'before',
 			'horizon_days'           => 365,
 			'max_instances'          => 3650,
+			'subscribe_past_days'    => 30,
+			'subscribe_future_days'  => 365,
 			'generation_strategy'    => 'on_save',
 			'rest_public'            => true,
 			'rest_feed_token'        => '',
@@ -287,6 +291,8 @@ class SettingsPage {
 			],
 			'horizon_days'           => [ 'type' => 'integer' ],
 			'max_instances'          => [ 'type' => 'integer' ],
+			'subscribe_past_days'    => [ 'type' => 'integer' ],
+			'subscribe_future_days'  => [ 'type' => 'integer' ],
 			'generation_strategy'    => [
 				'type' => 'string',
 				'enum' => [ 'on_save', 'cron' ],
