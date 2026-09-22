@@ -188,8 +188,14 @@ class Exporter {
 
 	/**
 	 * Escape text for iCal property values (RFC 5545 §3.3.11).
+	 *
+	 * Line breaks are normalised to \n escapes first. A raw CR left in a value
+	 * would terminate the content line early and let the rest of the string be
+	 * read as further iCalendar properties, so CRLF and bare CR are collapsed
+	 * before anything else is escaped.
 	 */
 	private function escape_text( string $value ): string {
+		$value = str_replace( [ "\r\n", "\r" ], "\n", $value );
 		$value = str_replace( '\\', '\\\\', $value );
 		$value = str_replace( ';', '\;', $value );
 		$value = str_replace( ',', '\,', $value );

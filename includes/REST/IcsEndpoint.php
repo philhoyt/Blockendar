@@ -148,8 +148,13 @@ class IcsEndpoint {
 
 	/**
 	 * Escape special iCalendar characters.
+	 *
+	 * CR is normalised to \n first: a raw CR would end the content line early
+	 * and let the remainder be parsed as additional iCalendar properties.
 	 */
 	private function escape_ical( string $value ): string {
+		$value = str_replace( [ "\r\n", "\r" ], "\n", $value );
+
 		return str_replace(
 			[ '\\', ',', ';', "\n" ],
 			[ '\\\\', '\\,', '\\;', '\\n' ],
