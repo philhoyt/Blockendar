@@ -75,3 +75,31 @@
 .is-enhanced {
 	position: relative;
 }
+
+/*
+ * Top-layer panel. The script shows it with the Popover API and measures the
+ * trigger into the custom properties below, so the panel is anchored to the
+ * document rather than to the block — nothing between the block and <body>
+ * can paint over it or clip it. Absolute, not fixed: a top-layer element is
+ * positioned against the initial containing block, so it scrolls with the
+ * page and a panel taller than the space below the trigger is reached the way
+ * it always was. The browser's own popover styles (position: fixed, inset: 0,
+ * margin: auto, system colours) are undone here.
+ *
+ * Width comes from the content, floored at the trigger's width and capped so
+ * a long venue name widens the panel instead of wrapping at the first word,
+ * without letting it run off a phone screen.
+ */
+.is-floating.is-open .blockendar-filter__panel {
+	color: inherit;
+	inline-size: max-content;
+	inset: auto;
+	inset-block-start: var(--blockendar-anchor-top, 0);
+	inset-inline-start: var(--blockendar-anchor-left, 0);
+	margin: 0;
+	margin-block-start: 0.25em;
+	max-inline-size: min(24rem, calc(100vw - 1rem));
+	min-inline-size: var(--blockendar-anchor-width, 0);
+	position: absolute;
+	z-index: auto;
+}

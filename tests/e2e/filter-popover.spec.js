@@ -104,6 +104,103 @@ test( 'the panel opens flush beneath the trigger at its width', async ( {
 	expect( Math.round( pb.x ) ).toBe( Math.round( tb.x ) );
 } );
 
+test( 'the open panel paints above a later stacking context', async ( {
+	page,
+} ) => {
+	await page.goto( `/?p=${ pageId }` );
+
+	// Page builders wrap blocks in groups with isolation: isolate. A group
+	// rendered after the filter used to paint over the open panel, because the
+	// panel's z-index only counted inside the filter's own group.
+	await page.evaluate( () => {
+		const filter = document.querySelector(
+			'.blockendar-filter-event-type'
+		);
+		const wrap = document.createElement( 'div' );
+		filter.parentElement.insertBefore( wrap, filter );
+		wrap.style.cssText = 'isolation:isolate;position:relative';
+		wrap.appendChild( filter );
+
+		const later = document.createElement( 'div' );
+		later.style.cssText =
+			'isolation:isolate;position:relative;background:#fff;min-height:600px';
+		wrap.parentElement.insertBefore( later, wrap.nextSibling );
+	} );
+
+	await page.locator( '.blockendar-filter__trigger' ).click();
+
+	const panel = page.locator( '.blockendar-filter__panel' );
+	await expect( panel ).toBeVisible();
+
+	const covered = await panel.evaluate( ( n ) => {
+		const r = n.getBoundingClientRect();
+		// Probe inside the viewport: with many terms the panel runs past the
+		// fold, and elementFromPoint() returns null outside the viewport.
+		const y = Math.min( r.bottom - 20, window.innerHeight - 5 );
+		const hit = document.elementFromPoint( r.left + 20, y );
+		return ! n.contains( hit );
+	} );
+
+	expect( covered, 'the panel must be the topmost element' ).toBe( false );
+} );
+
+test( 'a narrow trigger widens the panel to its options rather than wrapping them', async ( {
+	page,
+} ) => {
+	// Wraps at the first word inside a label-width panel; fits on one line
+	// once the panel widens to its options (capped at 24rem for safety).
+	const longName = 'Unhinged Lounge Upstairs';
+	const existing = wpCli( [
+		'term',
+		'list',
+		'event_type',
+		`--name=${ longName }`,
+		'--field=term_id',
+	] ).trim();
+
+	if ( ! existing ) {
+		wpCli( [ 'term', 'create', 'event_type', longName, '--porcelain' ] );
+	}
+
+	// A nowrap Row squeezes the filter to its trigger label's width.
+	const rowPageId = wpCliId( [
+		'post',
+		'create',
+		'--post_type=page',
+		'--post_title=E2E Popover Row Page',
+		'--post_status=publish',
+		'--post_content=<!-- wp:group {"layout":{"type":"flex","flexWrap":"nowrap"}} --><div class="wp-block-group"><!-- wp:blockendar/filter-event-type {"displayStyle":"dropdown","showEmptyTerms":true} /--><!-- wp:paragraph --><p>Filler that takes the rest of the row.</p><!-- /wp:paragraph --></div><!-- /wp:group -->',
+		'--porcelain',
+	] );
+	created.push( rowPageId );
+
+	await page.goto( `/?p=${ rowPageId }` );
+
+	const trigger = page.locator( '.blockendar-filter__trigger' );
+	const tb = await trigger.boundingBox();
+	await trigger.click();
+
+	const panel = page.locator( '.blockendar-filter__panel' );
+	await expect( panel ).toBeVisible();
+
+	const pb = await panel.boundingBox();
+	expect( pb.width ).toBeGreaterThan( tb.width );
+	expect( Math.round( pb.x ) ).toBe( Math.round( tb.x ) );
+
+	const lines = await page
+		.locator( '.blockendar-filter__checkbox-label', { hasText: longName } )
+		.evaluate( ( label ) => {
+			const text = Array.from( label.childNodes ).find(
+				( n ) => 3 === n.nodeType && n.textContent.trim()
+			);
+			const range = document.createRange();
+			range.selectNodeContents( text );
+			return range.getClientRects().length;
+		} );
+
+	expect( lines, 'the long option must sit on one line' ).toBe( 1 );
+} );
+
 test( 'the panel closes by Escape, outside click, and re-clicking the trigger', async ( {
 	page,
 } ) => {
