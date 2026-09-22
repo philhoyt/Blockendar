@@ -169,6 +169,10 @@ class SettingsPage {
 			'version'            => BLOCKENDAR_VERSION,
 			'siteTimezone'       => $site_timezone,
 			'generalSettingsUrl' => esc_url( admin_url( 'options-general.php' ) ),
+			// Token-free base URLs. The settings UI appends the token itself when
+			// one is needed, so the field stays live as the token is edited.
+			'feedUrl'            => \Blockendar\ICS\FeedUrl::build(),
+			'feedUrlWebcal'      => \Blockendar\ICS\FeedUrl::build( [], true ),
 		];
 
 		wp_add_inline_script(

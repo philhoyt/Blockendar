@@ -8,7 +8,10 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
-const { restUrl } = window.blockendarSettings ?? {};
+const {
+	feedUrl: FEED_URL = '',
+	feedUrlWebcal: FEED_URL_WEBCAL = '',
+} = window.blockendarSettings ?? {};
 
 function generateToken( length = 32 ) {
 	const chars =
@@ -19,12 +22,65 @@ function generateToken( length = 32 ) {
 	).join( '' );
 }
 
+/**
+ * A feed URL with a copy button.
+ *
+ * @param {Object} props
+ * @param {string} props.label Field label.
+ * @param {string} props.url   The URL to show.
+ * @param {string} props.help  Description below the field.
+ */
+function FeedUrlField( { label, url, help } ) {
+	const [ copied, setCopied ] = useState( false );
+
+	const copy = async () => {
+		try {
+			await window.navigator.clipboard.writeText( url );
+			setCopied( true );
+			window.setTimeout( () => setCopied( false ), 2000 );
+		} catch {
+			// Clipboard access can be refused (insecure origin, permissions).
+			// The field is selectable, so the user can still copy by hand.
+			setCopied( false );
+		}
+	};
+
+	return (
+		<VStack spacing={ 1 }>
+			<HStack alignment="left" spacing={ 2 }>
+				<TextControl
+					label={ label }
+					value={ url }
+					readOnly
+					onChange={ () => {} }
+					__nextHasNoMarginBottom
+				/>
+				<Button
+					variant="secondary"
+					style={ { marginTop: 24 } }
+					onClick={ copy }
+				>
+					{ copied ? __( 'Copied', 'blockendar' ) : __( 'Copy', 'blockendar' ) }
+				</Button>
+			</HStack>
+			{ help && <p className="description">{ help }</p> }
+		</VStack>
+	);
+}
+
 export function RestApiSection( { settings, update } ) {
 	const [ tokenVisible, setTokenVisible ] = useState( false );
 	const token = settings.rest_feed_token ?? '';
-	const feedUrl = `${ restUrl }blockendar/v1/calendar${
-		token ? `?token=${ token }` : ''
-	}`;
+	const isPublic = settings.rest_public ?? true;
+
+	// The token only does anything while the API is closed. Appending it to a
+	// public feed URL would put a credential in circulation for no benefit.
+	const withToken = ( url ) =>
+		! isPublic && token
+			? `${ url }${ url.includes( '?' ) ? '&' : '?' }token=${ encodeURIComponent(
+					token
+			  ) }`
+			: url;
 
 	return (
 		<VStack spacing={ 5 }>
@@ -37,9 +93,67 @@ export function RestApiSection( { settings, update } ) {
 						'Disable to require authentication for all event data.',
 					'blockendar'
 				) }
-				checked={ settings.rest_public ?? true }
+				checked={ isPublic }
 				onChange={ ( val ) => update( { rest_public: val } ) }
 			/>
+
+			<VStack spacing={ 4 }>
+				<h3 style={ { margin: 0 } }>
+					{ __( 'Calendar subscription', 'blockendar' ) }
+				</h3>
+
+				<FeedUrlField
+					label={ __( 'Subscription link (webcal)', 'blockendar' ) }
+					url={ withToken( FEED_URL_WEBCAL ) }
+					help={ __(
+						'Share this to let people subscribe. Most desktop and mobile calendar apps open a webcal link directly.',
+						'blockendar'
+					) }
+				/>
+
+				<FeedUrlField
+					label={ __( 'Feed URL (https)', 'blockendar' ) }
+					url={ withToken( FEED_URL ) }
+					help={ __(
+						'The same feed over https. Use this for Google Calendar, which asks for an https URL rather than a webcal link.',
+						'blockendar'
+					) }
+				/>
+
+				<TextControl
+					label={ __( 'Include past events for', 'blockendar' ) }
+					type="number"
+					min={ 0 }
+					max={ 3650 }
+					value={ settings.subscribe_past_days ?? 30 }
+					onChange={ ( val ) =>
+						update( { subscribe_past_days: parseInt( val, 10 ) || 0 } )
+					}
+					help={ __(
+						'Days of history the subscription includes. Keeps recently finished events visible in a subscriber calendar.',
+						'blockendar'
+					) }
+					__nextHasNoMarginBottom
+				/>
+
+				<TextControl
+					label={ __( 'Include upcoming events for', 'blockendar' ) }
+					type="number"
+					min={ 1 }
+					max={ 3650 }
+					value={ settings.subscribe_future_days ?? 365 }
+					onChange={ ( val ) =>
+						update( {
+							subscribe_future_days: parseInt( val, 10 ) || 1,
+						} )
+					}
+					help={ __(
+						'Days ahead the subscription covers. The feed cannot show events further out than the recurring event horizon has generated.',
+						'blockendar'
+					) }
+					__nextHasNoMarginBottom
+				/>
+			</VStack>
 
 			<VStack spacing={ 2 }>
 				<HStack alignment="left" spacing={ 2 }>
@@ -49,8 +163,8 @@ export function RestApiSection( { settings, update } ) {
 							'blockendar'
 						) }
 						help={ __(
-							'When set, the calendar feed URL will require this token. ' +
-								'Useful for sharing private calendars without full authentication.',
+							'When the REST API is not public, this token lets a calendar app read the feed without logging in. ' +
+								'Anyone who has the link has the calendar, so share it the way you would share a password.',
 							'blockendar'
 						) }
 						type={ tokenVisible ? 'text' : 'password' }
@@ -90,10 +204,12 @@ export function RestApiSection( { settings, update } ) {
 					) }
 				</HStack>
 
-				{ token && (
+				{ isPublic && token && (
 					<p className="description">
-						{ __( 'Calendar feed URL:', 'blockendar' ) }{ ' ' }
-						<code style={ { userSelect: 'all' } }>{ feedUrl }</code>
+						{ __(
+							'The REST API is public, so this token is not currently required to read the feed.',
+							'blockendar'
+						) }
 					</p>
 				) }
 			</VStack>
