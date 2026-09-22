@@ -70,6 +70,12 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 1.4.0
+- Added: a "Hide events" setting on the Events Query block that chooses when an event leaves the upcoming list — when it ends, at the end of its day, or a number of hours after it ends. The same moment decides when an event counts as past, so an event is never in both an upcoming and a past list at once. Developers can override the cutoff with the `blockendar_events_query_cutoff` filter.
+- Changed: events now stay in upcoming lists until the end of their day by default, and enter past lists the following day. Before, an event dropped out the moment it ended, and an event with no end time dropped out at its start time.
+- Changed: the venue and type filters offer a venue or type whose only event ended earlier today, matching what the query lists.
+- Fixed: the date range filter treated the chosen dates as UTC, so on sites in other timezones a filter for today could miss events at the start or end of the day.
+
 ### 1.3.3
 - Fixed: an open filter dropdown could be painted underneath content further down the page when a page builder wraps blocks in groups with their own stacking context (Advanced Columns and similar). The open panel now uses the browser's top layer, so nothing on the page can cover or clip it.
 - Fixed: a filter's dropdown was only as wide as its button, so a venue such as "Online / Livestream" wrapped at the first word. The panel now widens to fit its options, at least as wide as the button and never wider than the screen.

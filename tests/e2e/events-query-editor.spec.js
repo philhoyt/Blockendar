@@ -236,6 +236,92 @@ test( 'splitting the template leaves the editor in a valid state', async ( {
 	expect( pageErrors, pageErrors.join( '\n' ) ).toEqual( [] );
 } );
 
+test( 'the Hide events control offers three rules and a slider for the hours one', async ( {
+	page,
+} ) => {
+	test.setTimeout( 120000 );
+
+	await loginAsAdmin( page );
+	const canvas = await openEditor( page, postId );
+	await expect(
+		canvas.locator( '.blockendar-events-query' ).first()
+	).toBeVisible( { timeout: 30000 } );
+
+	// Select through the store and open the sidebar, as the other tests do.
+	await page.evaluate( () => {
+		const query = window.wp.data
+			.select( 'core/block-editor' )
+			.getBlocks()
+			.find( ( block ) => block.name === 'blockendar/events-query' );
+
+		window.wp.data
+			.dispatch( 'core/block-editor' )
+			.selectBlock( query.clientId );
+		window.wp.data
+			.dispatch( 'core/edit-post' )
+			?.openGeneralSidebar?.( 'edit-post/block' );
+	} );
+
+	const queryPanel = page.getByRole( 'button', {
+		name: 'Query',
+		exact: true,
+	} );
+
+	if (
+		( await queryPanel.count() ) &&
+		'false' === ( await queryPanel.first().getAttribute( 'aria-expanded' ) )
+	) {
+		await queryPanel.first().click();
+	}
+
+	// Located by the select's label text, for the reason given above.
+	const select = page.locator( 'select', {
+		has: page.locator( 'option', { hasText: 'At the end of their day' } ),
+	} );
+	await select.waitFor( { state: 'visible', timeout: 20000 } );
+
+	await expect( select ).toHaveValue( 'day' );
+	await expect( select.locator( 'option' ) ).toHaveText( [
+		'When they end',
+		'At the end of their day',
+		'A number of hours after they end',
+	] );
+
+	const hoursSlider = page.getByRole( 'slider', {
+		name: 'Hours after the event ends',
+	} );
+
+	await expect( hoursSlider ).toHaveCount( 0 );
+
+	await select.selectOption( 'hours' );
+	await expect( hoursSlider ).toHaveCount( 1 );
+	await expect( hoursSlider ).toHaveValue( '3' );
+
+	await hoursSlider.fill( '6' );
+
+	const saved = await page.evaluate( () => {
+		const query = window.wp.data
+			.select( 'core/block-editor' )
+			.getBlocks()
+			.find( ( block ) => block.name === 'blockendar/events-query' );
+
+		return {
+			hideAfter: query.attributes.hideAfter,
+			hideAfterHours: query.attributes.hideAfterHours,
+			serialized: window.wp.blocks.serialize( [ query ] ),
+		};
+	} );
+
+	expect( saved.hideAfter ).toBe( 'hours' );
+	expect( saved.hideAfterHours ).toBe( 6 );
+	expect( saved.serialized ).toContain( '"hideAfter":"hours"' );
+	expect( saved.serialized ).toContain( '"hideAfterHours":6' );
+
+	// Back to the default: the slider goes and the default is not serialised.
+	await select.selectOption( 'day' );
+	await expect( hoursSlider ).toHaveCount( 0 );
+} );
+
 test( 'each layout gets its own template that the toolbar switches between', async ( {
 	page,
 } ) => {

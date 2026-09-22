@@ -80,6 +80,19 @@
 				"both"
 			]
 		},
+		"hideAfter": {
+			"type": "string",
+			"default": "day",
+			"enum": [
+				"end",
+				"day",
+				"hours"
+			]
+		},
+		"hideAfterHours": {
+			"type": "integer",
+			"default": 3
+		},
 		"displayLayout": {
 			"type": "object",
 			"default": {

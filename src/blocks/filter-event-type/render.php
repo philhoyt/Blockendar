@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\Blocks\Cutoff;
 use Blockendar\Blocks\FilterContext;
 use Blockendar\Blocks\ScriptProbe;
 
@@ -52,8 +53,12 @@ $term_args = [
  * something ahead of them.
  */
 if ( ! $show_empty ) {
-	$index       = new \Blockendar\DB\EventIndex();
-	$with_events = $index->get_term_ids_with_events( 'type' );
+	$index = new \Blockendar\DB\EventIndex();
+
+	// From the start of today rather than from now: the Events Query keeps an
+	// event listed until the end of its day by default, so a term whose only
+	// event ended earlier today must still be on offer.
+	$with_events = $index->get_term_ids_with_events( 'type', Cutoff::start_of_today() );
 
 	if ( empty( $with_events ) ) {
 		return;
