@@ -101,21 +101,6 @@ if ( is_array( $blockendar_demo_state ) ) {
 	if ( isset( $blockendar_demo_front['page_on_front'] ) ) {
 		update_option( 'page_on_front', (int) $blockendar_demo_front['page_on_front'] );
 	}
-
-	// Remove only the settings keys the demo added.
-	$blockendar_demo_keys = (array) ( $blockendar_demo_state['settings_keys'] ?? [] );
-
-	if ( $blockendar_demo_keys ) {
-		$blockendar_demo_settings = get_option( 'blockendar_settings' );
-
-		if ( is_array( $blockendar_demo_settings ) ) {
-			foreach ( $blockendar_demo_keys as $blockendar_demo_key ) {
-				unset( $blockendar_demo_settings[ (string) $blockendar_demo_key ] );
-			}
-
-			update_option( 'blockendar_settings', $blockendar_demo_settings );
-		}
-	}
 }
 
 delete_option( 'blockendar_demo_seeded' );

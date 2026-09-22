@@ -65,15 +65,14 @@ class Seeder {
 		$this->ensure_generator();
 
 		$state = [
-			'events'        => [],
-			'pages'         => [],
-			'attachments'   => [],
-			'terms'         => [],
-			'front'         => [
+			'events'      => [],
+			'pages'       => [],
+			'attachments' => [],
+			'terms'       => [],
+			'front'       => [
 				'show_on_front' => get_option( 'show_on_front' ),
 				'page_on_front' => (int) get_option( 'page_on_front' ),
 			],
-			'settings_keys' => [],
 		];
 
 		$created = 0;
@@ -104,8 +103,6 @@ class Seeder {
 				$this->create_recurrence( $post_id, $series['rule'] );
 				++$created;
 			}
-
-			$state['settings_keys'] = $this->seed_settings();
 
 			$pages = ( new Pages() )->create( $state );
 		} finally {
@@ -181,8 +178,6 @@ class Seeder {
 				++$terms;
 			}
 		}
-
-		$this->restore_settings( (array) ( $state['settings_keys'] ?? [] ) );
 
 		$front = (array) ( $state['front'] ?? [] );
 		if ( isset( $front['show_on_front'] ) ) {
@@ -446,60 +441,6 @@ class Seeder {
 		( new EventIndex() )->delete_by_post_id( $post_id );
 
 		do_action( 'blockendar_generate_recurrence_index', $post_id );
-	}
-
-	/**
-	 * Merge demo defaults into blockendar_settings, without overwriting
-	 * anything the site already chose.
-	 *
-	 * @return string[] The keys this demo added, so reset() removes only those.
-	 */
-	private function seed_settings(): array {
-		$defaults = [
-			'map_provider'     => 'osm',
-			'default_currency' => 'USD',
-			'events_slug'      => 'events',
-		];
-
-		$settings = get_option( 'blockendar_settings' );
-		$settings = is_array( $settings ) ? $settings : [];
-		$added    = [];
-
-		foreach ( $defaults as $key => $value ) {
-			if ( ! array_key_exists( $key, $settings ) ) {
-				$settings[ $key ] = $value;
-				$added[]          = $key;
-			}
-		}
-
-		if ( $added ) {
-			update_option( 'blockendar_settings', $settings );
-		}
-
-		return $added;
-	}
-
-	/**
-	 * Remove only the settings keys the demo added.
-	 *
-	 * @param string[] $keys Keys to remove.
-	 */
-	private function restore_settings( array $keys ): void {
-		if ( ! $keys ) {
-			return;
-		}
-
-		$settings = get_option( 'blockendar_settings' );
-
-		if ( ! is_array( $settings ) ) {
-			return;
-		}
-
-		foreach ( $keys as $key ) {
-			unset( $settings[ (string) $key ] );
-		}
-
-		update_option( 'blockendar_settings', $settings );
 	}
 
 	/**

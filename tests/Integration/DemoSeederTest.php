@@ -262,21 +262,35 @@ class DemoSeederTest extends WP_UnitTestCase {
 		$this->assertSame( $attachment_id, get_post_thumbnail_id( $event_id ) );
 	}
 
-	public function test_settings_only_lose_the_keys_the_demo_added(): void {
+	/**
+	 * The demo must not touch blockendar_settings at all.
+	 *
+	 * An earlier version seeded "demo defaults" into this option. Two of the
+	 * three were already the plugin's own defaults, and the third
+	 * ('map_provider') is not a registered key at all — SettingsPage::sanitize()
+	 * rebuilds the option from its known keys, so it was silently stripped on
+	 * write. The whole step was a no-op wrapped around a bug, and seeding now
+	 * leaves the option alone.
+	 */
+	public function test_seeding_does_not_touch_site_settings(): void {
 		update_option( 'blockendar_settings', [ 'default_currency' => 'GBP' ] );
+
+		$before = get_option( 'blockendar_settings' );
 
 		$this->limit_fixtures( 1 );
 		$this->seeder->seed();
 
-		$settings = get_option( 'blockendar_settings' );
-		$this->assertSame( 'GBP', $settings['default_currency'], 'Demo overwrote an existing setting.' );
-		$this->assertSame( 'osm', $settings['map_provider'] );
+		$after = get_option( 'blockendar_settings' );
+		$this->assertSame( 'GBP', $after['default_currency'], 'Demo overwrote an existing setting.' );
+		$this->assertSame( $before, $after, 'Seeding changed blockendar_settings.' );
 
 		$this->seeder->reset();
 
-		$settings = get_option( 'blockendar_settings' );
-		$this->assertSame( 'GBP', $settings['default_currency'], 'Reset removed a setting the demo did not add.' );
-		$this->assertArrayNotHasKey( 'map_provider', $settings );
+		$this->assertSame(
+			$before,
+			get_option( 'blockendar_settings' ),
+			'Reset changed blockendar_settings.'
+		);
 	}
 
 	public function test_dependency_guard_rejects_missing_or_old_blockendar(): void {
