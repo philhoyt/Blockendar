@@ -29,8 +29,27 @@ class CalendarController extends AbstractController {
 
 	private EventIndex $index;
 
+	/**
+	 * Whether the current request is being served as an iCalendar feed.
+	 *
+	 * @var bool
+	 */
+	private bool $serving_ics = false;
+
 	public function __construct() {
 		$this->index = new EventIndex();
+	}
+
+	/**
+	 * Attach hooks.
+	 *
+	 * Extends the base registration with the filter that writes the iCalendar
+	 * body directly, bypassing JSON encoding.
+	 */
+	public function register(): void {
+		parent::register();
+
+		add_filter( 'rest_pre_serve_request', [ $this, 'serve_raw_ics' ], 10, 3 );
 	}
 
 	/**
@@ -292,6 +311,54 @@ class CalendarController extends AbstractController {
 		$response->header( 'Content-Type', 'text/calendar; charset=utf-8' );
 		$response->header( 'Content-Disposition', 'attachment; filename="blockendar-events.ics"' );
 
+		// Mark the response so rest_pre_serve_request() knows to emit the body
+		// verbatim rather than letting the server JSON-encode it.
+		$this->serving_ics = true;
+
 		return $response;
+	}
+
+	/**
+	 * Emit the iCalendar body verbatim.
+	 *
+	 * A WP_REST_Response holding a raw string is JSON-encoded by the server,
+	 * which turns the feed into a quoted string with literal \r\n escapes that
+	 * no calendar client can parse. Taking over the write here is the documented
+	 * way to bypass that; headers set on the response have already been sent by
+	 * the time this filter runs.
+	 *
+	 * @param bool  $served  Whether the request was already served.
+	 * @param mixed $result  Response to send.
+	 * @param mixed $request Current request.
+	 * @return bool True when this filter wrote the body itself.
+	 */
+	public function serve_raw_ics( bool $served, $result, $request ): bool {
+		if ( $served || ! $this->serving_ics ) {
+			return $served;
+		}
+
+		if ( ! $result instanceof WP_REST_Response || ! $request instanceof WP_REST_Request ) {
+			return $served;
+		}
+
+		// Only ever take over our own feed route.
+		if ( '/' . self::NAMESPACE . '/calendar' !== $request->get_route() ) {
+			return $served;
+		}
+
+		if ( 'ics' !== $request->get_param( 'format' ) ) {
+			return $served;
+		}
+
+		$body = $result->get_data();
+
+		if ( ! is_string( $body ) ) {
+			return $served;
+		}
+
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- iCalendar body, escaped by Exporter per RFC 5545.
+		echo $body;
+
+		return true;
 	}
 }
