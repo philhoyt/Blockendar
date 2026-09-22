@@ -243,12 +243,24 @@ if ( $inherit ) {
 	// In past mode the range narrows the "ended before the cutoff" set: the
 	// event must have finished inside it. It never switches the query back to
 	// overlap.
+	//
+	// The dates are the visitor's, so they are days in the site timezone and
+	// have to be converted before meeting the index's UTC columns — read as
+	// UTC, "today" started hours early or late and dropped events at the
+	// edges of the day. FilterContext has already validated them as Y-m-d.
+	$site_tz = wp_timezone();
+	$utc_tz  = new \DateTimeZone( 'UTC' );
+
 	if ( null !== $url_filters['date_start'] ) {
-		$filter_start = $url_filters['date_start'] . ' 00:00:00';
+		$filter_start = ( new \DateTimeImmutable( $url_filters['date_start'] . ' 00:00:00', $site_tz ) )
+			->setTimezone( $utc_tz )
+			->format( 'Y-m-d H:i:s' );
 		$start        = $show_past ? $filter_start : max( $cutoff, $filter_start );
 	}
 	if ( null !== $url_filters['date_end'] ) {
-		$end = $url_filters['date_end'] . ' 23:59:59';
+		$end = ( new \DateTimeImmutable( $url_filters['date_end'] . ' 23:59:59', $site_tz ) )
+			->setTimezone( $utc_tz )
+			->format( 'Y-m-d H:i:s' );
 	}
 
 	$standard_filters = $past_filter + [
