@@ -88,6 +88,14 @@
 	padding: 0;
 }
 
+/* In the top layer the panel is positioned against the document, so 100%
+   would be the whole page. The trigger's measured width takes its place, with
+   the same floor. */
+.blockendar-filter-date-range.is-floating.is-open .blockendar-filter__panel {
+	inline-size: max(var(--blockendar-anchor-width, 0px), 18rem);
+	max-inline-size: calc(100vw - 1rem);
+}
+
 /*
  * Flatpickr sizes its calendar, day container and rows in fixed pixels. Each
  * has to be released for the grid to track the panel rather than sit in it.
