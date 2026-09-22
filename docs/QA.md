@@ -293,6 +293,29 @@
 
 ---
 
+## 12. Demo Companion Plugin
+
+Applies to `blockendar-demo.zip`, released alongside the main plugin.
+
+| # | Test | Status | Notes |
+|---|------|--------|-------|
+| 12.1 | Activating the demo plugin with Blockendar inactive shows a notice and self-deactivates (no fatal) | 🔲 | |
+| 12.2 | Activating with Blockendar active seeds automatically | 🔲 | |
+| 12.3 | 31 events exist, all with start dates inside ±180 days of activation | 🔲 | |
+| 12.4 | All six tour pages render, each linking the other five | 🔲 | |
+| 12.5 | Landing page is set as the static front page | 🔲 | |
+| 12.6 | Recurring series show multiple occurrences on the calendar | 🔲 | |
+| 12.7 | Featured images appear on event cards (no outbound requests) | 🔲 | |
+| 12.8 | **Tools > Blockendar Demo** offers Seed / Reset per current state | 🔲 | |
+| 12.9 | Reset removes every demo object and restores the previous front page setting | 🔲 | |
+| 12.10 | A pre-existing `calendar` page and `music` term survive both seed and reset | 🔲 | |
+| 12.11 | Re-seeding without a reset is refused rather than duplicating content | 🔲 | |
+| 12.12 | `wp blockendar-demo seed` and `wp blockendar-demo reset` match the admin buttons | 🔲 | |
+| 12.13 | Deleting the demo plugin cleans up even with Blockendar already deactivated | 🔲 | |
+| 12.14 | Playground badge URL boots to a populated front page | 🔲 | |
+
+---
+
 ## Known Issues
 
 | # | Description | Severity | Status |
