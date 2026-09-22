@@ -11,6 +11,13 @@
  * the correct occurrence without needing a URL query param. A post_type_link filter
  * stamps ?occurrence_date= on the permalink so core/post-title links are correct too.
  *
+ * Upcoming and past are two sides of one cutoff (see Cutoff): an event is
+ * upcoming while it ends after the cutoff and past once it has ended by it.
+ * The block's hideAfter attribute chooses the rule — the moment the event ends,
+ * the end of its day (default), or a number of hours later — so nothing is
+ * ever in both lists, and a site can override the value through the
+ * blockendar_events_query_cutoff filter.
+ *
  * @package Blockendar
  */
 
@@ -21,6 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
+use Blockendar\Blocks\Cutoff;
 use Blockendar\Blocks\FilterContext;
 use Blockendar\DB\EventIndex;
 
@@ -77,8 +85,31 @@ $is_grid             = 'grid' === $layout_type;
 $column_count        = max( 2, min( 6, (int) ( $layout['columnCount'] ?? 3 ) ) );
 $column_count_tablet = max( 1, min( 4, (int) ( $layout['columnCountTablet'] ?? 2 ) ) );
 $column_count_mobile = max( 1, min( 3, (int) ( $layout['columnCountMobile'] ?? 1 ) ) );
-$now                 = gmdate( 'Y-m-d H:i:s' );
 $current_post_id     = 'none' !== $related_to ? (int) ( $block->context['postId'] ?? 0 ) : 0;
+
+/*
+ * The cutoff between upcoming and past. Validated here as well as in Cutoff:
+ * an unknown rule is the default and the hours are clamped to what the editor
+ * offers, so hand-edited markup cannot widen the range past that.
+ */
+$hide_after       = (string) ( $attributes['hideAfter'] ?? Cutoff::DEFAULT_RULE );
+$hide_after_hours = max( Cutoff::MIN_HOURS, min( Cutoff::MAX_HOURS, (int) ( $attributes['hideAfterHours'] ?? Cutoff::DEFAULT_HOURS ) ) );
+$cutoff           = Cutoff::for_rule( $hide_after, $hide_after_hours );
+
+/**
+ * Filter the moment before which this listing treats an event as past.
+ *
+ * The value must be a UTC datetime in 'Y-m-d H:i:s' form; anything else is
+ * ignored and the rule's own cutoff is kept.
+ *
+ * @param string $cutoff     UTC datetime.
+ * @param array  $attributes The block's attributes.
+ */
+$filtered = apply_filters( 'blockendar_events_query_cutoff', $cutoff, $attributes );
+
+if ( Cutoff::is_valid( $filtered ) ) {
+	$cutoff = $filtered;
+}
 
 // Resolve block gap — WordPress only injects --wp--style--block-gap via layout support,
 // which we don't use, so we read and resolve the raw attribute value ourselves.
@@ -96,16 +127,17 @@ if ( null !== $raw_block_gap && '' !== (string) $raw_block_gap ) {
 
 if ( $show_past ) {
 	$start = '2000-01-01 00:00:00';
-	$end   = $now;
+	$end   = $cutoff;
 } else {
-	$start = $now;
+	$start = $cutoff;
 	$end   = gmdate( 'Y-m-d H:i:s', strtotime( '+3 years' ) );
 }
 
-// Past means finished. The index matches by overlap, which would also catch an
-// event that started but has not ended (and every ongoing event, whose end is a
-// far-future sentinel), so past mode switches the query to "ended before now".
-$past_filter = $show_past ? [ 'ended_before' => $now ] : [];
+// Past means finished before the cutoff. The index matches by overlap, which
+// would also catch an event that started but has not ended (and every ongoing
+// event, whose end is a far-future sentinel), so past mode switches the query
+// to "ended before the cutoff".
+$past_filter = $show_past ? [ 'ended_before' => $cutoff ] : [];
 
 // Read active URL filters (only applied in standard query mode — not inherit/relatedTo).
 $url_filters = FilterContext::get_active_filters( $query_id );
@@ -207,12 +239,13 @@ if ( $inherit ) {
 	}
 
 	// Apply date range filter. When showPast is false the effective start is
-	// max(now, filter_date_start) so past dates cannot sneak in via the URL.
-	// In past mode the range narrows the "ended before now" set: the event must
-	// have finished inside it. It never switches the query back to overlap.
+	// max(cutoff, filter_date_start) so past dates cannot sneak in via the URL.
+	// In past mode the range narrows the "ended before the cutoff" set: the
+	// event must have finished inside it. It never switches the query back to
+	// overlap.
 	if ( null !== $url_filters['date_start'] ) {
 		$filter_start = $url_filters['date_start'] . ' 00:00:00';
-		$start        = $show_past ? $filter_start : max( $now, $filter_start );
+		$start        = $show_past ? $filter_start : max( $cutoff, $filter_start );
 	}
 	if ( null !== $url_filters['date_end'] ) {
 		$end = $url_filters['date_end'] . ' 23:59:59';
