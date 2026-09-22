@@ -41,6 +41,19 @@ class Exporter {
 			$title = get_bloginfo( 'name' ) . ' Events';
 		}
 
+		/**
+		 * Filters the calendar name advertised in the feed (X-WR-CALNAME).
+		 *
+		 * The returned value is escaped before output, so a filter cannot
+		 * inject additional iCalendar properties.
+		 *
+		 * @param string   $title Calendar name, already reflecting active filters.
+		 * @param object[] $rows  Index rows being exported.
+		 */
+		$title = (string) apply_filters( 'blockendar_ics_calendar_name', $title, $rows );
+
+		$refresh = $this->refresh_interval();
+
 		$lines   = [];
 		$lines[] = 'BEGIN:VCALENDAR';
 		$lines[] = 'VERSION:2.0';
@@ -49,6 +62,8 @@ class Exporter {
 		$lines[] = 'METHOD:PUBLISH';
 		$lines[] = 'X-WR-CALNAME:' . $this->escape_text( $title );
 		$lines[] = 'X-WR-TIMEZONE:UTC';
+		$lines[] = 'REFRESH-INTERVAL;VALUE=DURATION:' . $refresh;
+		$lines[] = 'X-PUBLISHED-TTL:' . $refresh;
 
 		foreach ( $rows as $row ) {
 			$lines = array_merge( $lines, $this->build_vevent( $row ) );
@@ -59,6 +74,53 @@ class Exporter {
 		$lines = array_map( [ $this, 'fold_line' ], $lines );
 
 		return implode( "\r\n", $lines ) . "\r\n";
+	}
+
+	/**
+	 * Refresh interval advertised to subscribing clients.
+	 *
+	 * Clients treat this as a hint only — Google Calendar in particular polls
+	 * on its own schedule — but Apple Calendar honours it reasonably closely.
+	 *
+	 * @return string A valid iCalendar duration.
+	 */
+	private function refresh_interval(): string {
+		$default = 'PT1H';
+
+		/**
+		 * Filters how often subscribing clients are asked to refresh the feed.
+		 *
+		 * Must be a valid iCalendar duration (RFC 5545 §3.3.6), e.g. 'PT30M',
+		 * 'PT6H', 'P1D'. Anything else falls back to the default, since this
+		 * value is written straight into two calendar properties.
+		 *
+		 * @param string $default Default interval, 'PT1H'.
+		 */
+		$value = (string) apply_filters( 'blockendar_ics_refresh_interval', $default );
+
+		return $this->is_valid_duration( $value ) ? $value : $default;
+	}
+
+	/**
+	 * Whether a string is a valid iCalendar duration value.
+	 *
+	 * The D modifier matters: without it '$' also matches before a trailing
+	 * newline, which would let "PT1H\n" through and break the content line.
+	 *
+	 * @param string $value Candidate duration.
+	 */
+	private function is_valid_duration( string $value ): bool {
+		if ( '' === $value || strlen( $value ) > 20 ) {
+			return false;
+		}
+
+		if ( ! preg_match( '/^[+-]?P(?:\d+W|(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+S)?)?)$/D', $value ) ) {
+			return false;
+		}
+
+		// Reject 'P', 'PT' and 'P1DT' — a duration needs at least one value,
+		// and a 'T' must be followed by a time component.
+		return (bool) preg_match( '/\d/', $value ) && ! str_ends_with( $value, 'T' );
 	}
 
 	/**
