@@ -240,7 +240,7 @@ class Exporter {
 		$post_id     = (int) $row->post_id;
 		$all_day     = (bool) $row->all_day;
 		$ongoing     = ! empty( $row->ongoing );
-		$uid         = "blockendar-{$post_id}-{$row->start_date}@" . wp_parse_url( home_url(), PHP_URL_HOST );
+		$uid         = $this->build_uid( $row );
 		$url         = get_permalink( $post_id );
 		$summary     = $this->escape_text( $row->post_title );
 		$description = $this->escape_text( wp_strip_all_tags( get_the_excerpt( $post_id ) ) );
@@ -250,6 +250,13 @@ class Exporter {
 		$lines[] = 'BEGIN:VEVENT';
 		$lines[] = 'UID:' . $uid;
 		$lines[] = 'DTSTAMP:' . gmdate( 'Ymd\THis\Z' );
+		$lines[] = 'SEQUENCE:' . $this->build_sequence( $row );
+
+		$modified = (string) ( $row->post_modified_gmt ?? '' );
+
+		if ( '' !== $modified ) {
+			$lines[] = 'LAST-MODIFIED:' . $this->utc_to_ical( $modified );
+		}
 
 		// RFC 5545 permits a VEVENT with DTSTART only; ongoing events have no end
 		// date, so emit none rather than the index's sentinel.
@@ -294,6 +301,54 @@ class Exporter {
 		$lines[] = 'END:VEVENT';
 
 		return $lines;
+	}
+
+	/**
+	 * Build the UID for an occurrence.
+	 *
+	 * A non-recurring event keeps one UID for its whole life, so moving it to a
+	 * new date updates the entry a subscriber already has instead of leaving the
+	 * old time behind as a second event.
+	 *
+	 * Occurrences of a recurring event stay keyed by date: with one standalone
+	 * VEVENT per occurrence and no RRULE, the date is the only thing that tells
+	 * one instance from another. Moving a single occurrence of a series is
+	 * therefore still seen as a delete plus an add. Emitting RRULE with
+	 * RECURRENCE-ID would fix that, and is deliberately out of scope here.
+	 *
+	 * @param object $row Index row.
+	 */
+	private function build_uid( object $row ): string {
+		$post_id = (int) $row->post_id;
+		$host    = wp_parse_url( home_url(), PHP_URL_HOST );
+
+		if ( ! empty( $row->recurrence_id ) ) {
+			return "blockendar-{$post_id}-{$row->start_date}@{$host}";
+		}
+
+		return "blockendar-{$post_id}@{$host}";
+	}
+
+	/**
+	 * Build the SEQUENCE for an occurrence.
+	 *
+	 * RFC 5545 wants a non-negative integer that only ever grows as an event is
+	 * revised; clients use it to decide whether an incoming copy is newer than
+	 * the one they hold. Seconds elapsed between creation and last modification
+	 * satisfies that without storing a counter: it is 0 for an untouched event
+	 * and rises with every subsequent edit.
+	 *
+	 * @param object $row Index row.
+	 */
+	private function build_sequence( object $row ): int {
+		$created  = strtotime( (string) ( $row->post_date_gmt ?? '' ) );
+		$modified = strtotime( (string) ( $row->post_modified_gmt ?? '' ) );
+
+		if ( ! $created || ! $modified || $modified <= $created ) {
+			return 0;
+		}
+
+		return $modified - $created;
 	}
 
 	/**
@@ -394,16 +449,18 @@ class Exporter {
 		$venue_term_id = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? $terms[0]->term_id : null;
 
 		return (object) [
-			'post_id'        => $post_id,
-			'post_title'     => $post->post_title,
-			'start_date'     => $start_date,
-			'end_date'       => $ongoing ? EventIndex::ONGOING_END_DATE : $end_date,
-			'start_datetime' => $start_dt->format( 'Y-m-d H:i:s' ),
-			'end_datetime'   => $end_dt->format( 'Y-m-d H:i:s' ),
-			'all_day'        => $all_day ? 1 : 0,
-			'ongoing'        => $ongoing ? 1 : 0,
-			'status'         => $status,
-			'venue_term_id'  => $venue_term_id,
+			'post_id'           => $post_id,
+			'post_title'        => $post->post_title,
+			'start_date'        => $start_date,
+			'end_date'          => $ongoing ? EventIndex::ONGOING_END_DATE : $end_date,
+			'start_datetime'    => $start_dt->format( 'Y-m-d H:i:s' ),
+			'end_datetime'      => $end_dt->format( 'Y-m-d H:i:s' ),
+			'all_day'           => $all_day ? 1 : 0,
+			'ongoing'           => $ongoing ? 1 : 0,
+			'status'            => $status,
+			'venue_term_id'     => $venue_term_id,
+			'post_date_gmt'     => $post->post_date_gmt,
+			'post_modified_gmt' => $post->post_modified_gmt,
 		];
 	}
 }

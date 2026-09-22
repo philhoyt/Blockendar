@@ -220,7 +220,8 @@ class EventIndex {
 			"SELECT e.id, e.post_id, e.start_datetime, e.end_datetime, e.start_date,
 			        e.end_date, e.all_day, e.recurrence_id, e.status,
 			        e.venue_term_id, e.type_term_ids, e.featured, e.hide_from_listings,
-			        e.ongoing, p.post_title, p.post_name, p.guid
+			        e.ongoing, p.post_title, p.post_name, p.guid,
+			        p.post_date_gmt, p.post_modified_gmt
 			FROM   {$events_table} e
 			JOIN   {$posts_table} p ON p.ID = e.post_id
 			{$where_sql}
