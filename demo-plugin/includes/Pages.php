@@ -86,30 +86,40 @@ class Pages {
 	}
 
 	/**
-	 * Fail loudly if a page's markup does not round-trip through the parser.
+	 * Warn if a page's markup did not parse into real blocks.
 	 *
-	 * Serialized block markup built by string concatenation is easy to get
-	 * subtly wrong — an unbalanced delimiter renders as a blank page rather
-	 * than an error, so this turns it into a visible one.
+	 * Serialized markup built by string concatenation is easy to get subtly
+	 * wrong, and an unbalanced delimiter renders as a blank page rather than an
+	 * error. This is deliberately not a serialize_blocks() round-trip equality
+	 * check: the serializer normalises whitespace, so identical-meaning markup
+	 * can differ byte for byte and the warning would fire on correct input.
+	 *
+	 * What it actually catches: markup that contains block delimiters but yields
+	 * no named blocks, which only happens when the delimiters are malformed.
 	 */
 	private function assert_parses( string $slug, string $markup ): void {
-		$blocks = parse_blocks( $markup );
-
-		if ( ! $blocks ) {
+		if ( ! str_contains( $markup, '<!-- wp:' ) ) {
 			return;
 		}
 
-		$reserialized = serialize_blocks( $blocks );
+		$named = 0;
 
-		if ( $reserialized !== $markup && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error
-			trigger_error(
-				sprintf(
-					'Blockendar Demo: block markup for "%s" did not round-trip through parse_blocks().',
-					esc_html( $slug )
-				),
-				E_USER_WARNING
-			);
+		foreach ( parse_blocks( $markup ) as $block ) {
+			if ( ! empty( $block['blockName'] ) ) {
+				++$named;
+			}
 		}
+
+		if ( $named > 0 ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log(
+			sprintf(
+				'Blockendar Demo: block markup for "%s" contains delimiters but parsed into no blocks.',
+				$slug
+			)
+		);
 	}
 }
