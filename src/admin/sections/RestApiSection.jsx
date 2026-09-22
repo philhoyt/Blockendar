@@ -47,20 +47,22 @@ function FeedUrlField( { label, url, help } ) {
 
 	return (
 		<VStack spacing={ 1 }>
-			<HStack alignment="left" spacing={ 2 }>
-				<TextControl
-					label={ label }
-					value={ url }
-					readOnly
-					onChange={ () => {} }
-					__nextHasNoMarginBottom
-				/>
-				<Button
-					variant="secondary"
-					style={ { marginTop: 24 } }
-					onClick={ copy }
-				>
-					{ copied ? __( 'Copied', 'blockendar' ) : __( 'Copy', 'blockendar' ) }
+			<HStack alignment="bottom" spacing={ 2 } justify="flex-start">
+				{ /* The field has to take the free space, or the URL people are
+				     being asked to copy is cut off mid-host. */ }
+				<div style={ { flexGrow: 1, minWidth: 0 } }>
+					<TextControl
+						label={ label }
+						value={ url }
+						readOnly
+						onChange={ () => {} }
+						__nextHasNoMarginBottom
+					/>
+				</div>
+				<Button variant="secondary" onClick={ copy }>
+					{ copied
+						? __( 'Copied', 'blockendar' )
+						: __( 'Copy', 'blockendar' ) }
 				</Button>
 			</HStack>
 			{ help && <p className="description">{ help }</p> }
