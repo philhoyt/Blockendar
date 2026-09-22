@@ -434,6 +434,41 @@ class CalendarSubscriptionTest extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * A feed holding exactly the ceiling dropped nothing, so it must not claim
+	 * it did. This is why the query fetches one row past the ceiling.
+	 */
+	public function test_a_feed_exactly_at_the_ceiling_does_not_claim_truncation(): void {
+		$this->make_event( 'Exactly One', gmdate( 'Y-m-d', strtotime( '+5 days' ) ) );
+
+		$limit = static fn() => 1;
+		add_filter( 'blockendar_ics_max_events', $limit );
+
+		$body = $this->request()->get_data();
+
+		remove_filter( 'blockendar_ics_max_events', $limit );
+
+		$this->assertSame( 1, substr_count( $body, 'BEGIN:VEVENT' ) );
+		$this->assertStringNotContainsString( 'X-WR-CALDESC', $body );
+		$this->assertFalse( get_transient( 'blockendar_ics_truncated' ) );
+	}
+
+	public function test_a_truncated_feed_carries_exactly_the_ceiling(): void {
+		foreach ( [ 3, 4, 5 ] as $offset ) {
+			$this->make_event( "Capped {$offset}", gmdate( 'Y-m-d', strtotime( "+{$offset} days" ) ) );
+		}
+
+		$limit = static fn() => 2;
+		add_filter( 'blockendar_ics_max_events', $limit );
+
+		$body = $this->request()->get_data();
+
+		remove_filter( 'blockendar_ics_max_events', $limit );
+
+		$this->assertSame( 2, substr_count( $body, 'BEGIN:VEVENT' ), 'The ceiling was not applied exactly.' );
+		$this->assertStringContainsString( 'X-WR-CALDESC', $body );
+	}
+
 	public function test_an_untruncated_feed_stays_quiet(): void {
 		$this->make_event( 'Only One', gmdate( 'Y-m-d', strtotime( '+5 days' ) ) );
 

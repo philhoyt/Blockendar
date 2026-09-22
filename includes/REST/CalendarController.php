@@ -129,19 +129,30 @@ class CalendarController extends AbstractController {
 
 		$ceiling = $is_ics ? $this->ics_max_events() : EventIndex::DEFAULT_MAX_PER_PAGE;
 
+		// Fetch one row past the ceiling on the feed path. Without it, a feed
+		// holding exactly the ceiling would be indistinguishable from one that
+		// was cut short, and would warn about dropping events it never had.
+		$fetch = $is_ics ? $ceiling + 1 : $ceiling;
+
 		$filters = [
 			'venue_term_id' => $this->parse_id_list( $request->get_param( 'venue' ) ),
 			'type_term_id'  => $this->parse_id_list( $request->get_param( 'type' ) ),
 			'featured'      => $request->get_param( 'featured' ) ? rest_sanitize_boolean( $request->get_param( 'featured' ) ) : null,
-			'per_page'      => $ceiling,
-			'max_per_page'  => $ceiling,
+			'per_page'      => $fetch,
+			'max_per_page'  => $fetch,
 			'page'          => 1,
 		];
 
 		$rows = $this->index->get_events_in_range( $start, $end, $filters );
 
 		if ( $is_ics ) {
-			return $this->serve_ics( $rows, $request, count( $rows ) >= $ceiling );
+			$truncated = count( $rows ) > $ceiling;
+
+			if ( $truncated ) {
+				$rows = array_slice( $rows, 0, $ceiling );
+			}
+
+			return $this->serve_ics( $rows, $request, $truncated );
 		}
 
 		$events = array_map( [ $this, 'format_for_fullcalendar' ], $rows );
