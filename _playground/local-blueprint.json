@@ -1,0 +1,32 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "Blockendar Demo (local preview)",
+		"description": "Boots the working tree's built plugins. Used by bin/playground.sh — the published demo uses blueprint.json.",
+		"author": "philhoyt"
+	},
+	"login": true,
+	"landingPage": "/",
+	"steps": [
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"blogname": "Blockendar Demo",
+				"permalink_structure": "/%postname%/"
+			}
+		},
+		{
+			"step": "activatePlugin",
+			"pluginPath": "blockendar/blockendar.php"
+		},
+		{
+			"step": "activatePlugin",
+			"pluginPath": "blockendar-demo/blockendar-demo.php"
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require_once '/wordpress/wp-load.php';",
+			"progress": { "caption": "Generating events and the guided tour" }
+		}
+	]
+}

@@ -11,18 +11,8 @@
 		"wp": "latest"
 	},
 	"login": true,
-	"landingPage": "/open-demo-page.php",
+	"landingPage": "/",
 	"steps": [
-		{
-			"step": "installPlugin",
-			"pluginData": {
-				"resource": "url",
-				"url": "https://github.com/philhoyt/Blockendar/releases/latest/download/blockendar.zip"
-			},
-			"options": {
-				"activate": true
-			}
-		},
 		{
 			"step": "setSiteOptions",
 			"options": {
@@ -31,34 +21,37 @@
 			}
 		},
 		{
-			"step": "importWxr",
-			"file": {
+			"step": "installPlugin",
+			"pluginData": {
 				"resource": "url",
-				"url": "https://raw.githubusercontent.com/philhoyt/Blockendar/main/_playground/demo.xml"
+				"url": "https://github.com/philhoyt/Blockendar/releases/latest/download/blockendar.zip"
 			},
-			"fetchAttachments": false,
-			"importComments": false,
-			"authorsMode": "default-author",
-			"defaultAuthorUsername": "admin"
-		},
-		{
-			"step": "wp-cli",
-			"command": "wp rewrite flush --hard",
+			"options": {
+				"activate": true
+			},
 			"progress": {
-				"caption": "Flushing permalinks"
+				"caption": "Installing Blockendar"
 			}
 		},
 		{
-			"step": "wp-cli",
-			"command": "wp blockendar rebuild-index",
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "url",
+				"url": "https://github.com/philhoyt/Blockendar/releases/latest/download/blockendar-demo.zip"
+			},
+			"options": {
+				"activate": true
+			},
 			"progress": {
-				"caption": "Building the Blockendar event index"
+				"caption": "Installing the demo content"
 			}
 		},
 		{
-			"step": "writeFile",
-			"path": "/wordpress/open-demo-page.php",
-			"data": "<?php require_once 'wp-load.php'; $pages = get_posts( [ 'name' => 'events-demo', 'post_type' => 'page', 'numberposts' => 1 ] ); if ( $pages ) { wp_redirect( get_permalink( $pages[0]->ID ) ); } else { wp_redirect( home_url() ); } exit;"
+			"step": "runPHP",
+			"code": "<?php require_once '/wordpress/wp-load.php';",
+			"progress": {
+				"caption": "Generating events and the guided tour"
+			}
 		}
 	]
 }

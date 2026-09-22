@@ -7,7 +7,7 @@
 	<file>uninstall.php</file>
 	<file>includes/</file>
 	<file>src/blocks/</file>
-	<file>bin/</file>
+	<file>demo-plugin/</file>
 	<file>tests/</file>
 
 	<arg name="extensions" value="php"/>
@@ -161,18 +161,14 @@
 	</rule>
 
 	<!-- ======================================================
-	     Developer scripts
+	     Demo companion plugin
 	     ====================================================== -->
-	<!-- bin/ holds local seeding/maintenance scripts run from WP-CLI. They are
-	     excluded from the distributed zip via the "files" array in package.json. -->
+	<!-- demo-plugin/ is a separate plugin, shipped as its own zip. It is not
+	     part of the Blockendar zip (see the "files" array in package.json) and
+	     carries no translatable strings by design, so the blockendar text
+	     domain rule above does not apply to it. -->
 	<rule ref="WordPress.WP.GlobalVariablesOverride">
-		<exclude-pattern>bin/</exclude-pattern>
-	</rule>
-	<rule ref="WordPress.WP.AlternativeFunctions.unlink_unlink">
-		<exclude-pattern>bin/</exclude-pattern>
-	</rule>
-	<rule ref="WordPress.DB.DirectDatabaseQuery">
-		<exclude-pattern>bin/</exclude-pattern>
+		<exclude-pattern>demo-plugin/uninstall.php</exclude-pattern>
 	</rule>
 
 	<!-- ======================================================

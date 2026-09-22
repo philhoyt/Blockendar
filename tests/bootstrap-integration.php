@@ -43,6 +43,10 @@ tests_add_filter(
 	'muplugins_loaded',
 	static function (): void {
 		require dirname( __DIR__ ) . '/blockendar.php';
+
+		// The companion demo plugin ships as its own zip, but lives in this repo
+		// and is covered by this suite.
+		require dirname( __DIR__ ) . '/demo-plugin/blockendar-demo.php';
 	}
 );
 

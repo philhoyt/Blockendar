@@ -34,6 +34,9 @@ jobs:
       - name: Create plugin zip
         run: npm run plugin-zip
 
+      - name: Create demo plugin zip
+        run: npm run plugin-zip:demo
+
       - name: Extract changelog
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
@@ -44,5 +47,6 @@ jobs:
         with:
           files: |
             blockendar.zip
+            demo-plugin/blockendar-demo.zip
             readme.txt
           body_path: changelog_body.txt

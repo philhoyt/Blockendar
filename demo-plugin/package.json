@@ -1,0 +1,15 @@
+{
+	"name": "blockendar-demo",
+	"version": "1.5.0",
+	"description": "Companion demo content plugin for Blockendar. Packaged as its own zip; not part of the Blockendar plugin.",
+	"private": true,
+	"license": "GPL-2.0-or-later",
+	"files": [
+		"includes",
+		"images",
+		"blockendar-demo.php",
+		"uninstall.php",
+		"readme.txt",
+		"README.md"
+	]
+}

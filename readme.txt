@@ -72,6 +72,12 @@ Yes. The Calendar View block exposes an iCal feed URL, and individual events hav
 
 Event metadata is stored in standard WordPress post meta. All date/time data is additionally indexed in a custom table (`{prefix}blockendar_events`) for performant range queries.
 
+= How do I try it without setting up events first? =
+
+Download `blockendar-demo.zip` from the Releases page and install it alongside Blockendar. Activating it creates 31 events, 5 venues and a six-page guided tour of the plugin's blocks. Every date is generated at activation, so the demo is always current.
+
+Manage it from Tools > Blockendar Demo, or with `wp blockendar-demo seed` and `wp blockendar-demo reset`. Reset removes only what the demo created and restores your previous front page setting.
+
 = Does it work with WordPress Multisite? =
 
 Each site in a multisite network gets its own database tables. The plugin has not been tested extensively in multisite environments.
@@ -84,6 +90,12 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 1.5.0 =
+* Added: a companion demo plugin, released as `blockendar-demo.zip`. Activating it fills a site with 31 events, 6 event types, 5 venues and a six-page guided tour of the plugin's blocks. Dates are generated at activation, so the demo does not go stale.
+* Added: `wp blockendar-demo seed` and `wp blockendar-demo reset`, plus a Tools > Blockendar Demo screen for the same two actions.
+* Fixed: the Playground demo booted an empty site. It imported a placeholder WXR file that carried no content, and its landing page pointed at a page that was never created.
+* Removed: `bin/generate-test-events.php`. Its fixtures now live in the demo plugin and are available through the seeder.
 
 = 1.4.0 =
 * Added: a "Hide events" setting on the Events Query block that chooses when an event leaves the upcoming list — when it ends, at the end of its day, or a number of hours after it ends. The same moment decides when an event counts as past, so an event is never in both an upcoming and a past list at once. Developers can override the cutoff with the `blockendar_events_query_cutoff` filter.
@@ -251,6 +263,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.5.0 =
+Adds an optional companion demo plugin, downloaded separately. Blockendar itself is unchanged, so no action is required.
 
 = 1.4.0 =
 Events now stay in upcoming lists until the end of their day and move to past lists the following day. To keep the old behaviour, set "Hide events" to "When they end" on each Events Query block.

@@ -41,5 +41,12 @@ When bumping the plugin version, update **all** of the following in one commit:
 3. Every `src/blocks/*/block.json` — `"version"` field
 4. `README.md` — add a new `### X.Y.Z` section under `## Changelog`
 5. `readme.txt` — bump `Stable tag:`, add a new `= X.Y.Z =` section under `== Changelog ==`, and add an `== Upgrade Notice ==` entry
+6. `demo-plugin/blockendar-demo.php` — plugin header `Version:` and `BLOCKENDAR_DEMO_VERSION` constant
+7. `demo-plugin/package.json` — `"version"` field
+8. `demo-plugin/readme.txt` — bump `Stable tag:` and add a `= X.Y.Z =` changelog section
+
+The companion demo plugin ships as its own zip from the same tag, so its version
+tracks the main plugin's. `BLOCKENDAR_DEMO_MIN_BLOCKENDAR` is separate: it is the
+oldest Blockendar whose APIs the seeder uses, and only moves when that changes.
 
 The changelog lives in `README.md` and `readme.txt` only — do not create a separate `CHANGELOG.md`.

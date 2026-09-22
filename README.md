@@ -31,17 +31,42 @@ A block-native WordPress events plugin.
 3. Choose the downloaded `.zip` file and click **Install Now**.
 4. Click **Activate Plugin**.
 
+## Try the demo
+
+The [Playground demo](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/philhoyt/Blockendar/main/_playground/blueprint.json)
+runs the plugin in your browser with no install.
+
+To preview the working tree instead — no Docker needed, it runs on php-wasm:
+
+```bash
+npm run playground   # http://127.0.0.1:9400
+```
+
+To get the same content on a site of your own, download `blockendar-demo.zip`
+from the [Releases page](https://github.com/philhoyt/Blockendar/releases) and
+install it alongside Blockendar. Activating it creates 31 events, 5 venues and a
+six-page guided tour. Every date is generated when you activate it, so the demo
+is always current.
+
+Manage it from **Tools → Blockendar Demo**, or with `wp blockendar-demo seed`
+and `wp blockendar-demo reset`. Reset removes only what the demo created and
+restores your previous front page setting — your own content is never touched.
+
 ## Development
 
 ```bash
-npm run start        # Watch mode
-npm run build        # Production build
-npm run lint:js      # JS lint
-npm run lint:css     # CSS lint
-npm run lint:php     # PHP lint (WPCS)
-npm run lint:php:fix # Auto-fix PHP lint issues
-npm run plugin-zip   # Build distributable zip
+npm run start          # Watch mode
+npm run build          # Production build
+npm run lint:js        # JS lint
+npm run lint:css       # CSS lint
+npm run lint:php       # PHP lint (WPCS)
+npm run lint:php:fix   # Auto-fix PHP lint issues
+npm run plugin-zip     # Build distributable zip
+npm run plugin-zip:demo # Build the demo companion zip
 ```
+
+The demo companion plugin lives in [`demo-plugin/`](demo-plugin/) and ships as
+its own zip.
 
 ## Architecture
 
@@ -69,6 +94,12 @@ Two third-party requests to OpenStreetMap are possible:
 See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Policy).
 
 ## Changelog
+
+### 1.5.0
+- Added: a companion demo plugin, released as `blockendar-demo.zip`. Activating it fills a site with 31 events, 6 event types, 5 venues and a six-page guided tour of the plugin's blocks. Dates are generated at activation, so the demo does not go stale.
+- Added: `wp blockendar-demo seed` and `wp blockendar-demo reset`, plus a Tools > Blockendar Demo screen for the same two actions.
+- Fixed: the Playground demo booted an empty site. It imported a placeholder WXR file that carried no content, and its landing page pointed at a page that was never created.
+- Removed: `bin/generate-test-events.php`. Its fixtures now live in the demo plugin and are available through the seeder.
 
 ### 1.4.0
 - Added: a "Hide events" setting on the Events Query block that chooses when an event leaves the upcoming list — when it ends, at the end of its day, or a number of hours after it ends. The same moment decides when an event counts as past, so an event is never in both an upcoming and a past list at once. Developers can override the cutoff with the `blockendar_events_query_cutoff` filter.
