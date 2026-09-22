@@ -134,6 +134,10 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 		relatedTo,
 		displayLayout,
 	} = attributes;
+	// Fallbacks for content saved before these attributes existed, as with
+	// relatedTo below; the server applies the same defaults and limits.
+	const hideAfter = attributes.hideAfter ?? 'day';
+	const hideAfterHours = attributes.hideAfterHours ?? 3;
 	const isGrid = displayLayout?.type === 'grid';
 	const columnCount = displayLayout?.columnCount ?? 3;
 	const columnCountTablet = displayLayout?.columnCountTablet ?? 2;
@@ -482,6 +486,61 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 							}
 							__nextHasNoMarginBottom
 						/>
+						<SelectControl
+							label={ __( 'Hide events', 'blockendar' ) }
+							value={ hideAfter }
+							options={ [
+								{
+									label: __( 'When they end', 'blockendar' ),
+									value: 'end',
+								},
+								{
+									label: __(
+										'At the end of their day',
+										'blockendar'
+									),
+									value: 'day',
+								},
+								{
+									label: __(
+										'A number of hours after they end',
+										'blockendar'
+									),
+									value: 'hours',
+								},
+							] }
+							onChange={ ( val ) =>
+								setAttributes( { hideAfter: val } )
+							}
+							help={ __(
+								'When an event leaves the upcoming list. The same moment decides when it counts as past.',
+								'blockendar'
+							) }
+							__nextHasNoMarginBottom
+						/>
+						{ hideAfter === 'hours' && (
+							<RangeControl
+								label={ __(
+									'Hours after the event ends',
+									'blockendar'
+								) }
+								value={ hideAfterHours }
+								onChange={ ( val ) =>
+									// A cleared field yields undefined; never
+									// serialise that.
+									setAttributes( {
+										hideAfterHours: Math.min(
+											72,
+											Math.max( 1, Number( val ) || 3 )
+										),
+									} )
+								}
+								min={ 1 }
+								max={ 72 }
+								step={ 1 }
+								__nextHasNoMarginBottom
+							/>
+						) }
 						<ToggleControl
 							label={ __( 'Reverse order', 'blockendar' ) }
 							help={ __(
