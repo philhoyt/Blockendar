@@ -155,6 +155,28 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 1.8.0
+- Security: an event's recurrence rule and individual occurrences could be changed by any contributor, including on events they do not own. Those four endpoints now check permission against the specific event rather than the general ability to edit posts.
+- Security: password-protected events no longer appear in the REST API, the calendar feed or the iCalendar export. Their title, dates and venue address were readable by anyone despite the password.
+- Security: the calendar feed token is generated with the browser's cryptographic random source, and a token shorter than 16 characters is refused rather than stored.
+- Fixed: the Recurring Events settings had no effect. The generation horizon stayed at 365 days and the instance limit at its built-in ceiling, whatever was saved.
+- Fixed: the Calendar and General settings had no effect. Default view, first day of week, slot duration and timezone display now apply, and a calendar block can still override the first two.
+- Fixed: sorting the events list by start date left its database changes in place for the rest of the page, which could disturb other queries running on that screen.
+- Fixed: deleting the plugin left tables and settings behind on every site of a multisite network except the one it was deleted from, along with a stored notice and two scheduled jobs.
+- Fixed: the date filter could not be used with a keyboard. Opening the panel left no way to reach or type a date, only to clear or apply.
+- Fixed: the calendar showed nothing when JavaScript was unavailable or slow to load. It now lists upcoming events from the server, and the events archive and event type archive are readable without scripts.
+- Fixed: the event map showed nothing when JavaScript was unavailable. It now prints the venue name and address, which the map replaces once it loads.
+- Fixed: screen reader and keyboard problems across the filter, countdown, status and time controls: unlabelled time fields in the editor, filter lists that misreported their grouping, a countdown that changed under the cursor once a second, and a view switch that gave no indication anything had happened.
+- Fixed: translations of text in the block editor and the settings screen were never loaded, so those strings stayed in English however complete the translation.
+- Changed: the Venue and Type filters apply when the Apply button is pressed, rather than the moment a choice is made. Changing a choice with the keyboard used to navigate away before the intended option was reached.
+- Changed: the nightly recurrence job adds the occurrences that have come into range instead of rebuilding every occurrence of every recurring event, which could exceed the time limit on a busy site and quietly stop.
+- Changed: event listings, the calendar feed and the iCalendar export load the data they need in bulk rather than once per event.
+- Changed: the events archive and the event type archive draw their calendar at wide width, so a month grid has room for its day cells. A site that has customised either template in the Site Editor keeps its own copy and sees no change.
+- Changed: the date filter's closed label shows numeric dates, so a selected range stays readable in a narrow column.
+- Changed: both date format fields say they take a PHP date format.
+- Added: suggested privacy policy text under Settings > Privacy, covering the map tiles shown to visitors and the address lookup used when adding a venue.
+- Removed: the Import screen for The Events Calendar. Importing now runs from the command line with `wp blockendar import-tribe <file>`, which suits an export of any size; the screen could not finish a large one.
+
 ### 1.7.0
 - Added: colour, typography, spacing and border controls on the Event Venue block, bringing it in line with the other single-event blocks.
 - Changed: the filter blocks can sit at any depth inside the Events Query Filters block. Wrapping Type, Venue and Dates in a Group to lay them out in a row now works; before this they had to be direct children.
