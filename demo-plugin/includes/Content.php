@@ -273,7 +273,6 @@ class Content {
 			),
 			$this->events_query(
 				[
-					'align'          => 'wide',
 					'perPage'        => 4,
 					'showPagination' => false,
 				],
@@ -326,21 +325,21 @@ class Content {
 		);
 
 		/*
-		 * No "align" on this events-query, unlike the standalone ones on other
-		 * pages. Alignment is a layout-container rule -- .is-layout-constrained
-		 * > .alignwide -- and query-filters renders a plain div with no layout,
-		 * so the class would match nothing here. The wide width comes from the
-		 * query-filters wrapper, and the query fills it.
-		 */
-		/*
-		 * A flow-layout group around both, purely to get a gap between the
-		 * controls and the results. query-filters declares spacing.blockGap but
-		 * no layout support, and blockGap CSS is emitted by the layout support,
-		 * so setting it on the wrapper itself produces nothing.
+		 * A flow-layout group around the controls and the results, purely to get
+		 * a gap between them. query-filters declares spacing.blockGap but no
+		 * layout support, and blockGap CSS is emitted by the layout support, so
+		 * setting it on the wrapper itself produces nothing.
 		 *
 		 * Flow ("default"), not constrained: a constrained layout would cap the
 		 * query at the theme's content size and undo the wide width the
 		 * query-filters wrapper provides.
+		 *
+		 * The query carries no "align" of its own, unlike the standalone ones on
+		 * other pages. Alignment is a layout-container rule --
+		 * .is-layout-constrained > .alignwide -- and neither this group nor
+		 * query-filters is a constrained layout, so the class would match
+		 * nothing. The wide width comes from the query-filters wrapper, and the
+		 * query fills it.
 		 */
 		$inner = $this->group(
 			$controls . "\n\n"
@@ -394,7 +393,6 @@ class Content {
 			),
 			$this->events_query(
 				[
-					'align'          => 'wide',
 					'perPage'        => 1,
 					'showPagination' => false,
 				],
@@ -418,6 +416,10 @@ class Content {
 				'Venues and maps',
 				'Venues are a taxonomy, so an event can be assigned one and inherit its address, coordinates and capacity. The map block lazy-loads Leaflet and only renders when the venue has coordinates. The demo also includes a virtual venue with no map data, and events with no venue at all, so you can see the fallbacks.'
 			),
+			// The only list query that takes the wide width. A map is the one
+			// thing in these templates that reads better bigger; the queries
+			// that are title, date and a line of text stay at the content
+			// width, where the lines are a sensible length.
 			$this->events_query(
 				[
 					'align'          => 'wide',
@@ -456,7 +458,6 @@ class Content {
 			),
 			$this->events_query(
 				[
-					'align'          => 'wide',
 					'perPage'        => 3,
 					'showPagination' => false,
 				],
@@ -475,7 +476,17 @@ class Content {
 	 * The default event card used in most queries.
 	 */
 	private function event_card(): string {
-		return '<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"16/9"} /-->' . "\n\n"
+		/*
+		 * The thumbnail is capped at 480px rather than filling its row. In the
+		 * grid that changes nothing — a column is narrower than the cap, and
+		 * core's image CSS keeps max-width at 100% — but in the list layout a
+		 * card is the full wide width, and a 16/9 image across 1340px came out
+		 * 754px tall, which made one event taller than the viewport.
+		 *
+		 * post-featured-image is a dynamic block, so this is an inline style at
+		 * render with no save output to keep in step.
+		 */
+		return '<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"16/9","width":"480px"} /-->' . "\n\n"
 			. '<!-- wp:blockendar/event-status /-->' . "\n\n"
 			. '<!-- wp:post-title {"level":3,"isLink":true} /-->' . "\n\n"
 			. '<!-- wp:blockendar/event-datetime /-->' . "\n\n"
