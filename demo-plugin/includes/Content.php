@@ -108,6 +108,68 @@ class Content {
 	}
 
 	/**
+	 * Wrap markup in a core/group.
+	 *
+	 * core/group has a static save(), so the markup here has to match what the
+	 * editor would have produced or the block fails validation on open. Two
+	 * things follow from that: the class list is built here rather than left to
+	 * the server (align and className are baked into save output by the block
+	 * supports), and layout / spacing live in the attribute comment only, since
+	 * the server derives their CSS from the attributes at render time.
+	 *
+	 * @param string               $inner Inner block markup.
+	 * @param array<string, mixed> $attrs Group attributes.
+	 */
+	private function group( string $inner, array $attrs = [] ): string {
+		$classes = [ 'wp-block-group' ];
+
+		if ( ! empty( $attrs['align'] ) ) {
+			$classes[] = 'align' . $attrs['align'];
+		}
+
+		if ( ! empty( $attrs['className'] ) ) {
+			$classes[] = (string) $attrs['className'];
+		}
+
+		$json      = $attrs ? wp_json_encode( $attrs ) : '';
+		$delimiter = ( is_string( $json ) && '' !== $json ) ? ' ' . $json : '';
+
+		return '<!-- wp:group' . $delimiter . ' -->' . "\n"
+			. '<div class="' . esc_attr( implode( ' ', $classes ) ) . '">' . "\n"
+			. $inner . "\n"
+			. '</div>' . "\n"
+			. '<!-- /wp:group -->';
+	}
+
+	/**
+	 * Flex layout attributes for a group, with a gap and optional justification.
+	 *
+	 * Gaps are literal rem values rather than var:preset|spacing|NN. A preset
+	 * only resolves if the active theme defines that step, and the demo has to
+	 * look right under whatever theme it lands on.
+	 *
+	 * @param string $justify One of the flex justifyContent values, or ''.
+	 * @param string $gap     CSS length for blockGap.
+	 * @return array<string, mixed>
+	 */
+	private function flex( string $justify = '', string $gap = '1rem' ): array {
+		$layout = [
+			'type'              => 'flex',
+			'flexWrap'          => 'wrap',
+			'verticalAlignment' => 'bottom',
+		];
+
+		if ( '' !== $justify ) {
+			$layout['justifyContent'] = $justify;
+		}
+
+		return [
+			'layout' => $layout,
+			'style'  => [ 'spacing' => [ 'blockGap' => $gap ] ],
+		];
+	}
+
+	/**
 	 * A heading + paragraph intro block pair.
 	 */
 	private function intro( string $heading, string $text ): string {
@@ -161,10 +223,22 @@ class Content {
 		// — and query-filters renders a plain div with no layout, so the class
 		// would match nothing. The wide width comes from the query-filters
 		// wrapper below, and the query fills it.
-		$inner = '<!-- wp:blockendar/filter-event-type {"label":"Type"} /-->' . "\n\n"
-			. '<!-- wp:blockendar/filter-venue {"label":"Venue"} /-->' . "\n\n"
-			. '<!-- wp:blockendar/filter-date-range {"label":"Dates"} /-->' . "\n\n"
-			. '<!-- wp:blockendar/query-view-switcher {"showLabels":true} /-->' . "\n\n"
+		// The three filters in a row of their own, so they stay grouped when the
+		// outer row wraps and the switcher drops to its own line.
+		$filters = $this->group(
+			'<!-- wp:blockendar/filter-event-type {"label":"Type"} /-->' . "\n\n"
+				. '<!-- wp:blockendar/filter-venue {"label":"Venue"} /-->' . "\n\n"
+				. '<!-- wp:blockendar/filter-date-range {"label":"Dates"} /-->',
+			$this->flex()
+		);
+
+		// Filters left, view switcher right.
+		$controls = $this->group(
+			$filters . "\n\n" . '<!-- wp:blockendar/query-view-switcher {"showLabels":true} /-->',
+			$this->flex( 'space-between', '1.5rem' )
+		);
+
+		$inner = $controls . "\n\n"
 			. $this->events_query(
 				[
 					'perPage'        => 6,
