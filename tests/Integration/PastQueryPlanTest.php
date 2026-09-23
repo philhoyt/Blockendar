@@ -92,10 +92,9 @@ class PastQueryPlanTest extends WP_UnitTestCase {
 		}
 
 		// 6,000 occurrences spread evenly over six years centred on the cutoff.
-		$base  = strtotime( self::CUTOFF ) - ( 3 * YEAR_IN_SECONDS );
-		$step  = (int) ( ( 6 * YEAR_IN_SECONDS ) / 6000 );
-		$rows  = [];
-		$count = 0;
+		$base = strtotime( self::CUTOFF ) - ( 3 * YEAR_IN_SECONDS );
+		$step = (int) ( ( 6 * YEAR_IN_SECONDS ) / 6000 );
+		$rows = [];
 
 		for ( $n = 0; $n < 6000; $n++ ) {
 			$post_id = $this->post_ids[ $n % count( $this->post_ids ) ];
@@ -122,7 +121,6 @@ class PastQueryPlanTest extends WP_UnitTestCase {
 				$hidden,
 				$ongoing
 			);
-			++$count;
 
 			if ( count( $rows ) >= 1000 ) {
 				$this->insert_rows( $events_table, $rows );
