@@ -14,9 +14,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
+/*
+ * defaultView and firstDay carry no block.json default, so an attribute that
+ * is absent means "use the site setting" rather than "the author chose the
+ * same value as the default". Settings > Blockendar sets the site-wide
+ * default; a block that overrides it keeps its own choice.
+ */
 $enabled_views = $attributes['enabledViews'] ?? [ 'dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listNextMonth' ];
-$default_view  = $attributes['defaultView'] ?? 'dayGridMonth';
-$first_day     = (int) ( $attributes['firstDay'] ?? 0 );
+$default_view  = $attributes['defaultView'] ?? \Blockendar\Admin\SettingsPage::get( 'calendar_default_view' );
+$first_day     = (int) ( $attributes['firstDay'] ?? \Blockendar\Admin\SettingsPage::get( 'calendar_first_day' ) );
+
+// Applies to the time-grid views only; FullCalendar ignores it elsewhere.
+$slot_duration = (string) \Blockendar\Admin\SettingsPage::get( 'calendar_slot_duration' );
 $venue_ids     = array_map( 'intval', (array) ( $attributes['venueIds'] ?? [] ) );
 $type_ids      = array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) );
 $featured_only = ! empty( $attributes['featuredOnly'] ) ? 'true' : 'false';
@@ -54,6 +63,7 @@ $data_attrs = [
 	'data-rest-url'      => $rest_url,
 	'data-default-view'  => $default_view,
 	'data-first-day'     => (string) $first_day,
+	'data-slot-duration' => $slot_duration,
 	'data-enabled-views' => wp_json_encode( $enabled_views ),
 	'data-featured-only' => $featured_only,
 	'data-venue-ids'     => wp_json_encode( array_values( $venue_ids ) ),

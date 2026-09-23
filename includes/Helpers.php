@@ -97,3 +97,64 @@ function blockendar_occurrence_permalink_filter( string $permalink, WP_Post $pos
 	}
 	return $permalink;
 }
+
+/**
+ * Resolve the timezone an event's times should be displayed in.
+ *
+ * Honours the timezone_mode setting:
+ *  - 'event' — show the times in the timezone the event was authored in, which
+ *    is what a visitor travelling to the venue wants.
+ *  - 'site'  — convert every event to the site's timezone, so a listing mixing
+ *    events from several timezones can be compared at a glance.
+ *
+ * @param int $post_id The event post ID.
+ * @return array{event: string, display: string} IANA identifiers. Equal when no
+ *                                               conversion is needed.
+ */
+function blockendar_display_timezone( int $post_id ): array {
+	$site_tz  = wp_timezone_string();
+	$event_tz = (string) get_post_meta( $post_id, 'blockendar_timezone', true );
+
+	if ( '' === $event_tz ) {
+		$event_tz = $site_tz;
+	}
+
+	$mode = (string) \Blockendar\Admin\SettingsPage::get( 'timezone_mode' );
+
+	return [
+		'event'   => $event_tz,
+		'display' => 'site' === $mode ? $site_tz : $event_tz,
+	];
+}
+
+/**
+ * Convert a local date and time from one timezone to another.
+ *
+ * Both timezones may be UTC-offset strings rather than IANA names when the site
+ * uses a manual offset, which DateTimeZone accepts. Anything it cannot parse
+ * leaves the values untouched — displaying the authored time is a better
+ * failure than displaying nothing.
+ *
+ * @param string $date    Y-m-d in the source timezone.
+ * @param string $time    H:i in the source timezone. Empty means date-only.
+ * @param string $from_tz Source timezone identifier.
+ * @param string $to_tz   Target timezone identifier.
+ * @return array{0: string, 1: string} The converted date and time.
+ */
+function blockendar_convert_datetime( string $date, string $time, string $from_tz, string $to_tz ): array {
+	if ( '' === $date || '' === $time || $from_tz === $to_tz ) {
+		return [ $date, $time ];
+	}
+
+	try {
+		$moment = new \DateTimeImmutable(
+			$date . ' ' . $time,
+			new \DateTimeZone( $from_tz )
+		);
+		$moment = $moment->setTimezone( new \DateTimeZone( $to_tz ) );
+	} catch ( \Exception $e ) {
+		return [ $date, $time ];
+	}
+
+	return [ $moment->format( 'Y-m-d' ), $moment->format( 'H:i' ) ];
+}

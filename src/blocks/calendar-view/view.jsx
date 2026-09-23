@@ -73,20 +73,43 @@ async function loadCalendar( views ) {
 	};
 }
 
+/**
+ * Read a JSON array out of a data attribute.
+ *
+ * render.php always writes these, but a hand-edited block or a truncated
+ * response would otherwise throw during render and leave the container empty
+ * with no calendar and no message.
+ *
+ * @param {string|undefined} raw      The data attribute value.
+ * @param {Array}            fallback Value to use when parsing fails.
+ * @return {Array} The parsed array, or the fallback.
+ */
+function parseList( raw, fallback = [] ) {
+	if ( ! raw ) {
+		return fallback;
+	}
+
+	try {
+		const parsed = JSON.parse( raw );
+		return Array.isArray( parsed ) ? parsed : fallback;
+	} catch {
+		return fallback;
+	}
+}
+
 function BlockendarCalendar( { dataset } ) {
 	const calendarRef = useRef( null );
 	const [ loaded, setLoaded ] = useState( null );
 
 	const restUrl = dataset.restUrl ?? '/wp-json/blockendar/v1';
-	const venueIds = dataset.venueIds ? JSON.parse( dataset.venueIds ) : [];
-	const typeIds = dataset.typeIds ? JSON.parse( dataset.typeIds ) : [];
+	const venueIds = parseList( dataset.venueIds );
+	const typeIds = parseList( dataset.typeIds );
 	const featuredOnly = dataset.featuredOnly === 'true';
-	const defaultView = dataset.defaultView ?? 'dayGridMonth';
+	const defaultView = dataset.defaultView || 'dayGridMonth';
 	const firstDay = dataset.firstDay ? parseInt( dataset.firstDay, 10 ) : 0;
+	const slotDuration = dataset.slotDuration || undefined;
 	const timezone = dataset.timezone ?? 'UTC';
-	const enabledViews = dataset.enabledViews
-		? JSON.parse( dataset.enabledViews )
-		: DEFAULT_VIEWS;
+	const enabledViews = parseList( dataset.enabledViews, DEFAULT_VIEWS );
 
 	const viewButtons = enabledViews.join( ',' );
 
@@ -177,6 +200,7 @@ function BlockendarCalendar( { dataset } ) {
 			timeZone={ timezone }
 			initialView={ isMobile() ? MOBILE_VIEW : defaultView }
 			firstDay={ firstDay }
+			slotDuration={ slotDuration }
 			views={ customViews }
 			headerToolbar={ {
 				left: 'prev,next today',

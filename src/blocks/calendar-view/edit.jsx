@@ -12,7 +12,7 @@ import {
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
 const VIEW_OPTIONS = [
 	{ label: __( 'Month', 'blockendar' ), value: 'dayGridMonth' },
@@ -105,6 +105,42 @@ export function Edit( { attributes, setAttributes } ) {
 		[]
 	);
 
+	/*
+	 * The site-wide defaults from Settings > Blockendar, used to label what
+	 * "Site default" currently resolves to. Reading site settings needs
+	 * manage_options, so this is null for an author without it — the option
+	 * still works, it just cannot name the value it will use.
+	 */
+	const siteDefaults = useSelect(
+		( select ) =>
+			select( coreStore ).getEntityRecord( 'root', 'site' )
+				?.blockendar_settings ?? null,
+		[]
+	);
+
+	const siteDefaultView = siteDefaults?.calendar_default_view ?? null;
+	const siteFirstDay = siteDefaults?.calendar_first_day ?? null;
+
+	/**
+	 * Label for the "Site default" option, naming the resolved value when it
+	 * can be read.
+	 *
+	 * @param {Array}  options The option list to resolve against.
+	 * @param {*}      value   The site-wide value, or null when unreadable.
+	 * @return {string} The option label.
+	 */
+	const siteDefaultLabel = ( options, value ) => {
+		const match = options.find( ( o ) => o.value === value );
+
+		return match
+			? sprintf(
+					/* translators: %s: the value configured in Settings > Blockendar. */
+					__( 'Site default (%s)', 'blockendar' ),
+					match.label
+			  )
+			: __( 'Site default', 'blockendar' );
+	};
+
 	const toggleView = ( view ) => {
 		const next = enabledViews.includes( view )
 			? enabledViews.filter( ( v ) => v !== view )
@@ -189,23 +225,46 @@ export function Edit( { attributes, setAttributes } ) {
 
 						<SelectControl
 							label={ __( 'Default view', 'blockendar' ) }
-							value={ defaultView }
-							options={ VIEW_OPTIONS.filter( ( v ) =>
-								enabledViews.includes( v.value )
-							) }
+							value={ defaultView ?? '' }
+							options={ [
+								{
+									label: siteDefaultLabel(
+										VIEW_OPTIONS,
+										siteDefaultView
+									),
+									value: '',
+								},
+								...VIEW_OPTIONS.filter( ( v ) =>
+									enabledViews.includes( v.value )
+								),
+							] }
 							onChange={ ( val ) =>
-								setAttributes( { defaultView: val } )
+								setAttributes( {
+									defaultView: val === '' ? undefined : val,
+								} )
 							}
 							__nextHasNoMarginBottom
 						/>
 
 						<SelectControl
 							label={ __( 'First day of week', 'blockendar' ) }
-							value={ firstDay }
-							options={ FIRST_DAY_OPTIONS }
+							value={ firstDay ?? '' }
+							options={ [
+								{
+									label: siteDefaultLabel(
+										FIRST_DAY_OPTIONS,
+										siteFirstDay
+									),
+									value: '',
+								},
+								...FIRST_DAY_OPTIONS,
+							] }
 							onChange={ ( val ) =>
 								setAttributes( {
-									firstDay: parseInt( val, 10 ),
+									firstDay:
+										val === ''
+											? undefined
+											: parseInt( val, 10 ),
 								} )
 							}
 							__nextHasNoMarginBottom
@@ -306,7 +365,8 @@ export function Edit( { attributes, setAttributes } ) {
 									<span
 										key={ v.value }
 										className={ `blockendar-calendar-placeholder__pill${
-											v.value === defaultView
+											v.value ===
+											( defaultView ?? siteDefaultView )
 												? ' is-default'
 												: ''
 										}` }
@@ -323,8 +383,9 @@ export function Edit( { attributes, setAttributes } ) {
 							</span>
 							<span className="blockendar-calendar-placeholder__value">
 								{ FIRST_DAY_OPTIONS.find(
-									( o ) => o.value === firstDay
-								)?.label ?? __( 'Sunday', 'blockendar' ) }
+									( o ) =>
+										o.value === ( firstDay ?? siteFirstDay )
+								)?.label ?? __( 'Site default', 'blockendar' ) }
 							</span>
 						</div>
 
