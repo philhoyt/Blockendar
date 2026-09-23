@@ -104,7 +104,10 @@ class IndexBuilder {
 
 		$post = get_post( $post_id );
 
-		if ( $post ) {
+		// Core restores an untrashed post to 'draft', not to its previous
+		// status, so indexing unconditionally here would put unpublished rows
+		// into a table every public read path treats as published-only.
+		if ( $post && 'publish' === $post->post_status ) {
 			$this->build_for_post( $post_id );
 		}
 	}
@@ -126,6 +129,15 @@ class IndexBuilder {
 	 * @param int $post_id Post ID.
 	 */
 	public function build_for_post( int $post_id ): void {
+		// Every public read path joins the index against wp_posts on
+		// post_status = 'publish', so an unpublished post must never hold rows
+		// here. Guarding at this level rather than per-caller means a new call
+		// site cannot reintroduce the leak by forgetting the check.
+		if ( 'publish' !== get_post_status( $post_id ) ) {
+			$this->index->delete_by_post_id( $post_id );
+			return;
+		}
+
 		$meta    = $this->get_event_meta( $post_id );
 		$ongoing = ! empty( $meta['ongoing'] );
 

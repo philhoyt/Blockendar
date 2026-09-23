@@ -270,6 +270,14 @@ class EventsController extends AbstractController {
 			return new WP_Error( 'blockendar_not_found', __( 'Event not found.', 'blockendar' ), [ 'status' => 404 ] );
 		}
 
+		// This route is public by default, and get_by_post_id() reads the index
+		// table alone with no post_status join — so an unpublished event whose
+		// rows survived (see IndexBuilder::on_untrash) would otherwise expose
+		// its whole schedule anonymously. Mirror the guard get_event() uses.
+		if ( 'publish' !== $post->post_status && ! current_user_can( 'edit_post', $post_id ) ) {
+			return new WP_Error( 'blockendar_forbidden', __( 'You do not have permission to view this event.', 'blockendar' ), [ 'status' => 403 ] );
+		}
+
 		$rows = $this->index->get_by_post_id( $post_id );
 
 		return $this->respond( array_map( [ $this, 'format_instance_row' ], $rows ) );
@@ -327,8 +335,9 @@ class EventsController extends AbstractController {
 	public function cancel_instance( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$post_id = (int) $request->get_param( 'id' );
 		$date    = sanitize_text_field( (string) $request->get_param( 'date' ) );
+		$post    = get_post( $post_id );
 
-		if ( ! get_post( $post_id ) ) {
+		if ( ! $post || 'blockendar_event' !== $post->post_type ) {
 			return new WP_Error( 'blockendar_not_found', __( 'Event not found.', 'blockendar' ), [ 'status' => 404 ] );
 		}
 
@@ -417,8 +426,27 @@ class EventsController extends AbstractController {
 	// Permission callbacks
 	// -------------------------------------------------------------------------
 
-	public function check_edit_permission(): bool {
-		return $this->can_edit();
+	/**
+	 * Permission callback for the per-event write routes.
+	 *
+	 * Authorises against the specific event named in the route, not against
+	 * the bare 'edit_posts' capability — the post type registers with
+	 * 'capability_type' => 'post', so 'edit_posts' alone would let any
+	 * Contributor rewrite, cancel or delete occurrences of somebody else's
+	 * event.
+	 *
+	 * @param WP_REST_Request $request The current REST request.
+	 */
+	public function check_edit_permission( WP_REST_Request $request ): bool|WP_Error {
+		if ( $this->can_edit_post( (int) $request->get_param( 'id' ) ) ) {
+			return true;
+		}
+
+		return new WP_Error(
+			'blockendar_rest_cannot_edit',
+			__( 'Sorry, you are not allowed to edit this event.', 'blockendar' ),
+			[ 'status' => rest_authorization_required_code() ]
+		);
 	}
 
 	public function check_manage_permission(): bool {

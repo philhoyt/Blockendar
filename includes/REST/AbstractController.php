@@ -90,10 +90,17 @@ abstract class AbstractController {
 	}
 
 	/**
-	 * Check if the current user can edit posts (for write endpoints).
+	 * Check if the current user can edit one specific post.
+	 *
+	 * Write endpoints that take a post ID in the route MUST use this rather
+	 * than a bare 'edit_posts' check: 'edit_posts' is held by every role down
+	 * to Contributor, so checking it alone authorises the caller to act on any
+	 * event, including ones they do not own.
+	 *
+	 * @param int $post_id Post the caller wants to modify.
 	 */
-	public function can_edit(): bool {
-		return current_user_can( 'edit_posts' );
+	public function can_edit_post( int $post_id ): bool {
+		return current_user_can( 'edit_post', $post_id );
 	}
 
 	/**

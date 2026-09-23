@@ -149,8 +149,12 @@ class EventIndex {
 			$params[] = $start;
 		}
 
-		// Only published posts.
+		// Only published, unprotected posts. post_password is checked because
+		// a password-protected event is still post_status = 'publish', and
+		// these rows feed the public REST, calendar and ICS responses — which
+		// expose title, dates and the venue's street address.
 		$where[] = "p.post_status = 'publish'";
+		$where[] = "p.post_password = ''";
 
 		// Status filter.
 		if ( null !== $filters['status'] ) {
@@ -301,7 +305,10 @@ class EventIndex {
 			$where[]  = 'e.end_datetime > %s';
 			$params[] = $start;
 		}
+		// Must mirror get_events_in_range() exactly, or the count and the page
+		// of results disagree.
 		$where[] = "p.post_status = 'publish'";
+		$where[] = "p.post_password = ''";
 
 		if ( null !== $filters['status'] ) {
 			$where[]  = 'e.status = %s';
@@ -530,6 +537,7 @@ class EventIndex {
 					JOIN   {$posts_table} p ON p.ID = e.post_id
 					WHERE  e.venue_term_id IS NOT NULL
 					  AND  p.post_status = 'publish'
+					  AND  p.post_password = ''
 					  AND  e.hide_from_listings = 0
 					  AND  e.end_datetime >= %s",
 					$from
@@ -547,6 +555,7 @@ class EventIndex {
 					JOIN   {$events_table} e ON e.id = t.event_index_id
 					JOIN   {$posts_table} p ON p.ID = e.post_id
 					WHERE  p.post_status = 'publish'
+					  AND  p.post_password = ''
 					  AND  e.hide_from_listings = 0
 					  AND  e.end_datetime >= %s",
 					$from
