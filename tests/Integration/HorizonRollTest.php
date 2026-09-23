@@ -1,0 +1,197 @@
+<?php
+/**
+ * Integration coverage for the nightly horizon roll.
+ *
+ * The roll used to call generate_for_post() for every recurring event, which
+ * deletes all of that event's rows and rewrites them. At a 365-day horizon
+ * across 100 recurring events that is ~36,500 deletes and ~36,500 inserts in
+ * one cron request, with no time limit raised and no way to resume — it dies
+ * partway on modest hosting and the horizon silently stops moving.
+ *
+ * These tests pin the behaviour that replaced it: extend the tail, leave the
+ * existing rows alone.
+ *
+ * @package Blockendar\Tests
+ */
+
+declare( strict_types=1 );
+
+namespace Blockendar\Tests\Integration;
+
+use Blockendar\Admin\SettingsPage;
+use Blockendar\DB\EventIndex;
+use Blockendar\DB\Schema;
+use Blockendar\Recurrence\Generator;
+use Blockendar\Recurrence\RuleRepository;
+use WP_UnitTestCase;
+
+class HorizonRollTest extends WP_UnitTestCase {
+
+	private EventIndex $index;
+	private RuleRepository $repo;
+
+	public function set_up(): void {
+		parent::set_up();
+
+		Schema::create_tables();
+
+		$this->index = new EventIndex();
+		$this->repo  = new RuleRepository();
+
+		delete_option( SettingsPage::OPTION_NAME );
+		$this->index->flush_cache();
+	}
+
+	public function tear_down(): void {
+		delete_option( SettingsPage::OPTION_NAME );
+		parent::tear_down();
+	}
+
+	/**
+	 * A daily-recurring published event starting tomorrow.
+	 */
+	private function make_daily_event(): int {
+		$post_id = self::factory()->post->create(
+			[
+				'post_type'   => 'blockendar_event',
+				'post_status' => 'publish',
+				'post_title'  => 'Daily standup',
+			]
+		);
+
+		$start = gmdate( 'Y-m-d', strtotime( '+1 day' ) );
+
+		update_post_meta( $post_id, 'blockendar_start_date', $start );
+		update_post_meta( $post_id, 'blockendar_end_date', $start );
+		update_post_meta( $post_id, 'blockendar_start_time', '09:00' );
+		update_post_meta( $post_id, 'blockendar_end_time', '10:00' );
+
+		$this->repo->upsert(
+			$post_id,
+			[
+				'frequency' => 'daily',
+				'interval'  => 1,
+			]
+		);
+
+		return $post_id;
+	}
+
+	/**
+	 * Row ids for a post, in insertion order.
+	 *
+	 * @param int $post_id Event post ID.
+	 * @return int[]
+	 */
+	private function row_ids( int $post_id ): array {
+		$this->index->flush_cache();
+
+		return array_map(
+			static fn( $row ) => (int) $row->id,
+			$this->index->get_by_post_id( $post_id )
+		);
+	}
+
+	/**
+	 * The heart of it: a roll must add rows without churning the existing ones.
+	 *
+	 * Primary keys are the tell. A full regeneration deletes and re-inserts,
+	 * so every row comes back with a new auto-increment id; an append leaves
+	 * the originals untouched and only adds ids after them.
+	 */
+	public function test_rolling_the_horizon_appends_instead_of_rewriting(): void {
+		update_option( SettingsPage::OPTION_NAME, [ 'horizon_days' => 30 ] );
+
+		$post_id = $this->make_daily_event();
+
+		$generator = new Generator();
+		$generator->generate_for_post( $post_id );
+
+		$before = $this->row_ids( $post_id );
+		$this->assertNotEmpty( $before, 'Precondition: the event is indexed.' );
+
+		// The horizon moves out, as it effectively does each night.
+		update_option( SettingsPage::OPTION_NAME, [ 'horizon_days' => 60 ] );
+		$generator->roll_horizon();
+
+		$after = $this->row_ids( $post_id );
+
+		$this->assertGreaterThan(
+			count( $before ),
+			count( $after ),
+			'A wider horizon must produce more occurrences.'
+		);
+
+		// Every original row survives, with its original id.
+		$this->assertSame(
+			$before,
+			array_slice( $after, 0, count( $before ) ),
+			'Existing occurrence rows must be left in place, not deleted and rewritten.'
+		);
+	}
+
+	/**
+	 * Running the roll twice with no horizon change must be a no-op, or the
+	 * index would grow without bound one cron cycle at a time.
+	 */
+	public function test_rolling_twice_does_not_duplicate_rows(): void {
+		update_option( SettingsPage::OPTION_NAME, [ 'horizon_days' => 30 ] );
+
+		$post_id   = $this->make_daily_event();
+		$generator = new Generator();
+		$generator->generate_for_post( $post_id );
+
+		$generator->roll_horizon();
+		$first = $this->row_ids( $post_id );
+
+		$generator->roll_horizon();
+		$second = $this->row_ids( $post_id );
+
+		$this->assertSame( $first, $second, 'A second roll must add nothing.' );
+	}
+
+	/**
+	 * An event with a rule but no rows yet still gets built — the append path
+	 * has no tail to extend in that case.
+	 */
+	public function test_an_unindexed_event_is_built_from_scratch(): void {
+		update_option( SettingsPage::OPTION_NAME, [ 'horizon_days' => 30 ] );
+
+		$post_id = $this->make_daily_event();
+		$this->index->delete_by_post_id( $post_id );
+		$this->index->flush_cache();
+
+		$this->assertEmpty( $this->row_ids( $post_id ), 'Precondition: no rows.' );
+
+		( new Generator() )->roll_horizon();
+
+		$this->assertNotEmpty(
+			$this->row_ids( $post_id ),
+			'An event with a rule but no rows must be generated by the roll.'
+		);
+	}
+
+	/**
+	 * Unpublished events stay out of the index, including on the roll.
+	 */
+	public function test_the_roll_skips_unpublished_events(): void {
+		update_option( SettingsPage::OPTION_NAME, [ 'horizon_days' => 30 ] );
+
+		$post_id = $this->make_daily_event();
+		$this->index->delete_by_post_id( $post_id );
+
+		wp_update_post(
+			[
+				'ID'          => $post_id,
+				'post_status' => 'draft',
+			]
+		);
+
+		( new Generator() )->roll_horizon();
+
+		$this->assertEmpty(
+			$this->row_ids( $post_id ),
+			'A draft event must not be indexed by the nightly roll.'
+		);
+	}
+}

@@ -637,9 +637,15 @@ class EventIndex {
 	 *     @type int    $hide_from_listings 1 if event should be hidden from listings.
 	 *     @type int    $ongoing            1 if the event has no end date (sentinel end).
 	 * }
+	 * @param bool  $flush Invalidate the read cache afterwards. Pass false when
+	 *                     inserting in a loop and call flush_cache() once at the
+	 *                     end: without a persistent object cache the flush is a
+	 *                     single in-process write, but with Redis or Memcached it
+	 *                     is a network round-trip per row, and a horizon roll can
+	 *                     insert tens of thousands.
 	 * @return int|false Inserted row ID or false on failure.
 	 */
-	public function insert( array $data ): int|false {
+	public function insert( array $data, bool $flush = true ): int|false {
 		global $wpdb;
 
 		$type_term_ids = isset( $data['type_term_ids'] )
@@ -689,9 +695,38 @@ class EventIndex {
 			}
 		}
 
-		$this->flush_cache();
+		if ( $flush ) {
+			$this->flush_cache();
+		}
 
 		return $index_id;
+	}
+
+	/**
+	 * The latest start_datetime currently indexed for one post.
+	 *
+	 * Used by the nightly horizon roll to work out where its last run stopped,
+	 * so it can append the occurrences that have since come into range instead
+	 * of deleting and rewriting every row the event has.
+	 *
+	 * @param int $post_id Event post ID.
+	 * @return string|null UTC datetime, or null when the post has no rows.
+	 */
+	public function max_start_datetime( int $post_id ): ?string {
+		global $wpdb;
+
+		$events_table = Schema::events_table();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$value = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT MAX(start_datetime) FROM {$events_table} WHERE post_id = %d",
+				$post_id
+			)
+		);
+		// phpcs:enable
+
+		return null === $value ? null : (string) $value;
 	}
 
 	/**
