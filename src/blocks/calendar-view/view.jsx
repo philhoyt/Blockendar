@@ -97,7 +97,7 @@ function parseList( raw, fallback = [] ) {
 	}
 }
 
-function BlockendarCalendar( { dataset } ) {
+function BlockendarCalendar( { dataset, onReady } ) {
 	const calendarRef = useRef( null );
 	const [ loaded, setLoaded ] = useState( null );
 
@@ -131,11 +131,16 @@ function BlockendarCalendar( { dataset } ) {
 			.then( ( result ) => {
 				if ( ! cancelled ) {
 					setLoaded( result );
+					onReady?.();
 				}
 			} )
 			.catch( () => {
-				// Leave the container empty rather than throwing; the calendar is
-				// progressive enhancement over a plain block wrapper.
+				/*
+				 * Deliberately no state change. The server-rendered list of
+				 * upcoming events is still in the DOM — onReady() is what
+				 * removes it — so a failed chunk load leaves the visitor with
+				 * a usable list rather than an empty box.
+				 */
 			} );
 
 		return () => {
@@ -232,7 +237,23 @@ function BlockendarCalendar( { dataset } ) {
 document
 	.querySelectorAll( '.wp-block-blockendar-calendar-view' )
 	.forEach( ( el ) => {
-		createRoot( el ).render(
-			<BlockendarCalendar dataset={ el.dataset } />
+		/*
+		 * React is given its own child node rather than the block wrapper.
+		 * Rendering into the wrapper would make React the owner of its
+		 * children and wipe the server-rendered fallback on the first pass —
+		 * which returns null until the chunks arrive — so the page would go
+		 * blank while loading and stay blank if loading failed.
+		 */
+		const fallback = el.querySelector(
+			'.blockendar-calendar-fallback, .blockendar-calendar-fallback__empty'
+		);
+		const mount = document.createElement( 'div' );
+		el.appendChild( mount );
+
+		createRoot( mount ).render(
+			<BlockendarCalendar
+				dataset={ el.dataset }
+				onReady={ () => fallback?.remove() }
+			/>
 		);
 	} );

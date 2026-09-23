@@ -254,3 +254,29 @@
 .blockendar-calendar-subscribe__link:focus {
 	background: rgba(0, 0, 0, 0.05);
 }
+
+/* Server-rendered list of upcoming events, removed once FullCalendar mounts.
+   It is what the page shows with JavaScript off, while the chunks load, and
+   if they fail — both registered archive templates carry this block as their
+   only content, so without it those pages were a heading and nothing else. */
+.blockendar-calendar-fallback {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.blockendar-calendar-fallback__item {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em 1em;
+	justify-content: space-between;
+	padding-block: 0.4em;
+	border-block-end: 1px solid color-mix(in srgb, currentcolor 15%, transparent);
+}
+
+.blockendar-calendar-fallback__item time {
+	opacity: 0.75;
+}

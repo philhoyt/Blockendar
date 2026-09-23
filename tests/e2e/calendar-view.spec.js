@@ -12,6 +12,7 @@ const { wpCli } = require( './wp-cli' );
 
 let pageId;
 let eventId;
+let futureEventId;
 
 test.beforeAll( () => {
 	// A dated event so the index has a row for the calendar to fetch.
@@ -44,6 +45,39 @@ test.beforeAll( () => {
 	// Re-save so the index builder picks up the meta.
 	wpCli( [ 'post', 'update', eventId, '--post_title=E2E Calendar Event' ] );
 
+	/*
+	 * A second event dated ahead of today. The one above is pinned to the 15th
+	 * so it lands in the current month view, which means it is already in the
+	 * past for most of the month — and the server-rendered fallback lists
+	 * upcoming events only, so it needs something it will actually show.
+	 */
+	futureEventId = wpCli( [
+		'post',
+		'create',
+		'--post_type=blockendar_event',
+		'--post_title=E2E Calendar Future Event',
+		'--post_status=publish',
+		'--porcelain',
+	] ).match( /\d+/ )[ 0 ];
+
+	const future = new Date( Date.now() + 10 * 24 * 60 * 60 * 1000 );
+	const futureYmd = future.toISOString().slice( 0, 10 );
+
+	Object.entries( {
+		...meta,
+		blockendar_start_date: futureYmd,
+		blockendar_end_date: futureYmd,
+	} ).forEach( ( [ key, value ] ) => {
+		wpCli( [ 'post', 'meta', 'update', futureEventId, key, value ] );
+	} );
+
+	wpCli( [
+		'post',
+		'update',
+		futureEventId,
+		'--post_title=E2E Calendar Future Event',
+	] );
+
 	pageId = wpCli( [
 		'post',
 		'create',
@@ -56,7 +90,7 @@ test.beforeAll( () => {
 } );
 
 test.afterAll( () => {
-	[ pageId, eventId ].forEach( ( id ) => {
+	[ pageId, eventId, futureEventId ].forEach( ( id ) => {
 		if ( id ) {
 			wpCli( [ 'post', 'delete', id, '--force' ] );
 		}
@@ -167,4 +201,48 @@ test( 'only the view plugins the calendar needs are downloaded', async ( {
 		chunks.length,
 		`chunks loaded: ${ chunks.join( ', ' ) }`
 	).toBeGreaterThan( 1 );
+} );
+
+/*
+ * The block used to render an empty div and rely entirely on FullCalendar.
+ * Both registered archive templates carry it as their only content block, so
+ * a visitor without JavaScript — or one whose chunks fail to load — got a
+ * page title and nothing else.
+ */
+test.describe( 'without JavaScript', () => {
+	test.use( { javaScriptEnabled: false } );
+
+	test( 'the calendar falls back to a server-rendered list of events', async ( {
+		page,
+	} ) => {
+		await page.goto( `/?p=${ pageId }` );
+
+		const fallback = page.locator( '.blockendar-calendar-fallback' );
+		await expect( fallback ).toBeVisible();
+
+		// The seeded event is listed, with a working link to it.
+		const link = fallback.locator( 'a', {
+			hasText: 'E2E Calendar Future Event',
+		} );
+		await expect( link ).toBeVisible();
+		await expect( link ).toHaveAttribute( 'href', /.+/ );
+
+		// And the container is a named region rather than an anonymous div.
+		const container = page.locator( '.wp-block-blockendar-calendar-view' );
+		await expect( container ).toHaveAttribute( 'role', 'region' );
+		await expect( container ).toHaveAttribute( 'aria-label', /.+/ );
+	} );
+} );
+
+test( 'the fallback is removed once the calendar mounts', async ( {
+	page,
+} ) => {
+	await page.goto( `/?p=${ pageId }` );
+
+	// The calendar itself proves the chunks resolved.
+	await expect( page.locator( '.fc' ) ).toBeVisible( { timeout: 15000 } );
+
+	await expect( page.locator( '.blockendar-calendar-fallback' ) ).toHaveCount(
+		0
+	);
 } );
