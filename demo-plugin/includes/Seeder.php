@@ -49,15 +49,24 @@ class Seeder {
 	/**
 	 * Create the full demo dataset.
 	 *
-	 * @return array{created: int, pages: int, errors: string[], skipped: bool}
+	 * Seeding over an existing demo does not create a second one. It rewrites
+	 * the tour pages instead, so an install made before a markup change picks
+	 * up the current layout without a reset — a reset would take the events
+	 * with it, and their dates are generated relative to the day they were
+	 * created. The events themselves are left exactly as they are.
+	 *
+	 * @return array{created: int, pages: int, errors: string[], skipped: bool, refreshed: int}
 	 */
 	public function seed(): array {
 		if ( $this->is_seeded() ) {
+			$state = get_option( Plugin::STATE_OPTION );
+
 			return [
-				'created' => 0,
-				'pages'   => 0,
-				'errors'  => [],
-				'skipped' => true,
+				'created'   => 0,
+				'pages'     => 0,
+				'errors'    => [],
+				'skipped'   => true,
+				'refreshed' => is_array( $state ) ? ( new Pages() )->refresh( $state ) : 0,
 			];
 		}
 
@@ -119,10 +128,11 @@ class Seeder {
 		do_action( 'blockendar_demo_seeded', $state );
 
 		return [
-			'created' => $created,
-			'pages'   => $pages,
-			'errors'  => $this->errors,
-			'skipped' => false,
+			'created'   => $created,
+			'pages'     => $pages,
+			'errors'    => $this->errors,
+			'skipped'   => false,
+			'refreshed' => 0,
 		];
 	}
 

@@ -18,6 +18,7 @@ use Blockendar\DB\Schema;
 use Blockendar\Demo\Content;
 use Blockendar\Demo\Dependency;
 use Blockendar\Demo\Fixtures;
+use Blockendar\Demo\Pages;
 use Blockendar\Demo\Plugin;
 use Blockendar\Demo\Seeder;
 use WP_UnitTestCase;
@@ -195,12 +196,140 @@ class DemoSeederTest extends WP_UnitTestCase {
 		$this->assertFalse( $first['skipped'] );
 
 		$events_after_first = $this->count_rows( Schema::events_table() );
+		$pages_after_first  = $this->count_demo_pages();
 
 		$second = $this->seeder->seed();
 
-		$this->assertTrue( $second['skipped'], 'A second seed should be a no-op until reset runs.' );
+		$this->assertTrue( $second['skipped'], 'A second seed must not build a second dataset.' );
 		$this->assertSame( 0, $second['created'] );
 		$this->assertSame( $events_after_first, $this->count_rows( Schema::events_table() ) );
+		$this->assertSame( $pages_after_first, $this->count_demo_pages(), 'Re-seeding must not create more pages.' );
+	}
+
+	/**
+	 * A site seeded before a markup change has to be able to pick up the new
+	 * pages. Reset is not an answer: it deletes the events too, and their dates
+	 * are generated relative to the day they were made.
+	 */
+	public function test_reseeding_rewrites_page_content_in_place(): void {
+		$this->limit_fixtures( 3 );
+		$this->seeder->seed();
+
+		$state = get_option( Plugin::STATE_OPTION );
+		$this->assertIsArray( $state );
+
+		$before = [];
+		foreach ( array_keys( Content::PAGES ) as $slug ) {
+			$page = get_page_by_path( $slug );
+			$this->assertInstanceOf( \WP_Post::class, $page );
+
+			$before[ $slug ] = $page->ID;
+
+			// Stand in for a page built by an older version of the demo.
+			wp_update_post(
+				[
+					'ID'           => $page->ID,
+					'post_content' => '<!-- wp:paragraph --><p>stale</p><!-- /wp:paragraph -->',
+				]
+			);
+		}
+
+		$result = $this->seeder->seed();
+
+		$this->assertTrue( $result['skipped'] );
+		$this->assertSame( count( Content::PAGES ), $result['refreshed'] );
+
+		foreach ( $before as $slug => $page_id ) {
+			$page = get_post( $page_id );
+			$this->assertInstanceOf( \WP_Post::class, $page );
+			$this->assertStringNotContainsString( 'stale', (string) $page->post_content, "Stale content left on {$slug}." );
+			$this->assertStringContainsString( '<!-- wp:', (string) $page->post_content, "No blocks written to {$slug}." );
+
+			// Same post, rewritten — not a replacement at a new ID.
+			$this->assertSame( $page_id, (int) get_page_by_path( $slug )->ID );
+		}
+
+		$this->assertSame( count( Content::PAGES ), $this->count_demo_pages() );
+	}
+
+	/**
+	 * refresh() writes one page's content over another only if it can tell them
+	 * apart. A page the user deleted must not come back, and one that is no
+	 * longer ours must not be touched.
+	 */
+	public function test_reseeding_skips_pages_it_no_longer_owns(): void {
+		$this->limit_fixtures( 3 );
+		$this->seeder->seed();
+
+		$calendar = get_page_by_path( 'calendar' );
+		$this->assertInstanceOf( \WP_Post::class, $calendar );
+
+		// Someone took this page over: the marker is gone.
+		delete_post_meta( $calendar->ID, Seeder::MARKER );
+		wp_update_post(
+			[
+				'ID'           => $calendar->ID,
+				'post_content' => 'theirs now',
+			]
+		);
+
+		// And this one they deleted outright.
+		$subscribe = get_page_by_path( 'subscribe' );
+		$this->assertInstanceOf( \WP_Post::class, $subscribe );
+		wp_delete_post( $subscribe->ID, true );
+
+		$result = $this->seeder->seed();
+
+		$this->assertSame( count( Content::PAGES ) - 2, $result['refreshed'] );
+		$this->assertSame( 'theirs now', (string) get_post( $calendar->ID )->post_content );
+		$this->assertNull( get_page_by_path( 'subscribe' ), 'A deleted tour page must not be recreated.' );
+	}
+
+	/**
+	 * Demos seeded before Pages::SLUG_META existed have only a post_name to go
+	 * on, and that name may carry the "-2" suffix wp_insert_post() adds when the
+	 * slug was already taken.
+	 */
+	public function test_reseeding_recovers_pages_seeded_without_the_slug_meta(): void {
+		$this->limit_fixtures( 3 );
+		$this->seeder->seed();
+
+		foreach ( array_keys( Content::PAGES ) as $slug ) {
+			$page = get_page_by_path( $slug );
+			$this->assertInstanceOf( \WP_Post::class, $page );
+
+			delete_post_meta( $page->ID, Pages::SLUG_META );
+			wp_update_post(
+				[
+					'ID'           => $page->ID,
+					'post_content' => 'stale',
+				]
+			);
+		}
+
+		$result = $this->seeder->seed();
+
+		$this->assertSame( count( Content::PAGES ), $result['refreshed'] );
+
+		foreach ( array_keys( Content::PAGES ) as $slug ) {
+			$page = get_page_by_path( $slug );
+			$this->assertStringContainsString( '<!-- wp:', (string) $page->post_content );
+			$this->assertSame( $slug, get_post_meta( $page->ID, Pages::SLUG_META, true ), 'The meta should be backfilled.' );
+		}
+	}
+
+	private function count_demo_pages(): int {
+		return count(
+			get_posts(
+				[
+					'post_type'   => 'page',
+					'post_status' => 'any',
+					'numberposts' => -1,
+					'fields'      => 'ids',
+					'meta_key'    => Seeder::MARKER, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				]
+			)
+		);
 	}
 
 	/**

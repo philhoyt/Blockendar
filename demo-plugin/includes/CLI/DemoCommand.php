@@ -36,7 +36,19 @@ class DemoCommand {
 		$result = ( new Seeder() )->seed();
 
 		if ( $result['skipped'] ) {
-			\WP_CLI::warning( 'Demo content is already installed. Run "wp blockendar-demo reset" first.' );
+			$refreshed = (int) $result['refreshed'];
+
+			if ( ! $refreshed ) {
+				\WP_CLI::warning( 'Demo content is already installed, and no demo tour pages were found to rebuild. Run "wp blockendar-demo reset" first.' );
+				return;
+			}
+
+			\WP_CLI::success(
+				sprintf(
+					'Demo content is already installed. Rebuilt %d tour page(s) with the current layout; the events were left alone. Run "wp blockendar-demo reset" for a fresh dataset.',
+					$refreshed
+				)
+			);
 			return;
 		}
 
