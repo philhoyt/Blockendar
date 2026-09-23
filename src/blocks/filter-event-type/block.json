@@ -14,7 +14,7 @@
 		"category"
 	],
 	"textdomain": "blockendar",
-	"parent": [
+	"ancestor": [
 		"blockendar/query-filters"
 	],
 	"supports": {
