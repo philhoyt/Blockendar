@@ -141,6 +141,11 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 1.7.0
+- Added: colour, typography, spacing and border controls on the Event Venue block, bringing it in line with the other single-event blocks.
+- Changed: the filter blocks can sit at any depth inside the Events Query Filters block. Wrapping Type, Venue and Dates in a Group to lay them out in a row now works; before this they had to be direct children.
+- Changed: the events archive and the event type archive draw their calendar at wide width, so a month grid has room for its day cells. A site that has customised either template in the Site Editor keeps its own copy and sees no change.
+
 ### 1.6.0
 - Added: calendar subscriptions. The Event Calendar block can show **iCalendar** and **Google Calendar** buttons that let visitors subscribe to your events, so their calendar keeps up with yours instead of taking a one-time copy. Both buttons carry whatever venue, type and featured filters the block is set to, and both are hidden while public REST access is turned off, because a private feed cannot be linked without publishing its access token. Settings > REST API shows both feed URLs with copy buttons.
 - Added: settings for how much of the calendar a subscription covers, 30 days back and 365 days ahead by default. The window moves with the date, so a subscription that worked in January still shows this month's events in June.

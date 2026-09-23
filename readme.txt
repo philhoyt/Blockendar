@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 1.6.0
+Stable tag: 1.7.0
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -90,6 +90,11 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 1.7.0 =
+* Added: colour, typography, spacing and border controls on the Event Venue block, bringing it in line with the other single-event blocks.
+* Changed: the filter blocks can sit at any depth inside the Events Query Filters block. Wrapping Type, Venue and Dates in a Group to lay them out in a row now works; before this they had to be direct children.
+* Changed: the events archive and the event type archive draw their calendar at wide width, so a month grid has room for its day cells. A site that has customised either template in the Site Editor keeps its own copy and sees no change.
 
 = 1.6.0 =
 * Added: calendar subscriptions. The Event Calendar block can show **iCalendar** and **Google Calendar** buttons that let visitors subscribe to your events, so their calendar keeps up with yours instead of taking a one-time copy. Both buttons carry whatever venue, type and featured filters the block is set to, and both are hidden while public REST access is turned off, because a private feed cannot be linked without publishing its access token. Settings > REST API shows both feed URLs with copy buttons.
@@ -275,6 +280,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.7.0 =
+Adds styling controls to the Event Venue block and lets the filter blocks be grouped, so Type, Venue and Dates can share a row. The archive calendars now render at wide width; a template you have customised in the Site Editor keeps your version.
 
 = 1.6.0 =
 Adds calendar subscriptions and repairs the iCalendar feed, which never worked before this release. Also fixes a bug where cancelling one occurrence of a repeating event could rewrite the rest of the series; if you have cancelled occurrences before, check those events after updating.
