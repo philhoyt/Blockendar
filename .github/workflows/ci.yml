@@ -88,15 +88,28 @@ jobs:
       # boots on its own default here and Playwright has to be pointed at it.
       WP_PORT: '8888'
 
+    defaults:
+      run:
+        # wp-env mounts the plugin under this directory's name, and the
+        # test:integration script addresses it as wp-content/plugins/blockendar.
+        # actions/checkout otherwise uses the repository name, "Blockendar",
+        # which mounts as .../plugins/Blockendar — indistinguishable on a
+        # case-insensitive macOS filesystem, fatal on the Linux runner.
+        # "blockendar" is also the plugin's real slug and text domain.
+        working-directory: blockendar
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          path: blockendar
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
+          cache-dependency-path: blockendar/package-lock.json
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -152,7 +165,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
+          # Relative to the workspace root, which `working-directory` does not affect.
           path: |
-            playwright-report/
-            test-results/
+            blockendar/playwright-report/
+            blockendar/test-results/
           retention-days: 7
