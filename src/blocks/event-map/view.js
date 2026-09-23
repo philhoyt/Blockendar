@@ -45,6 +45,16 @@ document
 			return;
 		}
 
+		/*
+		 * Hand the container over to Leaflet: drop the server-rendered address
+		 * list it replaces, and swap role="img" for a named region. img is
+		 * right for the static fallback but wrong once there are markers and
+		 * popups inside — it would hide all of that from assistive tech, while
+		 * region keeps the contents explorable and still gives the map a name.
+		 */
+		el.querySelector( '.blockendar-event-map__fallback' )?.remove();
+		el.setAttribute( 'role', 'region' );
+
 		const zoom = parseInt( el.dataset.zoom ?? '14', 10 );
 		const map = L.map( el, { scrollWheelZoom: false } );
 

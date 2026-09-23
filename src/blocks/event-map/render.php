@@ -39,9 +39,21 @@ foreach ( $terms as $term ) {
 		continue;
 	}
 	$pins[] = [
-		'lat'  => $lat,
-		'lng'  => $lng,
-		'name' => $term->name,
+		'lat'     => $lat,
+		'lng'     => $lng,
+		'name'    => $term->name,
+		'address' => trim(
+			implode(
+				', ',
+				array_filter(
+					[
+						(string) get_term_meta( $term->term_id, 'blockendar_venue_address', true ),
+						(string) get_term_meta( $term->term_id, 'blockendar_venue_city', true ),
+						(string) get_term_meta( $term->term_id, 'blockendar_venue_state', true ),
+					]
+				)
+			)
+		),
 	];
 }
 
@@ -60,5 +72,32 @@ $aria_label = 1 === count( $pins )
 	data-pins="<?php echo esc_attr( wp_json_encode( $pins ) ); ?>"
 	data-zoom="<?php echo esc_attr( (string) $zoom ); ?>"
 	style="height:<?php echo esc_attr( $height . 'px' ); ?>;"
+	<?php
+	/*
+	 * role="img" is what makes the aria-label count: on a bare <div> with no
+	 * role the label is ignored, so the carefully built "Map of {venue}" never
+	 * reached a screen reader at all.
+	 */
+	?>
+	role="img"
 	aria-label="<?php echo esc_attr( $aria_label ); ?>"
-></div>
+>
+	<?php
+	/*
+	 * Fallback content, replaced by Leaflet once it mounts. Without it this
+	 * block renders an empty div: with JavaScript off, with the tile host
+	 * blocked, or to anyone who cannot use a map, the venue address was simply
+	 * absent from the page.
+	 */
+	?>
+	<ul class="blockendar-event-map__fallback">
+		<?php foreach ( $pins as $pin ) : ?>
+			<li>
+				<strong><?php echo esc_html( $pin['name'] ); ?></strong>
+				<?php if ( '' !== $pin['address'] ) : ?>
+					<span><?php echo esc_html( $pin['address'] ); ?></span>
+				<?php endif; ?>
+			</li>
+		<?php endforeach; ?>
+	</ul>
+</div>

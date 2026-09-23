@@ -174,6 +174,7 @@ ScriptProbe::print_once();
 			class="blockendar-filter__trigger"
 			id="<?php echo esc_attr( $trigger_id ); ?>"
 			aria-expanded="false"
+			aria-haspopup="true"
 			aria-controls="<?php echo esc_attr( $panel_id ); ?>"
 		>
 			<span class="blockendar-filter__trigger-text"><?php echo esc_html( $trigger_text ); ?></span>

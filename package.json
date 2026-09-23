@@ -40,16 +40,17 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "flatpickr": "^4.6.13",
     "@fullcalendar/core": "^6.1.15",
     "@fullcalendar/daygrid": "^6.1.15",
     "@fullcalendar/list": "^6.1.15",
     "@fullcalendar/react": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
+    "flatpickr": "^4.6.13",
     "leaflet": "^1.9.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
+    "@wordpress/a11y": "^4.56.0",
     "@wordpress/env": "^11.13.0",
     "@wordpress/scripts": "^34.1.0"
   }

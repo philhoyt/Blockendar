@@ -3,7 +3,8 @@
  * blockendar/filter-event-type — server-side render callback.
  *
  * Renders a list of event_type terms as checkboxes or a <select> dropdown.
- * Active terms are read from $_GET and marked with aria-current / CSS class.
+ * Active terms are read from $_GET and marked with a CSS class; the checked
+ * state of each input is what conveys selection to assistive tech.
  * The form preserves all other active filter params as hidden inputs so that
  * applying this filter doesn't wipe out venue or date selections.
  *
@@ -97,6 +98,16 @@ $hidden_inputs .= FilterContext::hidden_view_input( $query_id );
 // param name is not a safe id.
 $panel_id   = wp_unique_id( 'blockendar-type-panel-' );
 $trigger_id = wp_unique_id( 'blockendar-type-trigger-' );
+$id_group   = wp_unique_id( 'blockendar-type-group-' );
+
+/*
+ * The visible group label sits outside the popover, so the fieldset points at
+ * it by id rather than carrying a <legend> that would only appear once the
+ * panel was open. With no label set, the fieldset names itself.
+ */
+$group_label_attr = '' !== $label
+	? 'aria-labelledby="' . esc_attr( $id_group ) . '"'
+	: 'aria-label="' . esc_attr__( 'Filter by event type', 'blockendar' ) . '"';
 
 /*
  * Summary shown on the trigger. One selection names it, several are counted, and
@@ -141,7 +152,7 @@ ScriptProbe::print_once();
 ?>
 <div <?php echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( '' !== $label ) : ?>
-		<p class="blockendar-filter__label"><?php echo esc_html( $label ); ?></p>
+		<p class="blockendar-filter__label" id="<?php echo esc_attr( $id_group ); ?>"><?php echo esc_html( $label ); ?></p>
 	<?php endif; ?>
 
 	<form method="get" action="<?php echo $form_action; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>">
@@ -163,6 +174,7 @@ ScriptProbe::print_once();
 				class="blockendar-filter__trigger"
 				id="<?php echo esc_attr( $trigger_id ); ?>"
 				aria-expanded="false"
+				aria-haspopup="true"
 				aria-controls="<?php echo esc_attr( $panel_id ); ?>"
 			>
 				<span class="blockendar-filter__trigger-text"><?php echo esc_html( $trigger_text ); ?></span>
@@ -172,15 +184,15 @@ ScriptProbe::print_once();
 			<div class="blockendar-filter__panel" id="<?php echo esc_attr( $panel_id ); ?>">
 		<?php endif; ?>
 
-			<ul class="blockendar-filter__list" role="group" aria-label="<?php esc_attr_e( 'Filter by event type', 'blockendar' ); ?>">
+			<fieldset class="blockendar-filter__group" <?php echo $group_label_attr; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from esc_attr()/esc_attr__() above. ?>>
+			<ul class="blockendar-filter__list">
 				<?php foreach ( $terms as $term ) : ?>
 					<?php
 					$is_active = in_array( $term->term_id, $active_ids, true );
 					$count     = $show_count ? ' <span class="blockendar-filter__count">(' . (int) $term->count . ')</span>' : '';
 					$li_class  = $is_active ? ' is-active' : '';
 					?>
-					<li class="blockendar-filter__item<?php echo esc_attr( $li_class ); ?>"
-						<?php echo $is_active ? 'aria-current="true"' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+					<li class="blockendar-filter__item<?php echo esc_attr( $li_class ); ?>">
 						<label class="blockendar-filter__checkbox-label">
 							<input
 								type="checkbox"
@@ -197,6 +209,7 @@ ScriptProbe::print_once();
 					</li>
 				<?php endforeach; ?>
 			</ul>
+			</fieldset>
 			<?php
 			/*
 			 * Both actions sit together inside the panel, so a visitor who has opened

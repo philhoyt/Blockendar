@@ -137,6 +137,8 @@ function TimeSelect( { value, onChange } ) {
 			>
 				<div style={ { width: 64 } }>
 					<SelectControl
+						label={ __( 'Hour', 'blockendar' ) }
+						hideLabelFromVision
 						value={ h12str }
 						options={ HOUR_OPTIONS_12 }
 						onChange={ onHour }
@@ -146,6 +148,8 @@ function TimeSelect( { value, onChange } ) {
 				</div>
 				<div style={ { width: 64 } }>
 					<SelectControl
+						label={ __( 'Minute', 'blockendar' ) }
+						hideLabelFromVision
 						value={ minuteStr }
 						options={ MINUTE_OPTIONS }
 						onChange={ ( min ) =>
@@ -157,6 +161,8 @@ function TimeSelect( { value, onChange } ) {
 				</div>
 				<div style={ { width: 74 } }>
 					<SelectControl
+						label={ __( 'AM or PM', 'blockendar' ) }
+						hideLabelFromVision
 						value={ isPm ? 'PM' : 'AM' }
 						options={ AMPM_OPTIONS }
 						onChange={ onAmPm }
@@ -172,6 +178,8 @@ function TimeSelect( { value, onChange } ) {
 		<HStack spacing={ 1 } alignment="left" style={ { flexWrap: 'nowrap' } }>
 			<div style={ { width: 72 } }>
 				<SelectControl
+					label={ __( 'Hour', 'blockendar' ) }
+					hideLabelFromVision
 					value={ String( h24 ).padStart( 2, '0' ) }
 					options={ HOUR_OPTIONS_24 }
 					onChange={ ( h ) =>
@@ -183,6 +191,8 @@ function TimeSelect( { value, onChange } ) {
 			</div>
 			<div style={ { width: 72 } }>
 				<SelectControl
+					label={ __( 'Minute', 'blockendar' ) }
+					hideLabelFromVision
 					value={ minuteStr }
 					options={ MINUTE_OPTIONS }
 					onChange={ ( min ) =>

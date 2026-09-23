@@ -15,6 +15,7 @@ import { store as coreStore } from '@wordpress/core-data';
 import { __ } from '@wordpress/i18n';
 import { useState } from '@wordpress/element';
 import metadata from './block.json';
+import './style.css';
 
 const LABELS = {
 	d: __( 'days', 'blockendar' ),
