@@ -144,6 +144,14 @@ class SettingsPage {
 			true
 		);
 
+		// See the note in BlockRegistrar: a hand-enqueued bundle needs its
+		// translations wired up explicitly or every __() returns English.
+		wp_set_script_translations(
+			'blockendar-settings',
+			'blockendar',
+			BLOCKENDAR_DIR . 'languages'
+		);
+
 		wp_enqueue_style(
 			'blockendar-settings',
 			plugins_url( 'build/admin/style-index.css', BLOCKENDAR_FILE ),

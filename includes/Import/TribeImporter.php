@@ -46,7 +46,7 @@ class TribeImporter {
 			$errors              = libxml_get_errors();
 			$results['errors'][] = ! empty( $errors )
 				? $errors[0]->message
-				: 'Failed to parse XML.';
+				: __( 'Failed to parse XML.', 'blockendar' );
 			return $results;
 		}
 
@@ -58,7 +58,7 @@ class TribeImporter {
 		$items = $xpath->query( '//item[wp:post_type[normalize-space()="tribe_events"]]' );
 
 		if ( ! $items || 0 === $items->length ) {
-			$results['errors'][] = 'No tribe_events items found in the XML file.';
+			$results['errors'][] = __( 'No tribe_events items found in the XML file.', 'blockendar' );
 			return $results;
 		}
 
@@ -122,7 +122,11 @@ class TribeImporter {
 			return [
 				'title'   => $title,
 				'status'  => 'error',
-				'message' => "Missing start date: {$title}",
+				'message' => sprintf(
+					/* translators: %s: the event title from the import file. */
+					__( 'Missing start date: %s', 'blockendar' ),
+					$title
+				),
 			];
 		}
 
@@ -134,7 +138,12 @@ class TribeImporter {
 			return [
 				'title'   => $title,
 				'status'  => 'error',
-				'message' => "Could not parse start date \"{$start_raw}\": {$title}",
+				'message' => sprintf(
+					/* translators: 1: the unparseable date string, 2: the event title. */
+					__( 'Could not parse start date "%1$s": %2$s', 'blockendar' ),
+					$start_raw,
+					$title
+				),
 			];
 		}
 
@@ -165,7 +174,9 @@ class TribeImporter {
 			return [
 				'title'   => $title,
 				'status'  => 'imported',
-				'message' => $existing_id ? '(dry run — would update)' : '(dry run)',
+				'message' => $existing_id
+					? __( '(dry run — would update)', 'blockendar' )
+					: __( '(dry run)', 'blockendar' ),
 			];
 		}
 

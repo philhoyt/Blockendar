@@ -7,7 +7,7 @@ import {
 	Notice,
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 
 const { nonce, importUrl } = window.blockendarSettings ?? {};
 
@@ -94,12 +94,31 @@ export function ImportSection() {
 		}
 	};
 
+	/*
+	 * Two whole sentences rather than interpolated fragments. Splitting this
+	 * into "imported" / "skipped" pieces leaves a translator with no sentence
+	 * to place them in, and no way to move the numbers.
+	 */
 	const summary = results
-		? `${ results.imported } ${
+		? sprintf(
 				results.dryRun
-					? __( 'would be imported', 'blockendar' )
-					: __( 'imported', 'blockendar' )
-		  }, ${ results.skipped } ${ __( 'skipped', 'blockendar' ) }`
+					? /* translators: 1: number of events that would be imported, 2: number skipped. */
+					  _n(
+							'%1$d event would be imported, %2$d skipped.',
+							'%1$d events would be imported, %2$d skipped.',
+							results.imported,
+							'blockendar'
+					  )
+					: /* translators: 1: number of events imported, 2: number skipped. */
+					  _n(
+							'%1$d event imported, %2$d skipped.',
+							'%1$d events imported, %2$d skipped.',
+							results.imported,
+							'blockendar'
+					  ),
+				results.imported,
+				results.skipped
+		  )
 		: null;
 
 	return (
