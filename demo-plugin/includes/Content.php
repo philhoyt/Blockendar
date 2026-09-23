@@ -303,19 +303,26 @@ class Content {
 	 * @return string[]
 	 */
 	private function find_an_event(): array {
-		// The three filters in a row of their own, so they stay together when
-		// the outer row wraps and the switcher drops to its own line.
-		$filters = $this->group(
+		/*
+		 * One flex row holding all four controls, not a filters group nested in
+		 * an outer row. Nesting looked tidier but measured worse: the inner
+		 * group is itself a wrapping flex container, so it resolves to its
+		 * max-content width as a flex item and shrinks well below the space
+		 * available, which pushed Dates onto a second line while the row still
+		 * had room.
+		 *
+		 * The switcher is pushed to the end with margin-left:auto rather than
+		 * justifyContent:space-between, which would have spread the three
+		 * filters apart as well. query-view-switcher is a dynamic block, so the
+		 * margin becomes an inline style at render and there is no save output
+		 * to keep in step.
+		 */
+		$controls = $this->group(
 			'<!-- wp:blockendar/filter-event-type {"label":"Type"} /-->' . "\n\n"
 				. '<!-- wp:blockendar/filter-venue {"label":"Venue"} /-->' . "\n\n"
-				. '<!-- wp:blockendar/filter-date-range {"label":"Dates"} /-->',
-			$this->flex()
-		);
-
-		// Filters left, view switcher right.
-		$controls = $this->group(
-			$filters . "\n\n" . '<!-- wp:blockendar/query-view-switcher {"showLabels":true} /-->',
-			$this->flex( 'space-between', '1.5rem' )
+				. '<!-- wp:blockendar/filter-date-range {"label":"Dates"} /-->' . "\n\n"
+				. '<!-- wp:blockendar/query-view-switcher {"showLabels":true,"style":{"spacing":{"margin":{"left":"auto"}}}} /-->',
+			$this->flex( '', '1.5rem' )
 		);
 
 		/*
@@ -325,14 +332,30 @@ class Content {
 		 * so the class would match nothing here. The wide width comes from the
 		 * query-filters wrapper, and the query fills it.
 		 */
-		$inner = $controls . "\n\n"
-			. $this->events_query(
-				[
-					'perPage'        => 6,
-					'showPagination' => true,
-				],
-				$this->event_card()
-			);
+		/*
+		 * A flow-layout group around both, purely to get a gap between the
+		 * controls and the results. query-filters declares spacing.blockGap but
+		 * no layout support, and blockGap CSS is emitted by the layout support,
+		 * so setting it on the wrapper itself produces nothing.
+		 *
+		 * Flow ("default"), not constrained: a constrained layout would cap the
+		 * query at the theme's content size and undo the wide width the
+		 * query-filters wrapper provides.
+		 */
+		$inner = $this->group(
+			$controls . "\n\n"
+				. $this->events_query(
+					[
+						'perPage'        => 6,
+						'showPagination' => true,
+					],
+					$this->event_card()
+				),
+			[
+				'layout' => [ 'type' => 'default' ],
+				'style'  => [ 'spacing' => [ 'blockGap' => '2.5rem' ] ],
+			]
+		);
 
 		return [
 			$this->intro(
