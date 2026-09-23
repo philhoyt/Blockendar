@@ -59,10 +59,10 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 		//
 		// The composites must go first. Dropping a column does not drop an index
 		// that references it — MySQL rewrites the index without that column — so
-		// leaving idx_past in place would turn it into (end_datetime,
-		// start_datetime). dbDelta only ever ADDs a missing index, it never
+		// leaving idx_visible_past in place would turn it into
+		// (hide_from_listings, start_datetime). dbDelta only ever ADDs a missing index, it never
 		// reshapes one whose columns changed, so it would then retry
-		// `ADD KEY idx_past` on every run and fail with "Duplicate key name".
+		// `ADD KEY idx_visible_past` on every run and fail with "Duplicate key name".
 		$table = Schema::events_table();
 		$this->drop_v4_indexes();
 		$wpdb->query( "ALTER TABLE {$table} DROP COLUMN ongoing" ); // phpcs:ignore WordPress.DB
@@ -93,7 +93,7 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 		// composites that depend on it have to land in the same dbDelta run.
 		$names = $this->index_names( $table );
 		$this->assertContains( 'idx_visible_start', $names );
-		$this->assertContains( 'idx_past', $names );
+		$this->assertContains( 'idx_visible_past', $names );
 		$this->assertNotFalse(
 			wp_next_scheduled( 'blockendar_index_rebuild_after_upgrade' ),
 			'An upgrade (not a fresh install) must queue the one-shot rebuild.'
@@ -136,7 +136,7 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 
 		$table = Schema::events_table();
 
-		foreach ( [ 'idx_visible_start', 'idx_past' ] as $index ) {
+		foreach ( [ 'idx_visible_start', 'idx_visible_past' ] as $index ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( "ALTER TABLE {$table} DROP INDEX {$index}" );
 		}
@@ -146,7 +146,7 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 		$names = $this->index_names( Schema::events_table() );
 
 		$this->assertContains( 'idx_visible_start', $names );
-		$this->assertContains( 'idx_past', $names );
+		$this->assertContains( 'idx_visible_past', $names );
 	}
 
 	public function test_the_composites_cover_the_expected_columns_in_order(): void {
@@ -172,7 +172,7 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 		// Column order is the whole point of a composite: a prefix in the wrong
 		// order serves a different set of queries.
 		$this->assertSame( [ 'hide_from_listings', 'start_datetime' ], $columns['idx_visible_start'] );
-		$this->assertSame( [ 'ongoing', 'end_datetime', 'start_datetime' ], $columns['idx_past'] );
+		$this->assertSame( [ 'hide_from_listings', 'ongoing', 'start_datetime' ], $columns['idx_visible_past'] );
 	}
 
 	public function test_upgrading_from_version_3_adds_both_composites_without_a_reindex(): void {
@@ -186,7 +186,7 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 
 		$names = $this->index_names( $table );
 		$this->assertNotContains( 'idx_visible_start', $names, 'Precondition: the composite must be gone.' );
-		$this->assertNotContains( 'idx_past', $names, 'Precondition: the composite must be gone.' );
+		$this->assertNotContains( 'idx_visible_past', $names, 'Precondition: the composite must be gone.' );
 
 		// Seed a row so we can prove the upgrade does not disturb existing data.
 		$post_id = self::factory()->post->create( [ 'post_type' => 'blockendar_event' ] );
@@ -207,7 +207,7 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 
 		$names = $this->index_names( $table );
 		$this->assertContains( 'idx_visible_start', $names );
-		$this->assertContains( 'idx_past', $names );
+		$this->assertContains( 'idx_visible_past', $names );
 		$this->assertSame( '4', get_option( Schema::DB_VERSION_OPTION ) );
 
 		// The row is untouched — this migration adds indexes only, so no reindex
@@ -265,7 +265,7 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 
 			$names = $this->index_names( $table );
 			$this->assertContains( 'idx_visible_start', $names );
-			$this->assertContains( 'idx_past', $names );
+			$this->assertContains( 'idx_visible_past', $names );
 		} finally {
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			$wpdb->query( 'DROP TABLE IF EXISTS bkdr_alt_blockendar_event_type_terms' );
@@ -288,7 +288,7 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 
 		// Block only the ADD INDEX statements dbDelta issues for the composites.
 		$blocker = static function ( $query ) {
-			if ( preg_match( '/ADD (?:INDEX|KEY) `?(?:idx_visible_start|idx_past)`?/i', (string) $query ) ) {
+			if ( preg_match( '/ADD (?:INDEX|KEY) `?(?:idx_visible_start|idx_visible_past)`?/i', (string) $query ) ) {
 				return 'SELECT 1';
 			}
 			return $query;
@@ -309,6 +309,6 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 		$this->assertTrue( Schema::create_tables() );
 		$this->assertSame( '4', get_option( Schema::DB_VERSION_OPTION ) );
 		$names = $this->index_names( $table );
-		$this->assertContains( 'idx_past', $names );
+		$this->assertContains( 'idx_visible_past', $names );
 	}
 }

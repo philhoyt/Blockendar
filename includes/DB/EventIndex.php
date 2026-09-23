@@ -129,9 +129,10 @@ class EventIndex {
 			'order'                => 'ASC',
 		];
 
-		$filters = wp_parse_args( $filters, $defaults );
-		$where   = [];
-		$params  = [];
+		$filters    = wp_parse_args( $filters, $defaults );
+		$where      = [];
+		$params     = [];
+		$index_hint = '';
 
 		if ( null !== $filters['ended_before'] ) {
 			// Past mode — the event has finished, and finished inside the window.
@@ -141,6 +142,27 @@ class EventIndex {
 			$where[]  = 'e.end_datetime > %s';
 			$params[] = $start;
 			$where[]  = 'e.ongoing = 0';
+
+			// Steer the optimizer off idx_start_datetime on this branch.
+			//
+			// Past listings default to ORDER BY start_datetime DESC, so MariaDB
+			// likes idx_start_datetime: it can walk the index in sort order and
+			// stop at the LIMIT. But it walks from the newest start_datetime
+			// backwards, and on a calendar most of those rows are in the future
+			// or ongoing, so it scans deep before finding rows that pass
+			// `end_datetime <= cutoff`. Measured on 200k occurrences (50%
+			// ongoing, 25% hidden): 55ms at LIMIT 10, barely better than a scan.
+			//
+			// Excluding it lets idx_visible_past (hide_from_listings, ongoing,
+			// start_datetime) take over, which fixes both flags and then reads
+			// start_datetime in order: 19ms at the same limits.
+			//
+			// IGNORE rather than FORCE INDEX on purpose. This is a hint, not a
+			// mandate — the optimizer still chooses among the rest, so a site
+			// whose distribution makes another index better is not pinned to a
+			// bad plan. Forcing was measurably worse on a benign distribution
+			// where few rows are ongoing and early termination really is right.
+			$index_hint = 'IGNORE INDEX (idx_start_datetime)';
 		} else {
 			// Date range — events that overlap the requested window.
 			$where[]  = 'e.start_datetime < %s';
@@ -240,7 +262,7 @@ class EventIndex {
 			        e.venue_term_id, e.type_term_ids, e.featured, e.hide_from_listings,
 			        e.ongoing, p.post_title, p.post_name, p.guid,
 			        p.post_date_gmt, p.post_modified_gmt
-			FROM   {$events_table} e
+			FROM   {$events_table} e {$index_hint}
 			JOIN   {$posts_table} p ON p.ID = e.post_id
 			{$where_sql}
 			ORDER  BY {$orderby}
@@ -299,6 +321,15 @@ class EventIndex {
 			$where[]  = 'e.end_datetime > %s';
 			$params[] = $start;
 			$where[]  = 'e.ongoing = 0';
+
+			// Deliberately no IGNORE INDEX here, unlike get_events_in_range().
+			//
+			// That hint pays off because the page query has an ORDER BY and a
+			// LIMIT, which is what tempts the optimizer onto idx_start_datetime.
+			// A COUNT(*) has neither: it has to visit every matching row either
+			// way, and already declines to use idx_start_datetime. Measured on
+			// the same 200k rows, the hint changed nothing (25.9ms vs 26.1ms),
+			// so it is left off rather than carried over for symmetry.
 		} else {
 			$where[]  = 'e.start_datetime < %s';
 			$params[] = $end;

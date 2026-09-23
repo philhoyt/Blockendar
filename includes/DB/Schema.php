@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *   - {prefix}blockendar_events            — denormalised occurrence index
  *                                            (v3 adds the `ongoing` flag column;
  *                                            v4 adds the idx_visible_start and
- *                                            idx_past composite indexes)
+ *                                            idx_visible_past composite indexes)
  *   - {prefix}blockendar_recurrence        — RRULE storage
  *   - {prefix}blockendar_event_type_terms  — junction table for event type term filtering
  *
@@ -47,7 +47,7 @@ class Schema {
 	 * Indexes introduced in DB_VERSION 4, checked after dbDelta() before the
 	 * version option is persisted. See create_tables().
 	 */
-	private const REQUIRED_EVENT_INDEXES = [ 'idx_visible_start', 'idx_past' ];
+	private const REQUIRED_EVENT_INDEXES = [ 'idx_visible_start', 'idx_visible_past' ];
 
 	/**
 	 * Called on plugin activation and checked on every load via maybe_upgrade().
@@ -91,7 +91,7 @@ class Schema {
 			KEY idx_hide_from_listings (hide_from_listings),
 			KEY idx_ongoing (ongoing),
 			KEY idx_visible_start (hide_from_listings,start_datetime),
-			KEY idx_past (ongoing,end_datetime,start_datetime)
+			KEY idx_visible_past (hide_from_listings,ongoing,start_datetime)
 		) ENGINE=InnoDB $charset_collate;";
 
 		// Junction table: event index rows ↔ event type terms.
