@@ -81,6 +81,13 @@ jobs:
     name: Integration + E2E
     runs-on: ubuntu-latest
 
+    env:
+      # playwright.config.js defaults to port 8890, which comes from
+      # .wp-env.override.json — a local workaround for machines where another
+      # Docker project already holds 8888. That file is gitignored, so wp-env
+      # boots on its own default here and Playwright has to be pointed at it.
+      WP_PORT: '8888'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -111,6 +118,22 @@ jobs:
 
       - name: Start wp-env
         run: npm run env:start
+
+      # Fail here, in seconds and by name, rather than as eighty Playwright
+      # timeouts several minutes later, if the site is not where the tests think.
+      - name: Wait for WordPress
+        run: |
+          for _ in $(seq 1 30); do
+            if curl -fsS "http://localhost:${WP_PORT}/" > /dev/null; then
+              echo "WordPress is responding on port ${WP_PORT}."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "No response from http://localhost:${WP_PORT}/ after 60s."
+          echo "Ports wp-env actually published:"
+          docker ps --format '{{.Names}}\t{{.Ports}}'
+          exit 1
 
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
