@@ -65,7 +65,14 @@ class AdminPage {
 		$result = ( new Seeder() )->seed();
 
 		if ( $result['skipped'] ) {
-			$message = 'Demo content is already installed. Reset it first to re-seed.';
+			$refreshed = (int) $result['refreshed'];
+
+			$message = $refreshed
+				? sprintf(
+					'Demo content is already installed. Rebuilt %d tour page(s) with the current layout; the events were left alone. Reset first if you want a fresh dataset.',
+					$refreshed
+				)
+				: 'Demo content is already installed, and no demo tour pages were found to rebuild. Reset it first to re-seed.';
 		} else {
 			$message = sprintf(
 				'Created %d events and %d pages.',

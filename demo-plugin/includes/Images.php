@@ -28,16 +28,34 @@ class Images {
 	 * An allowlist rather than a path built from caller input: the key can come
 	 * from a fixture array that the blockendar_demo_event_fixtures filter has
 	 * touched, so it must never reach the filesystem unchecked.
+	 *
+	 * The "-alt" entries are second variants so that 31 events do not have to
+	 * share eight thumbnails. They are abstract gradients, so their colours are
+	 * picked to sit in the gaps between the original eight hues rather than to
+	 * suit the category they are named for; the name only says which slot a
+	 * fixture draws from.
+	 *
+	 * Keys and filenames are append-only. Existing demo installs record
+	 * attachments by ID in the seed state, so renaming or removing a bundled
+	 * file leaves them pointing at media that no longer exists.
 	 */
 	private const ALLOWED = [
-		'music'     => 'music.jpg',
-		'community' => 'community.jpg',
-		'sports'    => 'sports.jpg',
-		'arts'      => 'arts.jpg',
-		'food'      => 'food.jpg',
-		'tech'      => 'tech.jpg',
-		'gala'      => 'gala.jpg',
-		'market'    => 'market.jpg',
+		'music'         => 'music.jpg',
+		'community'     => 'community.jpg',
+		'sports'        => 'sports.jpg',
+		'arts'          => 'arts.jpg',
+		'food'          => 'food.jpg',
+		'tech'          => 'tech.jpg',
+		'gala'          => 'gala.jpg',
+		'market'        => 'market.jpg',
+		'music-alt'     => 'music-alt.jpg',
+		'community-alt' => 'community-alt.jpg',
+		'sports-alt'    => 'sports-alt.jpg',
+		'arts-alt'      => 'arts-alt.jpg',
+		'food-alt'      => 'food-alt.jpg',
+		'tech-alt'      => 'tech-alt.jpg',
+		'gala-alt'      => 'gala-alt.jpg',
+		'market-alt'    => 'market-alt.jpg',
 	];
 
 	/**

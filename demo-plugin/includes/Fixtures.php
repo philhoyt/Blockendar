@@ -194,6 +194,7 @@ class Fixtures {
 				'venue'      => 'community-center',
 				'types'      => [ 'community' ],
 				'cost'       => 'Free',
+				'image'      => 'food-alt',
 			],
 
 			// --- Today. ---
@@ -224,6 +225,7 @@ class Fixtures {
 				'end_time'   => gmdate( 'H:i', strtotime( '+2 hours' ) ),
 				'venue'      => 'city-hall',
 				'types'      => [ 'community' ],
+				'image'      => 'market',
 			],
 
 			// --- This week. ---
@@ -239,6 +241,7 @@ class Fixtures {
 				'venue'      => 'city-park',
 				'types'      => [ 'sports', 'community' ],
 				'cost'       => 'Free',
+				'image'      => 'sports-alt',
 			],
 
 			// All-day single day, with capacity + registration URL.
@@ -252,6 +255,7 @@ class Fixtures {
 				'types'            => [ 'tech', 'community' ],
 				'capacity'         => '30',
 				'registration_url' => 'https://example.com/register',
+				'image'            => 'tech-alt',
 			],
 
 			// No cost field at all.
@@ -264,6 +268,7 @@ class Fixtures {
 				'end_time'   => '12:00',
 				'venue'      => 'city-park',
 				'types'      => [ 'community' ],
+				'image'      => 'market-alt',
 			],
 
 			// Hidden from listings — was "Hidden VIP Preview".
@@ -278,6 +283,7 @@ class Fixtures {
 				'venue'      => 'city-hall',
 				'types'      => [ 'arts-culture' ],
 				'cost'       => '$200.00',
+				'image'      => 'arts',
 			],
 
 			// --- Next 31 days. ---
@@ -296,6 +302,7 @@ class Fixtures {
 				'cost_min'   => '10',
 				'cost_max'   => '25',
 				'currency'   => 'USD',
+				'image'      => 'music-alt',
 			],
 
 			// Explicit "Free" label, no min/max.
@@ -309,6 +316,7 @@ class Fixtures {
 				'venue'      => 'city-park',
 				'types'      => [ 'community', 'arts-culture' ],
 				'cost'       => 'Free',
+				'image'      => 'arts-alt',
 			],
 
 			// Virtual venue + registration URL.
@@ -334,6 +342,7 @@ class Fixtures {
 				'end_time'   => '20:00',
 				'venue'      => 'city-hall',
 				'types'      => [ 'community' ],
+				'image'      => 'community',
 			],
 
 			// NO event type assigned — exercises the type-colour fallback.
@@ -346,6 +355,7 @@ class Fixtures {
 				'start_time' => '11:00',
 				'end_time'   => '12:00',
 				'venue'      => 'community-center',
+				'image'      => 'gala-alt',
 			],
 
 			// Cancelled status. Was "Cancelled Workshop".
@@ -359,6 +369,7 @@ class Fixtures {
 				'status'     => 'cancelled',
 				'venue'      => 'community-center',
 				'types'      => [ 'tech' ],
+				'image'      => 'tech-alt',
 			],
 
 			[
@@ -420,6 +431,7 @@ class Fixtures {
 				'cost_min'   => '50',
 				'cost_max'   => '200',
 				'currency'   => 'USD',
+				'image'      => 'gala',
 			],
 
 			// Multi-day TIMED (not all-day) — spans 3 days with set hours.
@@ -452,7 +464,7 @@ class Fixtures {
 				'cost'       => 'From $99',
 				'cost_min'   => '99',
 				'cost_max'   => '299',
-				'image'      => 'music',
+				'image'      => 'music-alt',
 			],
 
 			// No venue — verifies graceful fallback in the venue block.
@@ -465,6 +477,7 @@ class Fixtures {
 				'start_time' => '10:00',
 				'end_time'   => '11:00',
 				'types'      => [ 'tech' ],
+				'image'      => 'tech',
 			],
 
 			// Crosses midnight: 22:00 one day to 03:00 the next.
@@ -478,6 +491,7 @@ class Fixtures {
 				'venue'      => 'rooftop-bar',
 				'types'      => [ 'music' ],
 				'cost'       => '$20.00',
+				'image'      => 'music-alt',
 			],
 
 			// Postponed status.
@@ -492,6 +506,7 @@ class Fixtures {
 				'types'      => [ 'arts-culture', 'community' ],
 				'status'     => 'postponed',
 				'cost'       => '$60.00',
+				'image'      => 'arts-alt',
 			],
 
 			// --- Beyond 31 days: month view only, not the default list view. ---
@@ -601,6 +616,7 @@ class Fixtures {
 					'end_time'   => '19:00',
 					'venue'      => 'city-hall',
 					'types'      => [ 'community' ],
+					'image'      => 'community',
 				],
 				'rule'  => [
 					'frequency'    => 'monthly',
@@ -621,6 +637,7 @@ class Fixtures {
 					'end_time'   => '19:30',
 					'venue'      => 'community-center',
 					'types'      => [ 'community' ],
+					'image'      => 'community-alt',
 				],
 				'rule'  => [
 					'frequency'    => 'monthly',
@@ -642,6 +659,7 @@ class Fixtures {
 					'end_time'   => '09:15',
 					'venue'      => 'online',
 					'types'      => [ 'tech' ],
+					'image'      => 'market-alt',
 				],
 				'rule'  => [
 					'frequency'    => 'daily',

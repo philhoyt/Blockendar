@@ -14,13 +14,18 @@
 const { test, expect } = require( '@playwright/test' );
 const { wpCli } = require( './wp-cli' );
 
+// `label` is the nav button text, which is shorter than the page title.
 const TOUR = [
-	{ slug: 'blockendar-demo', title: 'Blockendar Demo' },
-	{ slug: 'calendar', title: 'Calendar' },
-	{ slug: 'find-an-event', title: 'Find an Event' },
-	{ slug: 'anatomy-of-an-event', title: 'Anatomy of an Event' },
-	{ slug: 'venues-and-maps', title: 'Venues & Maps' },
-	{ slug: 'subscribe', title: 'Subscribe' },
+	{ slug: 'blockendar-demo', title: 'Blockendar Demo', label: 'Start' },
+	{ slug: 'calendar', title: 'Calendar', label: 'Calendar' },
+	{ slug: 'find-an-event', title: 'Find an Event', label: 'Find an Event' },
+	{
+		slug: 'anatomy-of-an-event',
+		title: 'Anatomy of an Event',
+		label: 'Event Anatomy',
+	},
+	{ slug: 'venues-and-maps', title: 'Venues & Maps', label: 'Venues & Maps' },
+	{ slug: 'subscribe', title: 'Subscribe', label: 'Subscribe' },
 ];
 
 test.beforeAll( () => {
@@ -37,7 +42,7 @@ test.afterAll( () => {
 } );
 
 test.describe( 'demo guided tour', () => {
-	for ( const { slug, title } of TOUR ) {
+	for ( const { slug, title, label } of TOUR ) {
 		test( `${ slug } renders with tour navigation`, async ( { page } ) => {
 			const response = await page.goto( `/${ slug }/` );
 			expect( response.status() ).toBe( 200 );
@@ -46,13 +51,74 @@ test.describe( 'demo guided tour', () => {
 				page.locator( 'h1, h2' ).filter( { hasText: title } ).first()
 			).toBeVisible();
 
-			// Five buttons: every tour page except this one.
+			// Every tour page, this one included, so the row keeps its shape
+			// as you move through the tour.
 			const nav = page.locator(
 				'.wp-block-buttons .wp-block-button__link'
 			);
-			await expect( nav ).toHaveCount( TOUR.length - 1 );
+			await expect( nav ).toHaveCount( TOUR.length );
+
+			// The page you are on is the one filled button. Matched on the
+			// label rather than the href: the landing page is the site's front
+			// page, so its permalink is "/", not "/blockendar-demo/".
+			const current = page.locator( '.wp-block-button.is-style-fill' );
+			await expect( current ).toHaveCount( 1 );
+			await expect( current ).toHaveText( label );
 		} );
 	}
+
+	test( 'the page body renders at wide width', async ( { page } ) => {
+		await page.goto( '/calendar/' );
+
+		const calendar = page.locator( '.wp-block-blockendar-calendar-view' );
+		await expect( calendar ).toBeVisible();
+		await expect( calendar ).toHaveClass( /alignwide/ );
+
+		// The point of the alignment: the calendar is wider than the text
+		// column it used to be squeezed into.
+		const heading = page.locator( 'h2' ).first();
+		const calendarBox = await calendar.boundingBox();
+		const headingBox = await heading.boundingBox();
+
+		expect( calendarBox.width ).toBeGreaterThan( headingBox.width );
+	} );
+
+	test( 'the filters sit on one row above the query', async ( { page } ) => {
+		await page.goto( '/find-an-event/' );
+
+		const type = page.locator( '.blockendar-filter-event-type' );
+		const venue = page.locator( '.blockendar-filter-venue' );
+		const dates = page.locator( '.blockendar-filter-date-range' );
+
+		await expect( type ).toBeVisible();
+		await expect( venue ).toBeVisible();
+		await expect( dates ).toBeVisible();
+
+		// Same row means the same vertical position, not stacked.
+		const boxes = await Promise.all( [
+			type.boundingBox(),
+			venue.boundingBox(),
+			dates.boundingBox(),
+		] );
+
+		for ( const box of boxes.slice( 1 ) ) {
+			expect( Math.abs( box.y - boxes[ 0 ].y ) ).toBeLessThan( 4 );
+		}
+	} );
+
+	test( 'every event in a listing has a thumbnail', async ( { page } ) => {
+		await page.goto( '/find-an-event/' );
+
+		const items = page.locator( '.blockendar-events-query__item' );
+		const count = await items.count();
+		expect( count ).toBeGreaterThan( 0 );
+
+		for ( let i = 0; i < count; i++ ) {
+			await expect(
+				items.nth( i ).locator( 'img' ).first()
+			).toBeVisible();
+		}
+	} );
 
 	test( 'the calendar page renders a populated calendar', async ( {
 		page,
