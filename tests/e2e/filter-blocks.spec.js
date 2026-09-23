@@ -193,3 +193,66 @@ test( 'filter page loads without console or asset errors', async ( {
 	expect( failed, 'no failed asset requests' ).toEqual( [] );
 	expect( consoleErrors, 'no console errors' ).toEqual( [] );
 } );
+
+/*
+ * Regression guard for a WCAG 3.2.2 (On Input) failure.
+ *
+ * Both the list-style type filter and the venue filter used to navigate the
+ * instant a box or radio changed, with the Apply button hidden by JavaScript.
+ * That made the control commit itself before the visitor had finished
+ * choosing, and for keyboard users it was worse: arrow keys move between
+ * radios and each move fired `change`, so the page left before the intended
+ * option was reached.
+ */
+test( 'a list-style filter waits for Apply instead of submitting on change', async ( {
+	page,
+} ) => {
+	const listPageId = wpCliId( [
+		'post',
+		'create',
+		'--post_type=page',
+		'--post_title=E2E List Filter Page',
+		'--post_status=publish',
+		'--post_content=<!-- wp:blockendar/filter-event-type {"displayStyle":"list"} /--><!-- wp:blockendar/events-query --><!-- wp:post-title {"isLink":true,"level":3} /--><!-- /wp:blockendar/events-query -->',
+		'--porcelain',
+	] );
+	created.push( listPageId );
+
+	const navigations = [];
+	page.on(
+		'framenavigated',
+		( f ) => f === page.mainFrame() && navigations.push( f.url() )
+	);
+
+	await page.goto( `/?p=${ listPageId }` );
+	navigations.length = 0;
+
+	// The Apply button must stay reachable — it used to be hidden outright.
+	const apply = page.locator(
+		'.blockendar-filter-event-type .blockendar-filter__submit'
+	);
+	await expect( apply ).toBeVisible();
+
+	const box = page
+		.locator( '.blockendar-filter-event-type input[type="checkbox"]' )
+		.first();
+	await box.check();
+	await page.waitForTimeout( 500 );
+
+	expect( navigations, 'ticking a box must not navigate on its own' ).toEqual(
+		[]
+	);
+	await expect( box ).toBeChecked();
+
+	// Apply is what commits it.
+	await Promise.all( [
+		page.waitForURL( /blockendar_type/ ),
+		apply.click(),
+	] );
+
+	const listed = await page.locator( '.blockendar-events-query' ).innerText();
+	expect(
+		listed.includes( CONCERT ) !== listed.includes( WORKSHOP ),
+		`exactly one event should remain, got: ${ listed }`
+	).toBe( true );
+} );
