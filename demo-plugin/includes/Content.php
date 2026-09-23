@@ -133,6 +133,7 @@ class Content {
 			)
 			. "\n\n" . $this->events_query(
 				[
+					'align'          => 'wide',
 					'perPage'        => 4,
 					'showPagination' => false,
 				],
@@ -148,13 +149,18 @@ class Content {
 			'The Event Calendar block',
 			'A full calendar with month, week and list views. Click any event to open it. Recurring events are expanded from the index table, so a weekly series shows every occurrence without creating a post per week.'
 		)
-			. "\n\n" . '<!-- wp:blockendar/calendar-view {"defaultView":"dayGridMonth"} /-->';
+			. "\n\n" . '<!-- wp:blockendar/calendar-view {"defaultView":"dayGridMonth","align":"wide"} /-->';
 	}
 
 	/**
 	 * Find an Event: the filter wrapper, view switcher, query and pagination.
 	 */
 	private function find_an_event(): string {
+		// No "align" on this events-query, unlike the standalone ones elsewhere.
+		// Alignment is a layout-container rule — .is-layout-constrained > .alignwide
+		// — and query-filters renders a plain div with no layout, so the class
+		// would match nothing. The wide width comes from the query-filters
+		// wrapper below, and the query fills it.
 		$inner = '<!-- wp:blockendar/filter-event-type {"label":"Type"} /-->' . "\n\n"
 			. '<!-- wp:blockendar/filter-venue {"label":"Venue"} /-->' . "\n\n"
 			. '<!-- wp:blockendar/filter-date-range {"label":"Dates"} /-->' . "\n\n"
@@ -174,7 +180,7 @@ class Content {
 			'Filters, view switching and pagination',
 			'The filter blocks live inside an <strong>Events Query Filters</strong> wrapper, which also contains the query itself — that is how the filters know which query to narrow. Filtering happens through URL parameters, so it works with JavaScript disabled.'
 		)
-			. "\n\n" . '<!-- wp:blockendar/query-filters {"queryId":"tour"} -->' . "\n"
+			. "\n\n" . '<!-- wp:blockendar/query-filters {"queryId":"tour","align":"wide"} -->' . "\n"
 			. $inner . "\n"
 			. '<!-- /wp:blockendar/query-filters -->';
 	}
@@ -198,6 +204,7 @@ class Content {
 		)
 			. "\n\n" . $this->events_query(
 				[
+					'align'          => 'wide',
 					'perPage'        => 1,
 					'showPagination' => false,
 				],
@@ -219,6 +226,7 @@ class Content {
 		)
 			. "\n\n" . $this->events_query(
 				[
+					'align'          => 'wide',
 					'perPage'        => 3,
 					'showPagination' => false,
 				],
@@ -253,6 +261,7 @@ class Content {
 			)
 			. "\n\n" . $this->events_query(
 				[
+					'align'          => 'wide',
 					'perPage'        => 3,
 					'showPagination' => false,
 				],
