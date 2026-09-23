@@ -52,12 +52,10 @@
 			}
 		},
 		"defaultView": {
-			"type": "string",
-			"default": "dayGridMonth"
+			"type": "string"
 		},
 		"firstDay": {
-			"type": "integer",
-			"default": 0
+			"type": "integer"
 		},
 		"showSubscribe": {
 			"type": "boolean",

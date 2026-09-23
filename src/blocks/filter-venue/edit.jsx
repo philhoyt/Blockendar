@@ -79,7 +79,10 @@ export default function Edit( { attributes, setAttributes } ) {
 
 			<div { ...blockProps }>
 				<div className="blockendar-filter__placeholder">
-					<span className="blockendar-filter__placeholder-icon">
+					<span
+						className="blockendar-filter__placeholder-icon"
+						aria-hidden="true"
+					>
 						📍
 					</span>
 					<span>

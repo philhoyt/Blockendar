@@ -34,7 +34,37 @@ $ongoing    = $occurrence ? ! empty( $occurrence->ongoing ) : (bool) get_post_me
 // Time and timezone are the same across all occurrences — always read from meta.
 $start_time = get_post_meta( $post_id, 'blockendar_start_time', true );
 $end_time   = get_post_meta( $post_id, 'blockendar_end_time', true );
-$tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
+
+/*
+ * Under timezone_mode = 'site' the authored times are converted into the site's
+ * timezone, so a listing that mixes events from several timezones can be read
+ * at a glance. Under 'event' (and for an all-day event, which has no clock
+ * time to convert) the authored values are shown as-is.
+ *
+ * The date can shift as well as the time — 11pm in one zone is the next day in
+ * another — so the converted date is taken too, and the end is converted
+ * independently of the start.
+ */
+$blockendar_tz = blockendar_display_timezone( $post_id );
+$tz_str        = $blockendar_tz['display'];
+
+if ( ! $all_day && $blockendar_tz['event'] !== $blockendar_tz['display'] ) {
+	[ $start_date, $start_time ] = blockendar_convert_datetime(
+		(string) $start_date,
+		(string) $start_time,
+		$blockendar_tz['event'],
+		$blockendar_tz['display']
+	);
+
+	if ( ! $ongoing ) {
+		[ $end_date, $end_time ] = blockendar_convert_datetime(
+			(string) $end_date,
+			(string) $end_time,
+			$blockendar_tz['event'],
+			$blockendar_tz['display']
+		);
+	}
+}
 
 if ( ! $start_date ) {
 	return;

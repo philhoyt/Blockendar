@@ -73,20 +73,43 @@ async function loadCalendar( views ) {
 	};
 }
 
-function BlockendarCalendar( { dataset } ) {
+/**
+ * Read a JSON array out of a data attribute.
+ *
+ * render.php always writes these, but a hand-edited block or a truncated
+ * response would otherwise throw during render and leave the container empty
+ * with no calendar and no message.
+ *
+ * @param {string|undefined} raw      The data attribute value.
+ * @param {Array}            fallback Value to use when parsing fails.
+ * @return {Array} The parsed array, or the fallback.
+ */
+function parseList( raw, fallback = [] ) {
+	if ( ! raw ) {
+		return fallback;
+	}
+
+	try {
+		const parsed = JSON.parse( raw );
+		return Array.isArray( parsed ) ? parsed : fallback;
+	} catch {
+		return fallback;
+	}
+}
+
+function BlockendarCalendar( { dataset, onReady } ) {
 	const calendarRef = useRef( null );
 	const [ loaded, setLoaded ] = useState( null );
 
 	const restUrl = dataset.restUrl ?? '/wp-json/blockendar/v1';
-	const venueIds = dataset.venueIds ? JSON.parse( dataset.venueIds ) : [];
-	const typeIds = dataset.typeIds ? JSON.parse( dataset.typeIds ) : [];
+	const venueIds = parseList( dataset.venueIds );
+	const typeIds = parseList( dataset.typeIds );
 	const featuredOnly = dataset.featuredOnly === 'true';
-	const defaultView = dataset.defaultView ?? 'dayGridMonth';
+	const defaultView = dataset.defaultView || 'dayGridMonth';
 	const firstDay = dataset.firstDay ? parseInt( dataset.firstDay, 10 ) : 0;
+	const slotDuration = dataset.slotDuration || undefined;
 	const timezone = dataset.timezone ?? 'UTC';
-	const enabledViews = dataset.enabledViews
-		? JSON.parse( dataset.enabledViews )
-		: DEFAULT_VIEWS;
+	const enabledViews = parseList( dataset.enabledViews, DEFAULT_VIEWS );
 
 	const viewButtons = enabledViews.join( ',' );
 
@@ -108,11 +131,16 @@ function BlockendarCalendar( { dataset } ) {
 			.then( ( result ) => {
 				if ( ! cancelled ) {
 					setLoaded( result );
+					onReady?.();
 				}
 			} )
 			.catch( () => {
-				// Leave the container empty rather than throwing; the calendar is
-				// progressive enhancement over a plain block wrapper.
+				/*
+				 * Deliberately no state change. The server-rendered list of
+				 * upcoming events is still in the DOM — onReady() is what
+				 * removes it — so a failed chunk load leaves the visitor with
+				 * a usable list rather than an empty box.
+				 */
 			} );
 
 		return () => {
@@ -177,6 +205,7 @@ function BlockendarCalendar( { dataset } ) {
 			timeZone={ timezone }
 			initialView={ isMobile() ? MOBILE_VIEW : defaultView }
 			firstDay={ firstDay }
+			slotDuration={ slotDuration }
 			views={ customViews }
 			headerToolbar={ {
 				left: 'prev,next today',
@@ -208,7 +237,23 @@ function BlockendarCalendar( { dataset } ) {
 document
 	.querySelectorAll( '.wp-block-blockendar-calendar-view' )
 	.forEach( ( el ) => {
-		createRoot( el ).render(
-			<BlockendarCalendar dataset={ el.dataset } />
+		/*
+		 * React is given its own child node rather than the block wrapper.
+		 * Rendering into the wrapper would make React the owner of its
+		 * children and wipe the server-rendered fallback on the first pass —
+		 * which returns null until the chunks arrive — so the page would go
+		 * blank while loading and stay blank if loading failed.
+		 */
+		const fallback = el.querySelector(
+			'.blockendar-calendar-fallback, .blockendar-calendar-fallback__empty'
+		);
+		const mount = document.createElement( 'div' );
+		el.appendChild( mount );
+
+		createRoot( mount ).render(
+			<BlockendarCalendar
+				dataset={ el.dataset }
+				onReady={ () => fallback?.remove() }
+			/>
 		);
 	} );

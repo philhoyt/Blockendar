@@ -49,7 +49,17 @@ class Cron {
 	}
 
 	/**
-	 * Unschedule the cron event on plugin deactivation.
+	 * Unschedule every event the plugin can have queued.
+	 *
+	 * Called on deactivation and again on uninstall. Covers all three hooks,
+	 * not just the daily roll: a one-shot rebuild queued by Schema or Upgrader,
+	 * or a deferred per-post build queued under the 'cron' generation strategy,
+	 * would otherwise be left in the cron array pointing at a callback that no
+	 * longer exists.
+	 *
+	 * wp_unschedule_hook() rather than wp_clear_scheduled_hook() for the
+	 * deferred build, because those events carry a post ID argument and
+	 * clearing by hook name alone would only remove the argument-less ones.
 	 */
 	public static function unschedule(): void {
 		$timestamp = wp_next_scheduled( self::HOOK );
@@ -57,5 +67,8 @@ class Cron {
 		if ( $timestamp ) {
 			wp_unschedule_event( $timestamp, self::HOOK );
 		}
+
+		wp_unschedule_hook( 'blockendar_index_rebuild_after_upgrade' );
+		wp_unschedule_hook( \Blockendar\DB\IndexBuilder::DEFERRED_HOOK );
 	}
 }

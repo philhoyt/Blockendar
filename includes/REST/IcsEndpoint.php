@@ -88,6 +88,13 @@ class IcsEndpoint {
 			wp_die( esc_html__( 'Event not found.', 'blockendar' ), 404 );
 		}
 
+		// A password-protected event is still 'publish'. This route does not go
+		// through EventIndex, so it needs its own check or it would hand out the
+		// title, dates and venue address the password exists to withhold.
+		if ( '' !== $post->post_password && ! current_user_can( 'edit_post', $post_id ) ) {
+			wp_die( esc_html__( 'Event not found.', 'blockendar' ), 404 );
+		}
+
 		/*
 		 * Built by the same Exporter the feed uses. It previously assembled its
 		 * own VEVENT, which gave the same event a different UID here than in the

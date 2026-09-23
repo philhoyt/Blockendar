@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\Admin\SettingsPage;
 use Blockendar\CPT\EventPostType;
 use Blockendar\Taxonomy\EventType;
 use Blockendar\Taxonomy\Venue;
@@ -24,6 +25,14 @@ use Blockendar\Taxonomy\Venue;
  * It can always be rebuilt in full from the CPT data via rebuild_all().
  */
 class IndexBuilder {
+
+	/**
+	 * Cron hook used when generation_strategy is 'cron'.
+	 *
+	 * Carries the post ID, so a deferred rebuild affects only the event that
+	 * was saved rather than the whole index.
+	 */
+	const DEFERRED_HOOK = 'blockendar_deferred_index_build';
 
 	private EventIndex $index;
 
@@ -41,6 +50,30 @@ class IndexBuilder {
 		add_action( 'before_delete_post', [ $this, 'on_delete' ] );
 		add_action( 'trashed_post', [ $this, 'on_delete' ] );
 		add_action( 'untrashed_post', [ $this, 'on_untrash' ] );
+		add_action( self::DEFERRED_HOOK, [ $this, 'build_for_post' ] );
+	}
+
+	/**
+	 * Rebuild the index for one event, honouring the generation_strategy setting.
+	 *
+	 * 'on_save' (the default) rebuilds in the current request, so the change is
+	 * live the moment the editor saves. 'cron' hands the work to WP-Cron
+	 * instead, which keeps the save fast on a site where an event expands into
+	 * thousands of occurrences — at the cost of the index trailing the post by
+	 * up to a cron cycle.
+	 *
+	 * @param int $post_id Event post ID.
+	 */
+	private function schedule_or_build( int $post_id ): void {
+		if ( 'cron' !== SettingsPage::get( 'generation_strategy' ) ) {
+			$this->build_for_post( $post_id );
+			return;
+		}
+
+		// Collapse repeated saves of the same event into one pending job.
+		if ( ! wp_next_scheduled( self::DEFERRED_HOOK, [ $post_id ] ) ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, self::DEFERRED_HOOK, [ $post_id ] );
+		}
 	}
 
 	/**
@@ -61,7 +94,7 @@ class IndexBuilder {
 			return;
 		}
 
-		$this->build_for_post( $post_id );
+		$this->schedule_or_build( $post_id );
 	}
 
 	/**
@@ -76,7 +109,7 @@ class IndexBuilder {
 
 		// Replaces any rows written by the earlier save_post hook, which ran
 		// before the REST request's meta was persisted.
-		$this->build_for_post( $post->ID );
+		$this->schedule_or_build( $post->ID );
 	}
 
 	/**
@@ -104,7 +137,10 @@ class IndexBuilder {
 
 		$post = get_post( $post_id );
 
-		if ( $post ) {
+		// Core restores an untrashed post to 'draft', not to its previous
+		// status, so indexing unconditionally here would put unpublished rows
+		// into a table every public read path treats as published-only.
+		if ( $post && 'publish' === $post->post_status ) {
 			$this->build_for_post( $post_id );
 		}
 	}
@@ -126,6 +162,15 @@ class IndexBuilder {
 	 * @param int $post_id Post ID.
 	 */
 	public function build_for_post( int $post_id ): void {
+		// Every public read path joins the index against wp_posts on
+		// post_status = 'publish', so an unpublished post must never hold rows
+		// here. Guarding at this level rather than per-caller means a new call
+		// site cannot reintroduce the leak by forgetting the check.
+		if ( 'publish' !== get_post_status( $post_id ) ) {
+			$this->index->delete_by_post_id( $post_id );
+			return;
+		}
+
 		$meta    = $this->get_event_meta( $post_id );
 		$ongoing = ! empty( $meta['ongoing'] );
 

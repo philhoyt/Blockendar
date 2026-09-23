@@ -113,16 +113,38 @@ if ( Cutoff::is_valid( $filtered ) ) {
 
 // Resolve block gap — WordPress only injects --wp--style--block-gap via layout support,
 // which we don't use, so we read and resolve the raw attribute value ourselves.
+
+/*
+ * Both branches below end up inside an inline style attribute, and the value
+ * comes from post content. get_block_wrapper_attributes() runs esc_attr(), so
+ * nothing can break out of the attribute — but a hand-edited block comment
+ * could still append extra CSS declarations inside it ("1rem;position:fixed;
+ * inset:0"). So each shape is validated rather than escaped: a preset path is
+ * restricted to the characters a preset slug can contain, and a literal must
+ * look like a CSS length. Anything else is dropped and the stylesheet default
+ * applies.
+ */
 $raw_block_gap   = $attributes['style']['spacing']['blockGap'] ?? null;
 $block_gap_style = '';
+$block_gap_value = '';
+
 if ( null !== $raw_block_gap && '' !== (string) $raw_block_gap ) {
 	if ( str_starts_with( (string) $raw_block_gap, 'var:' ) ) {
-		$parts           = explode( '|', substr( (string) $raw_block_gap, 4 ) );
-		$block_gap_value = 'var(--wp--' . implode( '--', $parts ) . ')';
-	} else {
+		$parts = array_filter(
+			explode( '|', substr( (string) $raw_block_gap, 4 ) ),
+			static fn( $part ) => (bool) preg_match( '/^[A-Za-z0-9_-]+$/', $part )
+		);
+
+		if ( ! empty( $parts ) ) {
+			$block_gap_value = 'var(--wp--' . implode( '--', $parts ) . ')';
+		}
+	} elseif ( preg_match( '/^-?(?:\d+\.?\d*|\.\d+)(?:px|em|rem|%|vh|vw|ch|ex|pt|pc|cm|mm|in)?$/D', (string) $raw_block_gap ) ) {
 		$block_gap_value = (string) $raw_block_gap;
 	}
-	$block_gap_style = '--wp--style--block-gap:' . $block_gap_value . ';';
+
+	if ( '' !== $block_gap_value ) {
+		$block_gap_style = '--wp--style--block-gap:' . $block_gap_value . ';';
+	}
 }
 
 if ( $show_past ) {
@@ -358,6 +380,15 @@ $wrapper_attrs['style'] = '--blockendar-columns:' . $column_count . ';'
 	. '--blockendar-columns-tablet:' . $column_count_tablet . ';'
 	. '--blockendar-columns-mobile:' . $column_count_mobile . ';'
 	. $block_gap_style;
+
+/*
+ * The rows come from custom SQL, so none of WordPress's caches know about
+ * these posts. Without this each iteration below costs a get_post(), a meta
+ * lookup the first time an inner block reads a field, and a term query per
+ * taxonomy — roughly 40 queries for a 10-event list where 3 will do.
+ */
+blockendar_prime_event_caches( $events );
+
 // Stamp ?occurrence_date= onto CPT permalinks while inner blocks render so that
 // core/post-title (and any other link) navigates to the correct occurrence.
 add_filter( 'post_type_link', 'blockendar_occurrence_permalink_filter', 10, 2 );

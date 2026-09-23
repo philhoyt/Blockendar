@@ -22,36 +22,19 @@ import '../shared/filter-controls.css';
 
 		initFilterPopover( el );
 
-		const submitBtn = el.querySelector( '.blockendar-filter__submit' );
-
-		if ( submitBtn ) {
-			submitBtn.hidden = true;
-		}
-
-		form.addEventListener( 'change', () => {
-			const url = new URL( form.action, window.location.href );
-			const data = new FormData( form );
-			const params = new URLSearchParams( url.searchParams );
-
-			for ( const [ key, val ] of data.entries() ) {
-				if ( '' === val ) {
-					params.delete( key );
-				} else {
-					params.set( key, val );
-				}
-			}
-
-			// Reset pagination.
-			const queryId =
-				el.closest( '[data-blockendar-query-id]' )?.dataset
-					?.blockendarQueryId ?? '';
-			const pageKey = queryId
-				? 'blockendar_page_' + queryId
-				: 'blockendar_page';
-			params.delete( pageKey );
-
-			url.search = params.toString();
-			window.location.assign( url.toString() );
-		} );
+		/*
+		 * No auto-submit, and the Apply button stays visible.
+		 *
+		 * Navigating the moment a radio changes is a WCAG 3.2.2 (On Input)
+		 * failure, and it broke keyboard use outright: arrow keys move between
+		 * radios and each move fires `change`, so the page navigated away
+		 * before the intended option was ever reached.
+		 *
+		 * Nothing is needed in its place. The form is a plain GET whose action
+		 * already drops this filter's own param and the pagination param, and
+		 * the other active filters travel as hidden inputs — so the browser's
+		 * native submit produces exactly the URL the old handler assembled by
+		 * hand. This is what filter-date-range has always done.
+		 */
 	} );
 } )();

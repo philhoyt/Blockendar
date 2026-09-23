@@ -92,6 +92,17 @@ class SettingsPage {
 	 * Render the mount point for the React SPA.
 	 */
 	public function render_page(): void {
+		/*
+		 * Defence in depth. add_submenu_page() already gates the menu entry on
+		 * this capability and every endpoint the SPA talks to has its own
+		 * permission_callback, but admin.php?page= URLs are directly reachable
+		 * and a render callback should not assume it was only reached through
+		 * the menu. The companion demo plugin's admin page does the same.
+		 */
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			return;
+		}
+
 		echo '<div id="blockendar-settings-root"></div>';
 	}
 
@@ -144,6 +155,14 @@ class SettingsPage {
 			true
 		);
 
+		// See the note in BlockRegistrar: a hand-enqueued bundle needs its
+		// translations wired up explicitly or every __() returns English.
+		wp_set_script_translations(
+			'blockendar-settings',
+			'blockendar',
+			BLOCKENDAR_DIR . 'languages'
+		);
+
 		wp_enqueue_style(
 			'blockendar-settings',
 			plugins_url( 'build/admin/style-index.css', BLOCKENDAR_FILE ),
@@ -165,7 +184,6 @@ class SettingsPage {
 			'defaults'           => self::defaults(),
 			'statsUrl'           => esc_url_raw( rest_url( 'blockendar/v1/settings/stats' ) ),
 			'rebuildUrl'         => esc_url_raw( rest_url( 'blockendar/v1/index/rebuild' ) ),
-			'importUrl'          => esc_url_raw( rest_url( 'blockendar/v1/import/tribe' ) ),
 			'version'            => BLOCKENDAR_VERSION,
 			'siteTimezone'       => $site_timezone,
 			'generalSettingsUrl' => esc_url( admin_url( 'options-general.php' ) ),
@@ -263,8 +281,39 @@ class SettingsPage {
 
 			// REST API.
 			'rest_public'            => (bool) ( $raw['rest_public'] ?? $d['rest_public'] ),
-			'rest_feed_token'        => sanitize_text_field( $raw['rest_feed_token'] ?? '' ),
+			'rest_feed_token'        => self::sanitize_feed_token( $raw['rest_feed_token'] ?? '' ),
 		];
+	}
+
+	/**
+	 * Minimum length accepted for a feed token.
+	 *
+	 * The generator produces 32 characters. This is the floor for a value typed
+	 * in by hand, low enough not to reject a deliberate choice and high enough
+	 * that the token is not guessable.
+	 */
+	private const MIN_TOKEN_LENGTH = 16;
+
+	/**
+	 * Clean a feed token, rejecting anything too short to be a credential.
+	 *
+	 * The token authenticates the calendar feed in place of a login, so a short
+	 * or punctuation-laden value is worse than none: it reads as protection
+	 * while being trivially guessable, and it travels in a URL where anything
+	 * outside [A-Za-z0-9] risks being mangled by a client. A value that fails
+	 * either test is cleared, which turns token access off rather than leaving
+	 * a weak token in place.
+	 *
+	 * @param mixed $raw Submitted token value.
+	 */
+	private static function sanitize_feed_token( mixed $raw ): string {
+		$token = preg_replace( '/[^A-Za-z0-9]/', '', (string) $raw );
+
+		if ( null === $token || strlen( $token ) < self::MIN_TOKEN_LENGTH ) {
+			return '';
+		}
+
+		return $token;
 	}
 
 	/**
@@ -277,6 +326,38 @@ class SettingsPage {
 		$slug     = is_array( $settings ) ? sanitize_title( (string) ( $settings['events_slug'] ?? '' ) ) : '';
 
 		return '' !== $slug ? $slug : 'events';
+	}
+
+	/**
+	 * Read one setting, falling back to its default.
+	 *
+	 * Every setting lives inside the single OPTION_NAME array. Reading one
+	 * with get_option( 'blockendar_<key>' ) looks plausible but always returns
+	 * the fallback, because no such standalone option is ever written — that
+	 * is how the recurrence horizon silently ignored its own setting. Go
+	 * through here instead of reaching for the option directly.
+	 *
+	 * @param string $key Setting key, as it appears in defaults().
+	 * @return mixed The stored value, the default, or null for an unknown key.
+	 */
+	public static function get( string $key ): mixed {
+		$defaults = self::defaults();
+
+		if ( ! array_key_exists( $key, $defaults ) ) {
+			return null;
+		}
+
+		$settings = get_option( self::OPTION_NAME );
+		$settings = is_array( $settings ) ? $settings : [];
+
+		// A key saved as an empty string means "unset" for every setting that
+		// has a meaningful default, so fall through to the default rather than
+		// handing back ''.
+		if ( ! isset( $settings[ $key ] ) || '' === $settings[ $key ] ) {
+			return $defaults[ $key ];
+		}
+
+		return $settings[ $key ];
 	}
 
 	/**

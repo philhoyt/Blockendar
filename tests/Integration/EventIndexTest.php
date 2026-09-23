@@ -42,13 +42,16 @@ class EventIndexTest extends WP_UnitTestCase {
 	 * @param array  $extra Extra column overrides.
 	 * @return int Post ID.
 	 */
-	private function seed_event( string $date, array $extra = [] ): int {
+	private function seed_event( string $date, array $extra = [], array $post_args = [] ): int {
 		$post_id = self::factory()->post->create(
-			[
-				'post_type'   => 'blockendar_event',
-				'post_status' => 'publish',
-				'post_title'  => "Event {$date}",
-			]
+			array_merge(
+				[
+					'post_type'   => 'blockendar_event',
+					'post_status' => 'publish',
+					'post_title'  => "Event {$date}",
+				],
+				$post_args
+			)
 		);
 
 		$this->index->insert(
@@ -67,6 +70,62 @@ class EventIndexTest extends WP_UnitTestCase {
 		);
 
 		return $post_id;
+	}
+
+	// -------------------------------------------------------------------------
+	// Visibility
+	// -------------------------------------------------------------------------
+
+	/**
+	 * A password-protected event is still post_status = 'publish', so filtering
+	 * on status alone lets it through every public read path — exposing its
+	 * title, dates and (via the ICS LOCATION property) the venue address.
+	 */
+	public function test_password_protected_events_are_excluded_from_range_reads(): void {
+		// The password is set at creation, not via a later wp_update_post():
+		// updating the post fires save_post -> IndexBuilder::build_for_post(),
+		// which would delete the hand-seeded row (these fixtures carry no event
+		// meta to rebuild from) and the assertion would then pass for the wrong
+		// reason — absence caused by the rebuild rather than by the filter.
+		$open_id      = $this->seed_event( '2026-09-01' );
+		$protected_id = $this->seed_event( '2026-09-02', [], [ 'post_password' => 'hunter2' ] );
+
+		$this->index->flush_cache();
+
+		$rows = $this->index->get_events_in_range( '2026-08-01 00:00:00', '2026-10-01 00:00:00' );
+		$ids  = array_map( static fn( $row ) => (int) $row->post_id, $rows );
+
+		// Guard the guard: if the protected row were missing from the index
+		// altogether, the assertion below would pass vacuously.
+		$this->assertSame(
+			'hunter2',
+			get_post_field( 'post_password', $protected_id ),
+			'Precondition: the fixture really is password-protected.'
+		);
+		$this->assertNotEmpty(
+			$this->index->get_by_post_id( $protected_id ),
+			'Precondition: the protected event still holds index rows, so exclusion must come from the query.'
+		);
+
+		$this->assertContains( $open_id, $ids );
+		$this->assertNotContains( $protected_id, $ids, 'A password-protected event must not appear in a public range read.' );
+	}
+
+	/**
+	 * The count query builds its own WHERE clause. If it drifts from the list
+	 * query, pagination reports a total the caller can never actually page to.
+	 */
+	public function test_password_protected_events_are_excluded_from_the_count(): void {
+		$this->seed_event( '2026-09-01' );
+		$this->seed_event( '2026-09-02', [], [ 'post_password' => 'hunter2' ] );
+
+		$this->index->flush_cache();
+
+		$this->assertSame(
+			1,
+			$this->index->count_events_in_range( '2026-08-01 00:00:00', '2026-10-01 00:00:00' ),
+			'The count must match what get_events_in_range() actually returns.'
+		);
 	}
 
 	// -------------------------------------------------------------------------

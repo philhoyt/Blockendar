@@ -53,16 +53,28 @@ class VenueGeocode {
 			true
 		);
 
-		wp_localize_script(
+		/*
+		 * wp_add_inline_script() rather than wp_localize_script(), matching the
+		 * other two data-passing sites in the plugin. localize() casts every
+		 * scalar to a string, which is the wrong shape for anything but text,
+		 * and it exists for a translation API that predates wp_json_encode().
+		 *
+		 * The strings are handed over from PHP because this file is the one
+		 * hand-written script outside src/: it has no build step, so it gets no
+		 * JS translations of its own.
+		 */
+		$geocode_data = [
+			'labelLookup'  => __( 'Look up coordinates', 'blockendar' ),
+			'labelLooking' => __( 'Looking up…', 'blockendar' ),
+			'msgNotFound'  => __( 'Address not found. Please enter coordinates manually.', 'blockendar' ),
+			'msgError'     => __( 'Geocoding request failed. Please try again.', 'blockendar' ),
+			'msgNoAddress' => __( 'Please enter at least a city or address first.', 'blockendar' ),
+		];
+
+		wp_add_inline_script(
 			'blockendar-venue-geocode',
-			'blockendarGeocode',
-			[
-				'labelLookup'  => __( 'Look up coordinates', 'blockendar' ),
-				'labelLooking' => __( 'Looking up…', 'blockendar' ),
-				'msgNotFound'  => __( 'Address not found. Please enter coordinates manually.', 'blockendar' ),
-				'msgError'     => __( 'Geocoding request failed. Please try again.', 'blockendar' ),
-				'msgNoAddress' => __( 'Please enter at least a city or address first.', 'blockendar' ),
-			]
+			'window.blockendarGeocode = ' . wp_json_encode( $geocode_data ) . ';',
+			'before'
 		);
 	}
 }

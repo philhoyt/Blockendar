@@ -17,7 +17,6 @@ import { CurrencySection } from './sections/CurrencySection';
 import { RecurringSection } from './sections/RecurringSection';
 import { PerformanceSection } from './sections/PerformanceSection';
 import { RestApiSection } from './sections/RestApiSection';
-import { ImportSection } from './sections/ImportSection';
 
 const { nonce, optionName, defaults } = window.blockendarSettings ?? {};
 
@@ -33,7 +32,6 @@ const SECTIONS = [
 	{ name: 'recurring', title: __( 'Recurring Events', 'blockendar' ) },
 	{ name: 'performance', title: __( 'Performance', 'blockendar' ) },
 	{ name: 'rest', title: __( 'REST API', 'blockendar' ) },
-	{ name: 'import', title: __( 'Import', 'blockendar' ), noSave: true },
 ];
 
 export function SettingsApp() {
@@ -162,7 +160,6 @@ export function SettingsApp() {
 						{ activeSection === 'rest' && (
 							<RestApiSection { ...sectionProps } />
 						) }
-						{ activeSection === 'import' && <ImportSection /> }
 					</div>
 
 					{ ! currentSection?.noSave && (

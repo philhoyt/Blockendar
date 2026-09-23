@@ -15,6 +15,9 @@
  * the chosen view, exactly as a full reload would have rendered them.
  */
 
+import { speak } from '@wordpress/a11y';
+import { __, sprintf } from '@wordpress/i18n';
+
 import { withViewParam } from '../shared/view-param';
 
 const SWITCHER = '.blockendar-view-switcher';
@@ -284,6 +287,28 @@ function onClick( event ) {
 	event.preventDefault();
 	applyView( switcher, queries, button.dataset.view );
 	window.history.pushState( {}, '', button.href );
+
+	/*
+	 * The results are rewritten in place and the page does not navigate, so
+	 * without this a screen-reader user activates "Grid view" and gets no
+	 * confirmation that anything happened at all.
+	 *
+	 * Announced here rather than inside applyView(): that also runs on load
+	 * from reconcileDefault(), where there is no user action to report.
+	 */
+	const label =
+		button.getAttribute( 'aria-label' ) || button.textContent.trim();
+
+	if ( label ) {
+		speak(
+			sprintf(
+				/* translators: %s: the name of the layout that was applied, e.g. "Grid view". */
+				__( '%s applied', 'blockendar' ),
+				label
+			),
+			'polite'
+		);
+	}
 }
 
 /**

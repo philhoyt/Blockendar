@@ -100,10 +100,15 @@ test( 'the panel presents the calendar itself, not fields that open one', async 
 		timeout: 15000,
 	} );
 
-	const visibleDateFields = page.locator(
-		'.blockendar-filter-date-range__field:not([hidden])'
-	);
-	await expect( visibleDateFields ).toHaveCount( 0 );
+	// The fields recede visually once the calendar is up...
+	const fieldBox = await page
+		.locator( '.blockendar-filter-date-range__field' )
+		.first()
+		.boundingBox();
+	expect(
+		fieldBox.width,
+		`the date field should be visually hidden, was ${ fieldBox?.width }px wide`
+	).toBeLessThanOrEqual( 2 );
 
 	// Both named inputs stay in the DOM: they carry the values the form submits.
 	await expect(
@@ -112,6 +117,59 @@ test( 'the panel presents the calendar itself, not fields that open one', async 
 	await expect(
 		page.locator( 'input[name="blockendar_date_end"]' )
 	).toHaveCount( 1 );
+} );
+
+/*
+ * Regression guard for a WCAG 2.1.1 (Level A) failure.
+ *
+ * The fields used to be hidden with the `hidden` attribute once Flatpickr
+ * mounted. Every element of a Flatpickr inline calendar carries
+ * tabIndex="-1" and its keyboard handler binds to the original input, so
+ * hiding the inputs left the open panel with no keyboard route to a date at
+ * all — the only tab stops were Clear and Apply.
+ */
+test( 'the date fields stay keyboard-reachable once the calendar mounts', async ( {
+	page,
+} ) => {
+	await page.goto( `/?p=${ pageId }` );
+	await openDatePopover( page );
+
+	await expect( page.locator( '.flatpickr-calendar.inline' ) ).toBeVisible( {
+		timeout: 15000,
+	} );
+
+	const start = page.locator( 'input[name="blockendar_date_start"]' );
+
+	// Focusable at all — display:none would make this a no-op.
+	await start.focus();
+	await expect( start ).toBeFocused();
+
+	// And genuinely operable: a typed date must stick.
+	await start.fill( '2026-09-15' );
+	await expect( start ).toHaveValue( '2026-09-15' );
+
+	// Reachable by Tab from inside the panel, not just by scripted focus.
+	const reachable = await page.evaluate( () => {
+		const panel = document.querySelector( '.blockendar-filter__panel' );
+		const stops = panel.querySelectorAll(
+			'input, button, select, textarea, a[href]'
+		);
+
+		return Array.from( stops ).some(
+			( el ) =>
+				el.matches( 'input[name="blockendar_date_start"]' ) &&
+				el.tabIndex >= 0 &&
+				// offsetParent is null for display:none, which is the state
+				// that broke this; a clipped element still reports one.
+				( el.offsetParent !== null ||
+					getComputedStyle( el ).position === 'fixed' )
+		);
+	} );
+
+	expect(
+		reachable,
+		'the start date input must remain in the panel focus order'
+	).toBe( true );
 } );
 
 test( 'the panel is sized to the calendar and does not scroll', async ( {

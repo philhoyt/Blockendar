@@ -90,6 +90,14 @@ import '../shared/filter-controls.css';
 						flatpickr( inputStart, {
 							mode: 'range',
 							dateFormat: 'Y-m-d',
+							/*
+							 * Flatpickr sets readonly on its input unless this
+							 * is on, which would leave the field focusable but
+							 * impossible to type into — half a keyboard trap.
+							 * The input is a native <input type="date">, so the
+							 * browser still constrains what can be entered.
+							 */
+							allowInput: true,
 							// The calendar is the panel's content, always visible
 							// rather than opening in response to a field.
 							inline: true,
@@ -126,14 +134,25 @@ import '../shared/filter-controls.css';
 							},
 						} );
 
-						// The native fields carry the values but are no longer the
-						// control; the calendar is. They stay in the DOM so the form
-						// still submits them.
+						/*
+						 * The native fields become visually redundant once the
+						 * calendar is up, but they must stay focusable: every
+						 * element Flatpickr builds for an inline calendar is
+						 * tabIndex="-1", and its keyboard handler is bound to
+						 * the input itself. Hiding them with [hidden] (or any
+						 * display:none) therefore left the panel with no way to
+						 * pick a date by keyboard at all.
+						 *
+						 * Visually hidden but still in the focus order keeps the
+						 * From/To labels available to screen readers and gives
+						 * keyboard users a working control, while the calendar
+						 * stays aria-hidden as the pointer-driven duplicate it is.
+						 */
 						[ startField, endField ].forEach( ( field ) =>
-							field?.setAttribute( 'hidden', '' )
+							field?.classList.add(
+								'blockendar-filter-date-range__field--visually-hidden'
+							)
 						);
-
-						mount.removeAttribute( 'aria-hidden' );
 					} )
 					.catch( () => {
 						// Picker unavailable: both native date inputs stay visible

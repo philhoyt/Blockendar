@@ -53,6 +53,20 @@ Manage it from **Tools → Blockendar Demo**, or with `wp blockendar-demo seed`
 and `wp blockendar-demo reset`. Reset removes only what the demo created and
 restores your previous front page setting — your own content is never touched.
 
+## Migrating from The Events Calendar
+
+Export your events on the source site (**Tools → Export**, choosing *Events*),
+then import them with WP-CLI:
+
+```bash
+wp blockendar import-tribe ./tribe-events.xml --dry-run   # report only
+wp blockendar import-tribe ./tribe-events.xml
+```
+
+There is no upload screen. A one-off migration does not need a permanent HTTP
+endpoint, and a real export runs to thousands of events — more than a single
+web request can parse and insert before it times out.
+
 ## Development
 
 ```bash

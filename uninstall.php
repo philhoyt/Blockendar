@@ -3,8 +3,9 @@
  * Plugin uninstall routine.
  *
  * Runs when the plugin is deleted (not deactivated) from the WordPress admin.
- * Removes custom tables and options — does NOT remove CPT posts or taxonomy terms
- * (user data is preserved on uninstall by convention).
+ * Removes custom tables, options, transients and scheduled events — does NOT
+ * remove CPT posts or taxonomy terms (user data is preserved on uninstall by
+ * convention), and therefore leaves their meta in place too.
  *
  * @package Blockendar
  */
@@ -34,17 +35,55 @@ spl_autoload_register(
 	}
 );
 
-Blockendar\Recurrence\Cron::unschedule();
-Blockendar\DB\Schema::drop_tables();
+/**
+ * Remove everything this plugin created on the current site.
+ *
+ * Both the tables and the options are per-site: Schema uses $wpdb->prefix,
+ * which is the current blog's prefix, and delete_option() writes to the
+ * current blog's options table. On a network install Schema::maybe_upgrade()
+ * creates the tables lazily on every site that loads the plugin, so this has
+ * to run once per site or those tables and rows are orphaned.
+ */
+function blockendar_uninstall_site(): void {
+	Blockendar\Recurrence\Cron::unschedule();
+	Blockendar\DB\Schema::drop_tables();
 
-// Remove plugin options.
-$options = [ // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-	'blockendar_db_version',
-	'blockendar_version',
-	'blockendar_last_index_rebuild',
-	'blockendar_settings',
-];
+	$options = [
+		'blockendar_db_version',
+		'blockendar_version',
+		'blockendar_last_index_rebuild',
+		'blockendar_settings',
 
-foreach ( $options as $option ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
-	delete_option( $option );
+		/*
+		 * Never written by the plugin — Generator used to read it by mistake
+		 * while the real value lived in blockendar_settings. Removed anyway in
+		 * case a site set it by hand to work around that bug.
+		 */
+		'blockendar_horizon_days',
+	];
+
+	foreach ( $options as $option ) {
+		delete_option( $option );
+	}
+
+	// Set by CalendarController when an ICS feed is truncated; a week-long
+	// transient outlives the plugin otherwise.
+	delete_transient( 'blockendar_ics_truncated' );
+}
+
+if ( is_multisite() ) {
+	$blockendar_site_ids = get_sites(
+		[
+			'fields' => 'ids',
+			'number' => 0,
+		]
+	);
+
+	foreach ( $blockendar_site_ids as $blockendar_site_id ) {
+		switch_to_blog( (int) $blockendar_site_id );
+		blockendar_uninstall_site();
+		restore_current_blog();
+	}
+} else {
+	blockendar_uninstall_site();
 }

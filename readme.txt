@@ -27,6 +27,18 @@ Blockendar is a fully block-native events plugin for WordPress. Every part of th
 * **Admin settings** — Configurable date/time formats, timezone mode, calendar defaults, map provider, currency, recurrence horizon, and more.
 * **GitHub-based updates** — Automatic update notifications in wp-admin, powered by tagged GitHub releases.
 
+== Migrating from The Events Calendar ==
+
+Export your events on the source site (Tools > Export, choosing "Events"), then
+import them with WP-CLI:
+
+`wp blockendar import-tribe ./tribe-events.xml --dry-run`
+`wp blockendar import-tribe ./tribe-events.xml`
+
+There is no upload screen. A one-off migration does not need a permanent HTTP
+endpoint, and a real export runs to thousands of events — more than a single web
+request can parse and insert before it times out.
+
 == Installation ==
 
 1. Go to the [Releases page](https://github.com/philhoyt/Blockendar/releases) and download the latest `blockendar.zip` asset.

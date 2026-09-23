@@ -107,6 +107,16 @@ $hidden_inputs .= FilterContext::hidden_view_input( $query_id );
 // the same query, so it cannot serve as an id.
 $panel_id   = wp_unique_id( 'blockendar-venue-panel-' );
 $trigger_id = wp_unique_id( 'blockendar-venue-trigger-' );
+$id_group   = wp_unique_id( 'blockendar-venue-group-' );
+
+/*
+ * The visible group label sits outside the popover, so the fieldset points at
+ * it by id rather than carrying a <legend> that would only appear once the
+ * panel was open. With no label set, the fieldset names itself.
+ */
+$group_label_attr = '' !== $label
+	? 'aria-labelledby="' . esc_attr( $id_group ) . '"'
+	: 'aria-label="' . esc_attr__( 'Filter by venue', 'blockendar' ) . '"';
 
 /*
  * Venue is single-select, so the trigger either names the chosen venue or falls
@@ -139,7 +149,7 @@ ScriptProbe::print_once();
 ?>
 <div <?php echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( '' !== $label ) : ?>
-		<p class="blockendar-filter__label"><?php echo esc_html( $label ); ?></p>
+		<p class="blockendar-filter__label" id="<?php echo esc_attr( $id_group ); ?>"><?php echo esc_html( $label ); ?></p>
 	<?php endif; ?>
 
 	<form method="get" action="<?php echo $form_action; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>">
@@ -160,6 +170,7 @@ ScriptProbe::print_once();
 				class="blockendar-filter__trigger"
 				id="<?php echo esc_attr( $trigger_id ); ?>"
 				aria-expanded="false"
+				aria-haspopup="true"
 				aria-controls="<?php echo esc_attr( $panel_id ); ?>"
 			>
 				<span class="blockendar-filter__trigger-text"><?php echo esc_html( $trigger_text ); ?></span>
@@ -169,7 +180,8 @@ ScriptProbe::print_once();
 			<div class="blockendar-filter__panel" id="<?php echo esc_attr( $panel_id ); ?>">
 		<?php endif; ?>
 
-			<ul class="blockendar-filter__list" role="radiogroup" aria-label="<?php esc_attr_e( 'Filter by venue', 'blockendar' ); ?>">
+			<fieldset class="blockendar-filter__group" <?php echo $group_label_attr; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from esc_attr()/esc_attr__() above. ?>>
+			<ul class="blockendar-filter__list">
 				<li class="blockendar-filter__item<?php echo null === $active_id ? ' is-active' : ''; ?>">
 					<label class="blockendar-filter__radio-label">
 						<input type="radio" name="<?php echo esc_attr( $param_name ); ?>" value=""
@@ -179,8 +191,7 @@ ScriptProbe::print_once();
 				</li>
 				<?php foreach ( $terms as $term ) : ?>
 					<?php $is_active = ( $active_id === $term->term_id ); ?>
-					<li class="blockendar-filter__item<?php echo $is_active ? ' is-active' : ''; ?>"
-						<?php echo $is_active ? 'aria-current="true"' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+					<li class="blockendar-filter__item<?php echo $is_active ? ' is-active' : ''; ?>">
 						<label class="blockendar-filter__radio-label">
 							<input type="radio" name="<?php echo esc_attr( $param_name ); ?>"
 								value="<?php echo esc_attr( (string) $term->term_id ); ?>"
@@ -190,6 +201,7 @@ ScriptProbe::print_once();
 					</li>
 				<?php endforeach; ?>
 			</ul>
+			</fieldset>
 			<div class="blockendar-filter__actions">
 				<?php if ( null !== $active_id ) : ?>
 					<a href="<?php echo esc_url( remove_query_arg( [ $param_name, $page_param ] ) ); ?>" class="blockendar-filter__clear">

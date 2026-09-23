@@ -31,6 +31,25 @@ touching the code they cover rather than on every commit:
 - PHPUnit is pinned to **9.x on purpose**. The WordPress core test suite calls
   `PHPUnit\Util\Test::parseTestMethodAnnotations()`, which was removed in PHPUnit 10,
   so upgrading past 9.x breaks the integration suite.
+- **Tests run against `build/`, not `src/`.** `BlockRegistrar` registers blocks from
+  `build/blocks/`, so editing a `src/blocks/*/render.php` has no effect on any test
+  until `npm run build` copies it across. This matters most when checking that a test
+  genuinely fails without its fix: mutate a `render.php`, skip the build, and the test
+  still passes — which reads as "the test is worthless" when it is actually fine.
+  Rebuild before drawing that conclusion. PHP under `includes/` is loaded directly and
+  needs no build step, which is why a mixed batch can have some mutations take effect
+  and others silently not.
+- **Assume a new test proves nothing until it has failed once.** Run it against the
+  unfixed code before keeping it. Two real examples from the 2026-09-23 audit pass:
+  a fixture that set `post_password` via `wp_update_post()` triggered `save_post`,
+  which deleted the index row under test, so the assertion passed because the row was
+  gone rather than because the query excluded it; and `WP_UnitTestCase`'s post factory
+  invents a `post_excerpt`, so an ICS test that does not blank it exercises the
+  manual-excerpt branch and never reaches the content-trimming code it was written for.
+- Tests that assert on scheduled events need to clear the cron array in `set_up()`.
+  Saving an event queues a deferred index build under the `cron` generation strategy,
+  so leftovers from earlier tests can satisfy a precondition on their own. A test that
+  passes alone and fails in the full suite is usually this.
 
 ## Version bumps
 

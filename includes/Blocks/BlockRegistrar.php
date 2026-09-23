@@ -70,6 +70,20 @@ class BlockRegistrar {
 			true
 		);
 
+		/*
+		 * Without this every __() call in the editor bundle returns its
+		 * English source string, however complete the translation is: the
+		 * JS i18n runtime only has a catalogue for handles that were
+		 * registered for one. Blocks registered from block.json get this
+		 * automatically from their "textdomain" field; a hand-enqueued
+		 * bundle like this one does not.
+		 */
+		wp_set_script_translations(
+			'blockendar-editor-panels',
+			'blockendar',
+			BLOCKENDAR_DIR . 'languages'
+		);
+
 		// Pass REST namespace and nonce to the editor panels.
 		// wp_add_inline_script() rather than wp_localize_script(): localisation casts
 		// every scalar to a string, and it is the wrong tool for a REST nonce.

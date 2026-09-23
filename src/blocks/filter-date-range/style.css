@@ -12,8 +12,7 @@
 
 /* The class below sets display:flex, which outranks the user-agent
    sheet's [hidden] rule, so the attribute has to be honoured
-   explicitly. JavaScript sets it on the end field once both dates
-   collapse into one range input. */
+   explicitly. Kept for any consumer that still sets the attribute. */
 .blockendar-filter-date-range__field[hidden] {
 	display: none;
 }
@@ -35,8 +34,6 @@
 	width: 100%;
 }
 
-/* When Flatpickr is active, the end-date field is hidden and the start
-   input spans the full width. */
 .blockendar-filter-date-range__fields .blockendar-filter-date-range__field:first-child:last-child {
 	flex: unset;
 	width: 100%;
@@ -47,9 +44,12 @@
 	font-family: inherit;
 }
 
+/* Tint the background only. `opacity` here would be inherited by the day
+   number too, fading the text of every in-range date to roughly 1.1:1
+   against the panel and removing the only cue for what is selected. */
 .blockendar-filter-date-range .flatpickr-day.inRange {
-	background: var(--wp--preset--color--primary, #3858e9);
-	opacity: 0.15;
+	background: color-mix(in srgb, var(--wp--preset--color--primary, #3858e9) 15%, transparent);
+	border-color: transparent;
 }
 
 .blockendar-filter-date-range .flatpickr-day.startRange,

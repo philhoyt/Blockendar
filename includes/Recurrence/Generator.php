@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\Admin\SettingsPage;
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\Schema;
 use Blockendar\Taxonomy\EventType;
@@ -28,10 +29,15 @@ use Blockendar\Taxonomy\Venue;
  */
 class Generator {
 
-	/** Default lookahead horizon in days. */
+	/** Default lookahead horizon in days, used when the setting is unreadable. */
 	const DEFAULT_HORIZON_DAYS = 365;
 
-	/** Absolute safety cap — never generate more instances than this per event. */
+	/**
+	 * Absolute safety cap — never generate more instances than this per event.
+	 *
+	 * This is the ceiling the max_instances setting is clamped to, not the
+	 * value used directly: see instance_cap().
+	 */
 	const MAX_INSTANCES = 3650;
 
 	private EventIndex $index;
@@ -111,7 +117,7 @@ class Generator {
 				]
 			);
 
-			$this->index->insert( $row );
+			$this->index->insert( $row, false );
 		}
 
 		// Insert manually added extra dates.
@@ -132,8 +138,11 @@ class Generator {
 				]
 			);
 
-			$this->index->insert( $row );
+			$this->index->insert( $row, false );
 		}
+
+		// One invalidation for the whole event rather than one per occurrence.
+		$this->index->flush_cache();
 	}
 
 	/**
@@ -144,25 +153,137 @@ class Generator {
 		global $wpdb;
 
 		$recurrence_table = Schema::recurrence_table();
+		$batch_size       = 100;
+		$offset           = 0;
 
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$post_ids = $wpdb->get_col( "SELECT post_id FROM {$recurrence_table}" );
-		// phpcs:enable
+		do {
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$post_ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT post_id FROM {$recurrence_table} ORDER BY post_id ASC LIMIT %d OFFSET %d",
+					$batch_size,
+					$offset
+				)
+			);
+			// phpcs:enable
 
-		foreach ( $post_ids as $post_id ) {
-			$post = get_post( (int) $post_id );
+			foreach ( $post_ids as $post_id ) {
+				$post = get_post( (int) $post_id );
 
-			if ( ! $post || 'publish' !== $post->post_status ) {
+				if ( ! $post || 'publish' !== $post->post_status ) {
+					continue;
+				}
+
+				$this->extend_for_post( (int) $post_id );
+			}
+
+			$fetched = count( $post_ids );
+			$offset += $batch_size;
+		} while ( $fetched === $batch_size );
+
+		// One invalidation for the whole roll rather than one per inserted row.
+		$this->index->flush_cache();
+	}
+
+	/**
+	 * Append the occurrences that have entered the horizon since the last roll.
+	 *
+	 * Deliberately not a call to generate_for_post(). That clears every row the
+	 * event has and rewrites the lot, so a nightly roll over 100 recurring
+	 * events at a 365-day horizon meant ~36,500 deletes and ~36,500 inserts
+	 * every night, in one cron request, with no time limit raised and no way to
+	 * resume — on shared hosting it dies partway and the horizon silently stops
+	 * moving.
+	 *
+	 * Appending instead writes only the handful of rows that are genuinely new.
+	 * Everything that changes the shape of the schedule — a rule edit, an added
+	 * exception, a cancelled instance — already triggers a full rebuild through
+	 * the save path, so the roll only ever has to extend the tail.
+	 *
+	 * @param int $post_id Event post ID.
+	 */
+	private function extend_for_post( int $post_id ): void {
+		if ( get_post_meta( $post_id, 'blockendar_ongoing', true ) ) {
+			return;
+		}
+
+		$rule = $this->get_rule( $post_id );
+
+		if ( null === $rule ) {
+			return;
+		}
+
+		$last_indexed = $this->index->max_start_datetime( $post_id );
+
+		// Nothing indexed yet — there is no tail to extend, so build it once.
+		if ( null === $last_indexed ) {
+			$this->generate_for_post( $post_id );
+			return;
+		}
+
+		$meta   = $this->get_event_meta( $post_id );
+		$shared = $this->get_shared_row_data( $post_id, $rule->id, $meta );
+
+		foreach ( $this->expand_dates( $rule, $meta ) as $date_pair ) {
+			if ( $date_pair['start_utc'] <= $last_indexed ) {
 				continue;
 			}
 
-			$this->generate_for_post( (int) $post_id );
+			$this->index->insert(
+				array_merge(
+					$shared,
+					[
+						'start_datetime' => $date_pair['start_utc'],
+						'end_datetime'   => $date_pair['end_utc'],
+						'start_date'     => $date_pair['start_date'],
+						'end_date'       => $date_pair['end_date'],
+					]
+				),
+				false
+			);
 		}
+
+		/*
+		 * Manual additions are not re-inserted here. They are written in full by
+		 * generate_for_post() whenever the rule is saved, regardless of the
+		 * horizon, so appending them again would duplicate rows.
+		 */
 	}
 
 	// -------------------------------------------------------------------------
 	// Date expansion
 	// -------------------------------------------------------------------------
+
+	/**
+	 * How far ahead to materialise instances, from the Recurring Events setting.
+	 *
+	 * Clamped to the same 30–3650 range SettingsPage::sanitize() enforces, so a
+	 * value written directly to the option (by a migration, WP-CLI or another
+	 * plugin) cannot push generation outside what the UI allows.
+	 */
+	private function horizon_days(): int {
+		$days = (int) SettingsPage::get( 'horizon_days' );
+
+		if ( $days <= 0 ) {
+			$days = self::DEFAULT_HORIZON_DAYS;
+		}
+
+		return max( 30, min( 3650, $days ) );
+	}
+
+	/**
+	 * Maximum instances to generate for one event, from the Recurring Events
+	 * setting, clamped to the MAX_INSTANCES safety cap.
+	 */
+	private function instance_cap(): int {
+		$cap = (int) SettingsPage::get( 'max_instances' );
+
+		if ( $cap <= 0 ) {
+			$cap = self::MAX_INSTANCES;
+		}
+
+		return max( 1, min( self::MAX_INSTANCES, $cap ) );
+	}
 
 	/**
 	 * Expand a recurrence rule into an array of start/end date pairs.
@@ -172,7 +293,7 @@ class Generator {
 	 * @return array[] Each element: ['start_date', 'end_date', 'start_utc', 'end_utc'].
 	 */
 	private function expand_dates( Rule $rule, array $meta ): array {
-		$horizon_days = (int) get_option( 'blockendar_horizon_days', self::DEFAULT_HORIZON_DAYS );
+		$horizon_days = $this->horizon_days();
 		$horizon      = $this->now()->modify( "+{$horizon_days} days" )->setTime( 23, 59, 59 );
 
 		$event_start = \DateTimeImmutable::createFromFormat( 'Y-m-d', $meta['start_date'] );
@@ -189,7 +310,9 @@ class Generator {
 		$count       = 0;
 		$cursor      = $event_start;
 
-		while ( $count < self::MAX_INSTANCES ) {
+		$instance_cap = $this->instance_cap();
+
+		while ( $count < $instance_cap ) {
 			$date_str = $cursor->format( 'Y-m-d' );
 
 			// Stop if past the until_date.

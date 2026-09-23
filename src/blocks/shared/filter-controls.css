@@ -69,6 +69,15 @@
    Choice lists
    -------------------------------------------------------------------------- */
 
+/* The fieldset exists to give the choice list a group name; it must not bring
+   the browser's default border, padding or margin with it. */
+.blockendar-filter__group {
+	border: 0;
+	margin: 0;
+	min-inline-size: 0;
+	padding: 0;
+}
+
 .blockendar-filter__list {
 	display: flex;
 	flex-direction: column;
@@ -130,6 +139,40 @@
 	gap: 0.3em;
 	min-inline-size: 8em;
 }
+
+/* Applied by filter-date-range/view.js once the inline calendar mounts.
+
+   Deliberately NOT display:none. Flatpickr gives every element of an inline
+   calendar tabIndex="-1" and binds its keyboard handler to the original
+   input, so taking these fields out of the focus order left the open panel
+   with no keyboard route to a date at all. They stay focusable and keep
+   their From/To labels; the calendar beside them is aria-hidden as the
+   pointer-only duplicate.
+
+   This lives here, next to the rule it has to beat, rather than in the
+   block's own style.css: this stylesheet is the block's viewScript CSS and
+   loads after style-index.css, so min-inline-size above would otherwise win
+   and hold the field open at 8em. */
+.blockendar-filter-date-range__field--visually-hidden {
+	position: absolute;
+	flex: none;
+	inline-size: 1px;
+	min-inline-size: 0;
+	block-size: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Deliberately no :focus-within reveal. The popover hands focus to the
+   panel's first control on open, so revealing on focus would expand a field
+   every time a pointer user opened the panel — and moving that focus
+   elsewhere to avoid it pushes the Apply button below the fold. Visual
+   feedback while editing comes from the calendar instead: it highlights the
+   selection as the value changes. */
 
 .blockendar-filter-date-range__label,
 .blockendar-filter__label {

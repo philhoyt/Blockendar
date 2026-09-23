@@ -79,13 +79,13 @@ class RestPermissionsTest extends WP_UnitTestCase {
 			'blockendar_settings',
 			[
 				'rest_public'     => false,
-				'rest_feed_token' => 'sekrit-token-value',
+				'rest_feed_token' => 'sekrittokenvalue00',
 			]
 		);
 		wp_set_current_user( 0 );
 
 		$request = new WP_REST_Request( 'GET', '/blockendar/v1/calendar' );
-		$request->set_param( 'token', 'sekrit-token-value' );
+		$request->set_param( 'token', 'sekrittokenvalue00' );
 
 		$this->assertTrue( $this->controller->check_feed_read( $request ) );
 	}
@@ -95,7 +95,7 @@ class RestPermissionsTest extends WP_UnitTestCase {
 			'blockendar_settings',
 			[
 				'rest_public'     => false,
-				'rest_feed_token' => 'sekrit-token-value',
+				'rest_feed_token' => 'sekrittokenvalue00',
 			]
 		);
 		wp_set_current_user( 0 );
@@ -111,7 +111,7 @@ class RestPermissionsTest extends WP_UnitTestCase {
 			'blockendar_settings',
 			[
 				'rest_public'     => false,
-				'rest_feed_token' => 'sekrit-token-value',
+				'rest_feed_token' => 'sekrittokenvalue00',
 			]
 		);
 		wp_set_current_user( 0 );
@@ -145,19 +145,73 @@ class RestPermissionsTest extends WP_UnitTestCase {
 	// Write and manage capabilities
 	// -------------------------------------------------------------------------
 
+	/**
+	 * Build a write request naming one specific event.
+	 *
+	 * @param int $post_id Event the request targets.
+	 */
+	private function edit_request( int $post_id ): WP_REST_Request {
+		$request = new WP_REST_Request( 'POST', "/blockendar/v1/events/{$post_id}/recurrence" );
+		$request->set_param( 'id', $post_id );
+
+		return $request;
+	}
+
 	public function test_edit_permission_denied_for_anonymous(): void {
+		$post_id = self::factory()->post->create( [ 'post_type' => 'blockendar_event' ] );
 		wp_set_current_user( 0 );
-		$this->assertFalse( $this->controller->check_edit_permission() );
+
+		$this->assertNotTrue( $this->controller->check_edit_permission( $this->edit_request( $post_id ) ) );
 	}
 
 	public function test_edit_permission_denied_for_subscriber(): void {
+		$post_id = self::factory()->post->create( [ 'post_type' => 'blockendar_event' ] );
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
-		$this->assertFalse( $this->controller->check_edit_permission() );
+
+		$this->assertNotTrue( $this->controller->check_edit_permission( $this->edit_request( $post_id ) ) );
 	}
 
-	public function test_edit_permission_allowed_for_contributor(): void {
-		wp_set_current_user( self::factory()->user->create( [ 'role' => 'contributor' ] ) );
-		$this->assertTrue( $this->controller->check_edit_permission() );
+	public function test_edit_permission_allowed_for_own_event(): void {
+		$author_id = self::factory()->user->create( [ 'role' => 'contributor' ] );
+		$post_id   = self::factory()->post->create(
+			[
+				'post_type'   => 'blockendar_event',
+				'post_author' => $author_id,
+				'post_status' => 'draft',
+			]
+		);
+
+		wp_set_current_user( $author_id );
+
+		$this->assertTrue( $this->controller->check_edit_permission( $this->edit_request( $post_id ) ) );
+	}
+
+	/**
+	 * The regression this suite exists for: 'edit_posts' is held by every role
+	 * down to Contributor, so a permission callback that checks it without an
+	 * object ID authorises writes against somebody else's event.
+	 */
+	public function test_edit_permission_denied_for_another_authors_event(): void {
+		$owner_id    = self::factory()->user->create( [ 'role' => 'author' ] );
+		$intruder_id = self::factory()->user->create( [ 'role' => 'contributor' ] );
+		$post_id     = self::factory()->post->create(
+			[
+				'post_type'   => 'blockendar_event',
+				'post_author' => $owner_id,
+				'post_status' => 'publish',
+			]
+		);
+
+		wp_set_current_user( $intruder_id );
+
+		$this->assertTrue(
+			user_can( $intruder_id, 'edit_posts' ),
+			'Precondition: a Contributor does hold the bare edit_posts capability.'
+		);
+		$this->assertNotTrue(
+			$this->controller->check_edit_permission( $this->edit_request( $post_id ) ),
+			'A Contributor must not be authorised to write to an event they do not own.'
+		);
 	}
 
 	public function test_manage_permission_denied_for_editor(): void {

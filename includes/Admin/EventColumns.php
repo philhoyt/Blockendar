@@ -130,7 +130,7 @@ class EventColumns {
 		}
 
 		$order = 'DESC' === strtoupper( (string) $query->get( 'order' ) ) ? 'DESC' : 'ASC';
-		$this->join_index_table( $order );
+		$this->join_index_table( $query, $order );
 	}
 
 	/**
@@ -149,7 +149,7 @@ class EventColumns {
 			return;
 		}
 
-		$this->join_index_table( 'DESC' );
+		$this->join_index_table( $query, 'DESC' );
 	}
 
 	/**
@@ -157,40 +157,72 @@ class EventColumns {
 	 * Uses posts_orderby to inject the ORDER BY directly so the SQL alias
 	 * is resolved correctly regardless of WP_Query's internal sanitization.
 	 *
-	 * @param string $order 'ASC' or 'DESC'.
+	 * @param \WP_Query $target The one query these filters should affect.
+	 * @param string    $order  'ASC' or 'DESC'.
 	 */
-	private function join_index_table( string $order = 'ASC' ): void {
+	private function join_index_table( \WP_Query $target, string $order = 'ASC' ): void {
 		global $wpdb;
 		$table = Schema::events_table();
 
+		/*
+		 * Every one of these filters applies to EVERY WP_Query for the rest of
+		 * the request, not just the one that was running when pre_get_posts
+		 * fired. Left unguarded they would bolt a LEFT JOIN, a GROUP BY and an
+		 * ORDER BY on an alias onto any secondary query another plugin runs
+		 * later on this screen — a wasted join at best, a SQL error on the
+		 * unknown alias at worst. Binding each closure to the exact WP_Query
+		 * instance it was added for makes them inert everywhere else.
+		 */
 		add_filter(
 			'posts_join',
-			function ( string $join ) use ( $wpdb, $table ): string {
-				$join .= " LEFT JOIN {$table} AS be ON be.post_id = {$wpdb->posts}.ID";
-				return $join;
-			}
+			static function ( string $join, \WP_Query $query ) use ( $wpdb, $table, $target ): string {
+				if ( $query !== $target ) {
+					return $join;
+				}
+
+				return $join . " LEFT JOIN {$table} AS be ON be.post_id = {$wpdb->posts}.ID";
+			},
+			10,
+			2
 		);
 
 		add_filter(
 			'posts_fields',
-			function ( string $fields ): string {
-				$fields .= ', MIN(be.start_datetime) AS blockendar_start_datetime';
-				return $fields;
-			}
+			static function ( string $fields, \WP_Query $query ) use ( $target ): string {
+				if ( $query !== $target ) {
+					return $fields;
+				}
+
+				return $fields . ', MIN(be.start_datetime) AS blockendar_start_datetime';
+			},
+			10,
+			2
 		);
 
 		add_filter(
 			'posts_groupby',
-			function () use ( $wpdb ): string {
+			static function ( string $groupby, \WP_Query $query ) use ( $wpdb, $target ): string {
+				if ( $query !== $target ) {
+					return $groupby;
+				}
+
 				return "{$wpdb->posts}.ID";
-			}
+			},
+			10,
+			2
 		);
 
 		add_filter(
 			'posts_orderby',
-			function () use ( $order ): string {
+			static function ( string $orderby, \WP_Query $query ) use ( $order, $target ): string {
+				if ( $query !== $target ) {
+					return $orderby;
+				}
+
 				return "blockendar_start_datetime {$order}";
-			}
+			},
+			10,
+			2
 		);
 	}
 }

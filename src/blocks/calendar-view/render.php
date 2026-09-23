@@ -14,9 +14,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
+/*
+ * defaultView and firstDay carry no block.json default, so an attribute that
+ * is absent means "use the site setting" rather than "the author chose the
+ * same value as the default". Settings > Blockendar sets the site-wide
+ * default; a block that overrides it keeps its own choice.
+ */
 $enabled_views = $attributes['enabledViews'] ?? [ 'dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listNextMonth' ];
-$default_view  = $attributes['defaultView'] ?? 'dayGridMonth';
-$first_day     = (int) ( $attributes['firstDay'] ?? 0 );
+$default_view  = $attributes['defaultView'] ?? \Blockendar\Admin\SettingsPage::get( 'calendar_default_view' );
+$first_day     = (int) ( $attributes['firstDay'] ?? \Blockendar\Admin\SettingsPage::get( 'calendar_first_day' ) );
+
+// Applies to the time-grid views only; FullCalendar ignores it elsewhere.
+$slot_duration = (string) \Blockendar\Admin\SettingsPage::get( 'calendar_slot_duration' );
 $venue_ids     = array_map( 'intval', (array) ( $attributes['venueIds'] ?? [] ) );
 $type_ids      = array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) );
 $featured_only = ! empty( $attributes['featuredOnly'] ) ? 'true' : 'false';
@@ -54,6 +63,7 @@ $data_attrs = [
 	'data-rest-url'      => $rest_url,
 	'data-default-view'  => $default_view,
 	'data-first-day'     => (string) $first_day,
+	'data-slot-duration' => $slot_duration,
 	'data-enabled-views' => wp_json_encode( $enabled_views ),
 	'data-featured-only' => $featured_only,
 	'data-venue-ids'     => wp_json_encode( array_values( $venue_ids ) ),
@@ -97,7 +107,66 @@ $google_url = $show_subscribe ? \Blockendar\ICS\FeedUrl::google_subscribe_url( $
 
 $subscribe_label = trim( (string) ( $attributes['subscribeLabel'] ?? '' ) );
 ?>
-<div <?php echo get_block_wrapper_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?><?php echo $data_attr_str; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above ?>>
+<?php
+/*
+ * Server-rendered fallback, replaced by FullCalendar on mount.
+ *
+ * The block used to output an empty div. Both the events archive and the
+ * event-type taxonomy template carry this block as their only content block,
+ * so with JavaScript off, with the chunks failing to load, or before they
+ * arrive, those pages showed a title and nothing else — no events, no list,
+ * no link to one. The same index query the REST feed uses answers it here.
+ */
+$fallback_filters = [
+	'per_page' => 25,
+	'orderby'  => 'start_datetime',
+	'order'    => 'ASC',
+];
+
+if ( ! empty( $venue_ids ) ) {
+	$fallback_filters['venue_term_id'] = $venue_ids;
+}
+
+if ( ! empty( $type_ids ) ) {
+	$fallback_filters['type_term_id'] = $type_ids;
+}
+
+if ( ! empty( $attributes['featuredOnly'] ) ) {
+	$fallback_filters['featured'] = true;
+}
+
+$fallback_events = ( new \Blockendar\DB\EventIndex() )->get_events_in_range(
+	gmdate( 'Y-m-d H:i:s' ),
+	gmdate( 'Y-m-d H:i:s', strtotime( '+1 year' ) ),
+	$fallback_filters
+);
+
+blockendar_prime_event_caches( $fallback_events, false, false );
+
+$fallback_date_fmt = \Blockendar\Admin\SettingsPage::get( 'date_format' );
+?>
+<div <?php echo get_block_wrapper_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?><?php echo $data_attr_str; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above ?>
+	role="region"
+	aria-label="<?php esc_attr_e( 'Event calendar', 'blockendar' ); ?>"
+>
+	<?php if ( ! empty( $fallback_events ) ) : ?>
+		<ul class="blockendar-calendar-fallback">
+			<?php foreach ( $fallback_events as $fallback_event ) : ?>
+				<li class="blockendar-calendar-fallback__item">
+					<a href="<?php echo esc_url( (string) get_permalink( (int) $fallback_event->post_id ) ); ?>">
+						<?php echo esc_html( (string) $fallback_event->post_title ); ?>
+					</a>
+					<time datetime="<?php echo esc_attr( (string) $fallback_event->start_date ); ?>">
+						<?php echo esc_html( date_i18n( $fallback_date_fmt, strtotime( (string) $fallback_event->start_date ) ) ); ?>
+					</time>
+				</li>
+			<?php endforeach; ?>
+		</ul>
+	<?php else : ?>
+		<p class="blockendar-calendar-fallback__empty">
+			<?php esc_html_e( 'No upcoming events.', 'blockendar' ); ?>
+		</p>
+	<?php endif; ?>
 </div>
 <?php if ( $show_subscribe ) : ?>
 	<div class="blockendar-calendar-subscribe">

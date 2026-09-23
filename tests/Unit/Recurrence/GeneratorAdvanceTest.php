@@ -50,7 +50,20 @@ class GeneratorAdvanceTest extends TestCase {
 		Monkey\setUp();
 		Monkey\Functions\when( 'wp_timezone_string' )->justReturn( 'UTC' );
 		Monkey\Functions\when( 'wp_timezone' )->justReturn( new \DateTimeZone( 'UTC' ) );
-		Monkey\Functions\when( 'get_option' )->justReturn( 365 );
+
+		// Key-aware: see the note in GeneratorExpandTest::setUp().
+		Monkey\Functions\when( 'get_option' )->alias(
+			static function ( string $name, $default_value = false ) {
+				if ( 'blockendar_settings' === $name ) {
+					return [
+						'horizon_days'  => 365,
+						'max_instances' => 3650,
+					];
+				}
+
+				return $default_value;
+			}
+		);
 		$this->gen = new TestableGenerator();
 	}
 

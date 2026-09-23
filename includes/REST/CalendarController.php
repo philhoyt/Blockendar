@@ -145,6 +145,14 @@ class CalendarController extends AbstractController {
 
 		$rows = $this->index->get_events_in_range( $start, $end, $filters );
 
+		/*
+		 * Both branches below read post meta and call get_permalink() once per
+		 * row, over as many as 500 rows for the JSON feed and 2000 for ICS.
+		 * Neither route is cached at the HTTP layer for a logged-out visitor,
+		 * so this is the difference between three queries and a thousand.
+		 */
+		blockendar_prime_event_caches( $rows );
+
 		if ( $is_ics ) {
 			$truncated = count( $rows ) > $ceiling;
 

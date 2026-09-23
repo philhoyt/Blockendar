@@ -26,13 +26,14 @@ use Blockendar\Recurrence\Cron;
 use Blockendar\REST\EventsController;
 use Blockendar\REST\CalendarController;
 use Blockendar\REST\IcsEndpoint;
-use Blockendar\REST\ImportController;
 use Blockendar\Blocks\BlockRegistrar;
 use Blockendar\Blocks\TemplateRegistrar;
 use Blockendar\Admin\EventColumns;
+use Blockendar\Admin\PrivacyPolicy;
 use Blockendar\Admin\SettingsPage;
 use Blockendar\Admin\VenueGeocode;
 use Blockendar\Upgrader;
+use Blockendar\CLI\ImportTribeCommand;
 use Blockendar\CLI\RebuildIndexCommand;
 
 /**
@@ -80,7 +81,6 @@ class Plugin {
 		( new EventsController() )->register();
 		( new CalendarController() )->register();
 		( new IcsEndpoint() )->register();
-		( new ImportController() )->register();
 
 		// Block registration + editor sidebar enqueue.
 		( new BlockRegistrar() )->register();
@@ -95,11 +95,13 @@ class Plugin {
 		if ( is_admin() ) {
 			( new EventColumns() )->register();
 			( new VenueGeocode() )->register();
+			( new PrivacyPolicy() )->register();
 		}
 
 		// WP-CLI commands.
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			\WP_CLI::add_command( 'blockendar rebuild-index', [ new RebuildIndexCommand(), 'rebuild' ] );
+			\WP_CLI::add_command( 'blockendar import-tribe', [ new ImportTribeCommand(), 'import' ] );
 		}
 
 		// Register block category.
