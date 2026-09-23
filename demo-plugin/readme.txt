@@ -3,7 +3,7 @@ Contributors: philhoyt
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.8.0
+Stable tag: 1.8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,6 +26,9 @@ setting. Content of your own is never touched.
 Requires Blockendar 1.7.0 or newer.
 
 == Changelog ==
+
+= 1.8.1 =
+* Changed: version only, to stay in step with Blockendar 1.8.1. The demo content and the seeder are unchanged.
 
 = 1.7.0 =
 * Changed: the tour pages are rebuilt. The calendar, the filtered grid and the venue maps render at wide width, Type, Venue and Dates share one row with the view switcher at the end, and each page is laid out in groups with consistent spacing.

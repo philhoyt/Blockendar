@@ -1,6 +1,6 @@
 {
 	"name": "blockendar-demo",
-	"version": "1.8.0",
+	"version": "1.8.1",
 	"description": "Companion demo content plugin for Blockendar. Packaged as its own zip; not part of the Blockendar plugin.",
 	"private": true,
 	"license": "GPL-2.0-or-later",
