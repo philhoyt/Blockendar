@@ -155,6 +155,10 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 1.8.1
+- Changed: listings of past events are faster on sites with a large archive. Two database indexes are added on update, which happens once and does not rebuild your events.
+- Fixed: the plugin rewrote the columns of all three of its database tables on every page load. The table definitions were laid out in aligned columns, which WordPress reads as a changed column type, so it issued a rewrite each time it checked.
+
 ### 1.8.0
 - Security: an event's recurrence rule and individual occurrences could be changed by any contributor, including on events they do not own. Those four endpoints now check permission against the specific event rather than the general ability to edit posts.
 - Security: password-protected events no longer appear in the REST API, the calendar feed or the iCalendar export. Their title, dates and venue address were readable by anyone despite the password.

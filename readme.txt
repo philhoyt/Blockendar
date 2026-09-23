@@ -103,6 +103,10 @@ Each site in a multisite network gets its own database tables. The plugin has no
 
 == Changelog ==
 
+= 1.8.1 =
+* Changed: listings of past events are faster on sites with a large archive. Two database indexes are added on update, which happens once and does not rebuild your events.
+* Fixed: the plugin rewrote the columns of all three of its database tables on every page load. The table definitions were laid out in aligned columns, which WordPress reads as a changed column type, so it issued a rewrite each time it checked.
+
 = 1.8.0 =
 * Security: an event's recurrence rule and individual occurrences could be changed by any contributor, including on events they do not own. Those four endpoints now check permission against the specific event rather than the general ability to edit posts.
 * Security: password-protected events no longer appear in the REST API, the calendar feed or the iCalendar export. Their title, dates and venue address were readable by anyone despite the password.
@@ -314,6 +318,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.8.1 =
+Speeds up listings of past events and stops the plugin rewriting its database tables on every page load. The update adds two indexes to the events table; on a site with 200,000 occurrences this took about half a second and did not touch event data.
 
 = 1.8.0 =
 Contains security fixes. Contributors could change the schedule of events they do not own, and password-protected events were exposing their title, dates and venue address through the REST API and calendar feeds. The Recurring Events and Calendar settings now take effect, having previously been saved and ignored. Two changes to be aware of: the Venue and Type filters wait for the Apply button rather than applying as soon as a choice is made, and the Import screen for The Events Calendar has been replaced by the WP-CLI command `wp blockendar import-tribe <file>`.
