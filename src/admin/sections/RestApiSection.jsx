@@ -13,13 +13,40 @@ const {
 	feedUrlWebcal: FEED_URL_WEBCAL = '',
 } = window.blockendarSettings ?? {};
 
+/**
+ * Generate a feed token.
+ *
+ * The token is a bearer credential — anyone holding the URL holds the calendar
+ * — so this uses crypto.getRandomValues() rather than Math.random(). V8's
+ * Math.random is an xorshift128+ generator whose internal state can be
+ * recovered from a short run of outputs, which would make a 32-character token
+ * worth far less than its length suggests.
+ *
+ * Bytes at or above the largest exact multiple of the alphabet length are
+ * discarded rather than folded in with a modulo, which would make the first
+ * few characters of the alphabet measurably more likely.
+ *
+ * @param {number} length How many characters to produce.
+ * @return {string} The generated token.
+ */
 function generateToken( length = 32 ) {
 	const chars =
 		'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	return Array.from(
-		{ length },
-		() => chars[ Math.floor( Math.random() * chars.length ) ]
-	).join( '' );
+	const limit = Math.floor( 256 / chars.length ) * chars.length;
+	const out = [];
+
+	while ( out.length < length ) {
+		const bytes = new Uint8Array( length );
+		window.crypto.getRandomValues( bytes );
+
+		for ( const byte of bytes ) {
+			if ( byte < limit && out.length < length ) {
+				out.push( chars[ byte % chars.length ] );
+			}
+		}
+	}
+
+	return out.join( '' );
 }
 
 /**
@@ -166,7 +193,8 @@ export function RestApiSection( { settings, update } ) {
 						) }
 						help={ __(
 							'When the REST API is not public, this token lets a calendar app read the feed without logging in. ' +
-								'Anyone who has the link has the calendar, so share it the way you would share a password.',
+								'Anyone who has the link has the calendar, so share it the way you would share a password. ' +
+								'Letters and numbers only, at least 16 characters — anything shorter is discarded on save and turns token access off.',
 							'blockendar'
 						) }
 						type={ tokenVisible ? 'text' : 'password' }

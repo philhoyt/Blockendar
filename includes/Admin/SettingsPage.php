@@ -92,6 +92,17 @@ class SettingsPage {
 	 * Render the mount point for the React SPA.
 	 */
 	public function render_page(): void {
+		/*
+		 * Defence in depth. add_submenu_page() already gates the menu entry on
+		 * this capability and every endpoint the SPA talks to has its own
+		 * permission_callback, but admin.php?page= URLs are directly reachable
+		 * and a render callback should not assume it was only reached through
+		 * the menu. The companion demo plugin's admin page does the same.
+		 */
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			return;
+		}
+
 		echo '<div id="blockendar-settings-root"></div>';
 	}
 
@@ -271,8 +282,39 @@ class SettingsPage {
 
 			// REST API.
 			'rest_public'            => (bool) ( $raw['rest_public'] ?? $d['rest_public'] ),
-			'rest_feed_token'        => sanitize_text_field( $raw['rest_feed_token'] ?? '' ),
+			'rest_feed_token'        => self::sanitize_feed_token( $raw['rest_feed_token'] ?? '' ),
 		];
+	}
+
+	/**
+	 * Minimum length accepted for a feed token.
+	 *
+	 * The generator produces 32 characters. This is the floor for a value typed
+	 * in by hand, low enough not to reject a deliberate choice and high enough
+	 * that the token is not guessable.
+	 */
+	private const MIN_TOKEN_LENGTH = 16;
+
+	/**
+	 * Clean a feed token, rejecting anything too short to be a credential.
+	 *
+	 * The token authenticates the calendar feed in place of a login, so a short
+	 * or punctuation-laden value is worse than none: it reads as protection
+	 * while being trivially guessable, and it travels in a URL where anything
+	 * outside [A-Za-z0-9] risks being mangled by a client. A value that fails
+	 * either test is cleared, which turns token access off rather than leaving
+	 * a weak token in place.
+	 *
+	 * @param mixed $raw Submitted token value.
+	 */
+	private static function sanitize_feed_token( mixed $raw ): string {
+		$token = preg_replace( '/[^A-Za-z0-9]/', '', (string) $raw );
+
+		if ( null === $token || strlen( $token ) < self::MIN_TOKEN_LENGTH ) {
+			return '';
+		}
+
+		return $token;
 	}
 
 	/**

@@ -79,13 +79,13 @@ class RestPermissionsTest extends WP_UnitTestCase {
 			'blockendar_settings',
 			[
 				'rest_public'     => false,
-				'rest_feed_token' => 'sekrit-token-value',
+				'rest_feed_token' => 'sekrittokenvalue00',
 			]
 		);
 		wp_set_current_user( 0 );
 
 		$request = new WP_REST_Request( 'GET', '/blockendar/v1/calendar' );
-		$request->set_param( 'token', 'sekrit-token-value' );
+		$request->set_param( 'token', 'sekrittokenvalue00' );
 
 		$this->assertTrue( $this->controller->check_feed_read( $request ) );
 	}
@@ -95,7 +95,7 @@ class RestPermissionsTest extends WP_UnitTestCase {
 			'blockendar_settings',
 			[
 				'rest_public'     => false,
-				'rest_feed_token' => 'sekrit-token-value',
+				'rest_feed_token' => 'sekrittokenvalue00',
 			]
 		);
 		wp_set_current_user( 0 );
@@ -111,7 +111,7 @@ class RestPermissionsTest extends WP_UnitTestCase {
 			'blockendar_settings',
 			[
 				'rest_public'     => false,
-				'rest_feed_token' => 'sekrit-token-value',
+				'rest_feed_token' => 'sekrittokenvalue00',
 			]
 		);
 		wp_set_current_user( 0 );

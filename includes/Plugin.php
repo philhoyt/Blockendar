@@ -30,6 +30,7 @@ use Blockendar\REST\ImportController;
 use Blockendar\Blocks\BlockRegistrar;
 use Blockendar\Blocks\TemplateRegistrar;
 use Blockendar\Admin\EventColumns;
+use Blockendar\Admin\PrivacyPolicy;
 use Blockendar\Admin\SettingsPage;
 use Blockendar\Admin\VenueGeocode;
 use Blockendar\Upgrader;
@@ -95,6 +96,7 @@ class Plugin {
 		if ( is_admin() ) {
 			( new EventColumns() )->register();
 			( new VenueGeocode() )->register();
+			( new PrivacyPolicy() )->register();
 		}
 
 		// WP-CLI commands.

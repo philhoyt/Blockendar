@@ -97,8 +97,13 @@
 	<!-- ======================================================
 	     WP block render files
 	     ====================================================== -->
-	<!-- Block render.php files receive $attributes, $content, $block from WP core
-	     via extract(); shadowing WP globals like $term, $post is unavoidable. -->
+	<!-- A false positive, not a real shadowing. Core does not extract() into a
+	     render.php: register_block_type_from_metadata() requires the template
+	     inside a closure, so $attributes/$content/$block arrive as closure
+	     parameters and everything else declared there is an ordinary local.
+	     The sniff flags those locals purely because their names collide with
+	     WordPress's global list — $post_id, $title, $status, $per_page, $order
+	     — which in function scope they cannot overwrite. -->
 	<rule ref="WordPress.WP.GlobalVariablesOverride">
 		<exclude-pattern>src/blocks/*/render.php</exclude-pattern>
 	</rule>
@@ -115,9 +120,6 @@
 	     throughout includes/. The DB namespace owns the schema; other namespaces
 	     query it for reads/writes that can't go through WP_Query. -->
 	<rule ref="WordPress.DB.DirectDatabaseQuery">
-		<exclude-pattern>includes/</exclude-pattern>
-	</rule>
-	<rule ref="WordPress.DB.SlowDBQuery">
 		<exclude-pattern>includes/</exclude-pattern>
 	</rule>
 	<!-- NOTE: SQL preparation is NOT excluded here. Queries that interpolate
@@ -158,17 +160,6 @@
 	     wrapper functions genuinely are not available. -->
 	<rule ref="WordPress.WP.AlternativeFunctions.json_encode_json_encode">
 		<exclude-pattern>tests/</exclude-pattern>
-	</rule>
-
-	<!-- ======================================================
-	     Demo companion plugin
-	     ====================================================== -->
-	<!-- demo-plugin/ is a separate plugin, shipped as its own zip. It is not
-	     part of the Blockendar zip (see the "files" array in package.json) and
-	     carries no translatable strings by design, so the blockendar text
-	     domain rule above does not apply to it. -->
-	<rule ref="WordPress.WP.GlobalVariablesOverride">
-		<exclude-pattern>demo-plugin/uninstall.php</exclude-pattern>
 	</rule>
 
 	<!-- ======================================================

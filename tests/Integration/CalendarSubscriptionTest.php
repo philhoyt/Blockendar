@@ -240,13 +240,13 @@ class CalendarSubscriptionTest extends WP_UnitTestCase {
 			'blockendar_settings',
 			[
 				'rest_public'     => false,
-				'rest_feed_token' => 'CACHE_TOKEN',
+				'rest_feed_token' => 'CACHETOKEN012345',
 			]
 		);
 
 		$this->assertSame(
 			'private, no-store',
-			$this->request( [ 'token' => 'CACHE_TOKEN' ] )->get_headers()['Cache-Control'] ?? '',
+			$this->request( [ 'token' => 'CACHETOKEN012345' ] )->get_headers()['Cache-Control'] ?? '',
 			'A URL carrying a credential must not be cached by an intermediary.'
 		);
 	}
@@ -260,7 +260,7 @@ class CalendarSubscriptionTest extends WP_UnitTestCase {
 			'blockendar_settings',
 			[
 				'rest_public'     => false,
-				'rest_feed_token' => 'GOOD_TOKEN',
+				'rest_feed_token' => 'GOODTOKEN0123456',
 			]
 		);
 		wp_set_current_user( 0 );
@@ -274,12 +274,12 @@ class CalendarSubscriptionTest extends WP_UnitTestCase {
 			'blockendar_settings',
 			[
 				'rest_public'     => false,
-				'rest_feed_token' => 'GOOD_TOKEN',
+				'rest_feed_token' => 'GOODTOKEN0123456',
 			]
 		);
 		wp_set_current_user( 0 );
 
-		$response = $this->request( [ 'token' => 'GOOD_TOKEN' ] );
+		$response = $this->request( [ 'token' => 'GOODTOKEN0123456' ] );
 
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertStringStartsWith( 'BEGIN:VCALENDAR', $response->get_data() );

@@ -2,7 +2,7 @@
  * Venue geocoding — "Look up coordinates" button for the venue admin form.
  *
  * Uses Nominatim (OpenStreetMap) to resolve an address to lat/lng.
- * Reads blockendarGeocode (localized by VenueGeocode.php).
+ * Reads window.blockendarGeocode, printed inline by VenueGeocode.php.
  */
 ( function () {
 	'use strict';
