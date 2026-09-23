@@ -46,13 +46,57 @@ $has_dates      = null !== $active_filters['date_start'] || null !== $active_fil
 
 /*
  * The trigger shows the chosen span, one bound when only one is set, or the
- * placeholder. Dates are formatted with the site's date format so they read the
- * way every other date on the page does.
+ * placeholder. Dates here are numeric and short — "9/23/26", not
+ * "September 23, 2026" — because two long dates side by side made the closed
+ * control far wider than the other filters next to it. The panel and the rest
+ * of the page still use the site's date format; only this summary is
+ * abbreviated.
  */
 $placeholder = sanitize_text_field( $attributes['triggerLabel'] ?? '' );
 $placeholder = '' !== $placeholder ? $placeholder : __( 'All dates', 'blockendar' );
 
-$fmt_display = static fn( string $ymd ): string => wp_date( get_option( 'date_format' ), strtotime( $ymd . ' 12:00:00' ) );
+/*
+ * Day/month order follows the site's date format, so a site set to d/m/Y does
+ * not suddenly read its ranges in US order. Only the first day token and the
+ * first month token matter; escaped characters are literal text and are skipped.
+ */
+$trigger_format = static function (): string {
+	// Same chain as event-datetime: the plugin's own setting wins, then the
+	// site's, so both blocks read a range the same way round.
+	$settings = (array) get_option( 'blockendar_settings', [] );
+	$format   = (string) ( $settings['date_format'] ?? get_option( 'date_format', 'F j, Y' ) );
+	$day      = null;
+	$month    = null;
+
+	for ( $i = 0, $len = strlen( $format ); $i < $len; $i++ ) {
+		$char = $format[ $i ];
+
+		if ( '\\' === $char ) {
+			++$i;
+			continue;
+		}
+
+		if ( null === $day && ( 'd' === $char || 'j' === $char ) ) {
+			$day = $i;
+		} elseif ( null === $month && false !== strpos( 'FMmn', $char ) ) {
+			$month = $i;
+		}
+	}
+
+	$day_first = null !== $day && ( null === $month || $day < $month );
+
+	return $day_first ? 'j/n/y' : 'n/j/y';
+};
+
+/**
+ * Filters the date format used in the date-range filter's closed trigger.
+ *
+ * @param string $format   A PHP date format string.
+ * @param string $query_id Id of the query the filter targets.
+ */
+$display_format = (string) apply_filters( 'blockendar_filter_date_trigger_format', $trigger_format(), $query_id );
+
+$fmt_display = static fn( string $ymd ): string => wp_date( $display_format, strtotime( $ymd . ' 12:00:00' ) );
 
 if ( '' !== $active_start && '' !== $active_end ) {
 	$trigger_text = sprintf(
