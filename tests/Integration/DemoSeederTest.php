@@ -278,11 +278,24 @@ class DemoSeederTest extends WP_UnitTestCase {
 		$this->assertInstanceOf( \WP_Post::class, $subscribe );
 		wp_delete_post( $subscribe->ID, true );
 
+		// This one they only trashed, so it is still ours but put away.
+		$venues = get_page_by_path( 'venues-and-maps' );
+		$this->assertInstanceOf( \WP_Post::class, $venues );
+		wp_update_post(
+			[
+				'ID'           => $venues->ID,
+				'post_content' => 'parked',
+			]
+		);
+		wp_trash_post( $venues->ID );
+
 		$result = $this->seeder->seed();
 
-		$this->assertSame( count( Content::PAGES ) - 2, $result['refreshed'] );
+		$this->assertSame( count( Content::PAGES ) - 3, $result['refreshed'] );
 		$this->assertSame( 'theirs now', (string) get_post( $calendar->ID )->post_content );
 		$this->assertNull( get_page_by_path( 'subscribe' ), 'A deleted tour page must not be recreated.' );
+		$this->assertSame( 'trash', get_post_status( $venues->ID ), 'A trashed tour page must stay trashed.' );
+		$this->assertSame( 'parked', (string) get_post( $venues->ID )->post_content, 'A trashed tour page must not be rewritten.' );
 	}
 
 	/**

@@ -165,7 +165,11 @@ class Pages {
 			// An ID can be stale: the page may have been deleted, or deleted and
 			// the ID reused by unrelated content. The marker is what says this is
 			// still ours to overwrite.
-			if ( ! $post instanceof \WP_Post || 'page' !== $post->post_type ) {
+			//
+			// Published only. A trashed page is one the user put away, and its
+			// permalink is a ?page_id= fallback that would make a dead link in
+			// every other page's nav row.
+			if ( ! $post instanceof \WP_Post || 'page' !== $post->post_type || 'publish' !== $post->post_status ) {
 				continue;
 			}
 
