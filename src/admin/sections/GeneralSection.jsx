@@ -49,7 +49,7 @@ export function GeneralSection( { settings, update, defaults } ) {
 				<HStack alignment="flex-end" spacing={ 2 }>
 					<div style={ { flex: 1 } }>
 						<TextControl
-							label={ __( 'Date format', 'blockendar' ) }
+							label={ __( 'Date format (PHP)', 'blockendar' ) }
 							help={
 								<>
 									{ __( 'Preview:', 'blockendar' ) }

@@ -4,6 +4,7 @@
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
 	Button,
+	ExternalLink,
 	PanelBody,
 	RadioControl,
 	TextControl,
@@ -162,7 +163,10 @@ export function Edit( { attributes, setAttributes, context } ) {
 					<VStack spacing={ 4 }>
 						<HStack alignment="flex-end" spacing={ 2 }>
 							<TextControl
-								label={ __( 'Date format', 'blockendar' ) }
+								label={ __(
+									'Date format (PHP)',
+									'blockendar'
+								) }
 								help={
 									<>
 										{ __( 'Preview:', 'blockendar' ) }{ ' ' }
@@ -172,6 +176,13 @@ export function Edit( { attributes, setAttributes, context } ) {
 												new Date()
 											) }
 										</code>
+										{ ' · ' }
+										<ExternalLink href="https://www.php.net/manual/en/datetime.format.php">
+											{ __(
+												'PHP date format reference',
+												'blockendar'
+											) }
+										</ExternalLink>
 									</>
 								}
 								placeholder={ siteDateFormat }
