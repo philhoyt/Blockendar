@@ -214,6 +214,10 @@ class EventsController extends AbstractController {
 		$events = $this->index->get_events_in_range( $start, $end, $filters );
 		$total  = $this->index->count_events_in_range( $start, $end, $filters );
 
+		// format_event_row() calls get_permalink() per row, which is a
+		// get_post() apiece against posts no cache has seen.
+		blockendar_prime_event_caches( $events );
+
 		$data = array_map( [ $this, 'format_event_row' ], $events );
 
 		return $this->respond(

@@ -158,3 +158,43 @@ function blockendar_convert_datetime( string $date, string $time, string $from_t
 
 	return [ $moment->format( 'Y-m-d' ), $moment->format( 'H:i' ) ];
 }
+
+/**
+ * Warm the post, meta and term caches for a set of index rows.
+ *
+ * Index rows come from custom SQL, so WordPress has never seen these posts and
+ * none of its caches are primed. Every consumer then pays a query per row —
+ * get_post() behind get_permalink(), a meta lookup the first time a block asks
+ * for a field, and a term query per taxonomy — which is the N+1 that shows up
+ * on the query loop, the calendar feed, the events collection and the ICS
+ * export alike.
+ *
+ * One call up front collapses all of that into three queries for the whole set.
+ *
+ * @param array<object> $rows        Index rows carrying a post_id property.
+ * @param bool          $with_terms  Prime the term cache too. Worth it wherever
+ *                                   venue or type terms are read per row.
+ * @param bool          $with_meta   Prime the post meta cache.
+ */
+function blockendar_prime_event_caches( array $rows, bool $with_terms = true, bool $with_meta = true ): void {
+	if ( empty( $rows ) ) {
+		return;
+	}
+
+	$post_ids = array_values(
+		array_unique(
+			array_filter(
+				array_map(
+					static fn( $row ) => isset( $row->post_id ) ? (int) $row->post_id : 0,
+					$rows
+				)
+			)
+		)
+	);
+
+	if ( empty( $post_ids ) ) {
+		return;
+	}
+
+	_prime_post_caches( $post_ids, $with_terms, $with_meta );
+}

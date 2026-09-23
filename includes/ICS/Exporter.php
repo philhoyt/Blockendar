@@ -264,6 +264,38 @@ class Exporter {
 	// -------------------------------------------------------------------------
 
 	/**
+	 * Plain-text DESCRIPTION for one event.
+	 *
+	 * Deliberately not get_the_excerpt(). On a post with no manual excerpt that
+	 * falls through to wp_trim_excerpt(), which applies the entire the_content
+	 * filter chain — every shortcode, embed and block render — once per event.
+	 * A feed can carry 2000 events in a single uncached request, so that is
+	 * 2000 full content renders to produce a few lines of text.
+	 *
+	 * The manual excerpt is used when the author wrote one; otherwise the raw
+	 * post content is trimmed directly. Password-protected posts never reach
+	 * this method — EventIndex excludes them from every public read — but the
+	 * check is kept so a future caller cannot leak one through.
+	 *
+	 * @param int $post_id Event post ID.
+	 */
+	private function build_description( int $post_id ): string {
+		$post = get_post( $post_id );
+
+		if ( ! $post || '' !== $post->post_password ) {
+			return '';
+		}
+
+		if ( '' !== trim( $post->post_excerpt ) ) {
+			return wp_strip_all_tags( $post->post_excerpt );
+		}
+
+		$text = wp_strip_all_tags( strip_shortcodes( $post->post_content ) );
+
+		return wp_trim_words( $text, 55, '' );
+	}
+
+	/**
 	 * Build a VEVENT block from an index row.
 	 *
 	 * @param object $row Index row joined with wp_posts.
@@ -276,7 +308,7 @@ class Exporter {
 		$uid         = $this->build_uid( $row );
 		$url         = get_permalink( $post_id );
 		$summary     = $this->escape_text( $row->post_title );
-		$description = $this->escape_text( wp_strip_all_tags( get_the_excerpt( $post_id ) ) );
+		$description = $this->escape_text( $this->build_description( $post_id ) );
 		$location    = $this->get_location_string( $row->venue_term_id ? (int) $row->venue_term_id : null );
 
 		$lines   = [];

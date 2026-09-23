@@ -358,6 +358,15 @@ $wrapper_attrs['style'] = '--blockendar-columns:' . $column_count . ';'
 	. '--blockendar-columns-tablet:' . $column_count_tablet . ';'
 	. '--blockendar-columns-mobile:' . $column_count_mobile . ';'
 	. $block_gap_style;
+
+/*
+ * The rows come from custom SQL, so none of WordPress's caches know about
+ * these posts. Without this each iteration below costs a get_post(), a meta
+ * lookup the first time an inner block reads a field, and a term query per
+ * taxonomy — roughly 40 queries for a 10-event list where 3 will do.
+ */
+blockendar_prime_event_caches( $events );
+
 // Stamp ?occurrence_date= onto CPT permalinks while inner blocks render so that
 // core/post-title (and any other link) navigates to the correct occurrence.
 add_filter( 'post_type_link', 'blockendar_occurrence_permalink_filter', 10, 2 );
