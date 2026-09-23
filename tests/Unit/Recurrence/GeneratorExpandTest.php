@@ -51,8 +51,27 @@ class GeneratorExpandTest extends TestCase {
 		// Stub WP functions used inside build_date_pair and expand_dates.
 		Monkey\Functions\when( 'wp_timezone_string' )->justReturn( 'UTC' );
 		Monkey\Functions\when( 'wp_timezone' )->justReturn( new \DateTimeZone( 'UTC' ) );
-		// horizon_days option.
-		Monkey\Functions\when( 'get_option' )->justReturn( 365 );
+
+		/*
+		 * Key-aware on purpose. A blanket justReturn() here answers every
+		 * option name identically, so a test would pass whether the code read
+		 * the right key or a name nothing ever writes — which is exactly how
+		 * the horizon setting stayed unwired while these tests stayed green.
+		 * Returning the settings array only for its real name means the
+		 * SettingsPage::get() path is genuinely exercised.
+		 */
+		Monkey\Functions\when( 'get_option' )->alias(
+			static function ( string $name, $default_value = false ) {
+				if ( 'blockendar_settings' === $name ) {
+					return [
+						'horizon_days'  => 365,
+						'max_instances' => 3650,
+					];
+				}
+
+				return $default_value;
+			}
+		);
 		$this->gen = new StubGenerator();
 	}
 

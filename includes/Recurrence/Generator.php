@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\Admin\SettingsPage;
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\Schema;
 use Blockendar\Taxonomy\EventType;
@@ -28,10 +29,15 @@ use Blockendar\Taxonomy\Venue;
  */
 class Generator {
 
-	/** Default lookahead horizon in days. */
+	/** Default lookahead horizon in days, used when the setting is unreadable. */
 	const DEFAULT_HORIZON_DAYS = 365;
 
-	/** Absolute safety cap — never generate more instances than this per event. */
+	/**
+	 * Absolute safety cap — never generate more instances than this per event.
+	 *
+	 * This is the ceiling the max_instances setting is clamped to, not the
+	 * value used directly: see instance_cap().
+	 */
 	const MAX_INSTANCES = 3650;
 
 	private EventIndex $index;
@@ -165,6 +171,37 @@ class Generator {
 	// -------------------------------------------------------------------------
 
 	/**
+	 * How far ahead to materialise instances, from the Recurring Events setting.
+	 *
+	 * Clamped to the same 30–3650 range SettingsPage::sanitize() enforces, so a
+	 * value written directly to the option (by a migration, WP-CLI or another
+	 * plugin) cannot push generation outside what the UI allows.
+	 */
+	private function horizon_days(): int {
+		$days = (int) SettingsPage::get( 'horizon_days' );
+
+		if ( $days <= 0 ) {
+			$days = self::DEFAULT_HORIZON_DAYS;
+		}
+
+		return max( 30, min( 3650, $days ) );
+	}
+
+	/**
+	 * Maximum instances to generate for one event, from the Recurring Events
+	 * setting, clamped to the MAX_INSTANCES safety cap.
+	 */
+	private function instance_cap(): int {
+		$cap = (int) SettingsPage::get( 'max_instances' );
+
+		if ( $cap <= 0 ) {
+			$cap = self::MAX_INSTANCES;
+		}
+
+		return max( 1, min( self::MAX_INSTANCES, $cap ) );
+	}
+
+	/**
 	 * Expand a recurrence rule into an array of start/end date pairs.
 	 *
 	 * @param Rule  $rule Recurrence rule.
@@ -172,7 +209,7 @@ class Generator {
 	 * @return array[] Each element: ['start_date', 'end_date', 'start_utc', 'end_utc'].
 	 */
 	private function expand_dates( Rule $rule, array $meta ): array {
-		$horizon_days = (int) get_option( 'blockendar_horizon_days', self::DEFAULT_HORIZON_DAYS );
+		$horizon_days = $this->horizon_days();
 		$horizon      = $this->now()->modify( "+{$horizon_days} days" )->setTime( 23, 59, 59 );
 
 		$event_start = \DateTimeImmutable::createFromFormat( 'Y-m-d', $meta['start_date'] );
@@ -189,7 +226,9 @@ class Generator {
 		$count       = 0;
 		$cursor      = $event_start;
 
-		while ( $count < self::MAX_INSTANCES ) {
+		$instance_cap = $this->instance_cap();
+
+		while ( $count < $instance_cap ) {
 			$date_str = $cursor->format( 'Y-m-d' );
 
 			// Stop if past the until_date.

@@ -280,6 +280,38 @@ class SettingsPage {
 	}
 
 	/**
+	 * Read one setting, falling back to its default.
+	 *
+	 * Every setting lives inside the single OPTION_NAME array. Reading one
+	 * with get_option( 'blockendar_<key>' ) looks plausible but always returns
+	 * the fallback, because no such standalone option is ever written — that
+	 * is how the recurrence horizon silently ignored its own setting. Go
+	 * through here instead of reaching for the option directly.
+	 *
+	 * @param string $key Setting key, as it appears in defaults().
+	 * @return mixed The stored value, the default, or null for an unknown key.
+	 */
+	public static function get( string $key ): mixed {
+		$defaults = self::defaults();
+
+		if ( ! array_key_exists( $key, $defaults ) ) {
+			return null;
+		}
+
+		$settings = get_option( self::OPTION_NAME );
+		$settings = is_array( $settings ) ? $settings : [];
+
+		// A key saved as an empty string means "unset" for every setting that
+		// has a meaningful default, so fall through to the default rather than
+		// handing back ''.
+		if ( ! isset( $settings[ $key ] ) || '' === $settings[ $key ] ) {
+			return $defaults[ $key ];
+		}
+
+		return $settings[ $key ];
+	}
+
+	/**
 	 * Default settings values.
 	 *
 	 * @return array
