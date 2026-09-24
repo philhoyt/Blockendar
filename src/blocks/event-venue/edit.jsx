@@ -29,7 +29,12 @@ export function Edit( { attributes, setAttributes, context } ) {
 				'blockendar_event',
 				postId
 			);
-			return post?.event_venue ?? [];
+			// The post object keys its taxonomy terms by the taxonomy's
+			// rest_base, not its name — see WP_REST_Posts_Controller::
+			// get_item_schema(). Venue.php registers rest_base as
+			// 'event-venues', so 'event_venue' here reads undefined and the
+			// block silently falls back to PLACEHOLDER forever.
+			return post?.[ 'event-venues' ] ?? [];
 		},
 		[ postId ]
 	);
