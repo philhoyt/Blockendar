@@ -383,4 +383,65 @@ class TaxonomyPrefixMigration {
 
 		return $deleted;
 	}
+
+	/**
+	 * Point classic nav-menu items at the new taxonomy names.
+	 *
+	 * A menu item linking to a term archive stores the taxonomy name in
+	 * `_menu_item_object` and is resolved with get_term( $object_id, $object ),
+	 * so a stale name breaks the link. Only rows whose sibling
+	 * `_menu_item_type` is `taxonomy` are touched. Each meta_id changed is
+	 * recorded for rollback, and the post's meta cache is cleared so the edited
+	 * value is what the next read sees.
+	 *
+	 * @param bool $dry_run Count without writing.
+	 * @return int Menu items updated (or that would be).
+	 */
+	private function migrate_nav_menu_items( bool $dry_run = false ): int {
+		global $wpdb;
+
+		$log     = $this->log();
+		$updated = 0;
+
+		foreach ( self::MAP as $old => $new ) {
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT pm.meta_id, pm.post_id FROM {$wpdb->postmeta} pm
+					JOIN {$wpdb->postmeta} t ON t.post_id = pm.post_id
+						AND t.meta_key = '_menu_item_type' AND t.meta_value = 'taxonomy'
+					WHERE pm.meta_key = '_menu_item_object' AND pm.meta_value = %s",
+					$old
+				)
+			);
+
+			if ( empty( $rows ) ) {
+				continue;
+			}
+
+			$updated += count( $rows );
+
+			if ( $dry_run ) {
+				continue;
+			}
+
+			foreach ( $rows as $row ) {
+				$wpdb->update(
+					$wpdb->postmeta,
+					[ 'meta_value' => $new ],
+					[ 'meta_id' => (int) $row->meta_id ],
+					[ '%s' ],
+					[ '%d' ]
+				);
+				wp_cache_delete( (int) $row->post_id, 'post_meta' );
+
+				$log['nav_menu_items'][ $new ][] = (int) $row->meta_id;
+			}
+		}
+
+		if ( ! $dry_run ) {
+			$this->save_log( $log );
+		}
+
+		return $updated;
+	}
 }
