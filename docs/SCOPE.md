@@ -103,7 +103,7 @@ Hierarchical taxonomy for categorising events. Behaves like post categories — 
 
 | Property | Value |
 |---|---|
-| Taxonomy Slug | `event_type` |
+| Taxonomy Slug | `blockendar_event_type` |
 | Hierarchical | Yes |
 | Public | Yes |
 | Show in REST | Yes |
@@ -118,7 +118,7 @@ Non-hierarchical flat taxonomy for ad-hoc tagging. Analogous to post tags.
 
 | Property | Value |
 |---|---|
-| Taxonomy Slug | `event_tag` |
+| Taxonomy Slug | `blockendar_event_tag` |
 | Hierarchical | No |
 | Public | Yes |
 | Show in REST | Yes |
@@ -132,7 +132,7 @@ Venue is modelled as a **hierarchical taxonomy** rather than a CPT. This is a de
 
 | Property | Value |
 |---|---|
-| Taxonomy Slug | `event_venue` |
+| Taxonomy Slug | `blockendar_event_venue` |
 | Hierarchical | Yes |
 | Public | Yes |
 | Show in REST | Yes |
@@ -178,7 +178,7 @@ CREATE TABLE {prefix}blockendar_events (
   recurrence_id  BIGINT UNSIGNED          DEFAULT NULL,
   status         VARCHAR(20)              DEFAULT 'scheduled',
   venue_term_id  BIGINT UNSIGNED          DEFAULT NULL, -- denormalised for join-free venue filtering
-  type_term_ids  JSON                     DEFAULT NULL, -- denormalised array of event_type term IDs
+  type_term_ids  JSON                     DEFAULT NULL, -- denormalised array of blockendar_event_type term IDs
   PRIMARY KEY (id),
   KEY idx_start_datetime (start_datetime),
   KEY idx_end_datetime   (end_datetime),
@@ -323,7 +323,7 @@ Patterns are registered in a dedicated `Blockendar` pattern category:
 - **Calendar + Sidebar** — FullCalendar block left, event list block right
 - **Single Event — Full Layout** — complete single event page composition
 - **Featured Event — Hero** — large featured event with image background
-- **Venue Directory** — grid of venue cards from the `event_venue` taxonomy
+- **Venue Directory** — grid of venue cards from the `blockendar_event_venue` taxonomy
 
 ---
 
@@ -351,7 +351,7 @@ All event-specific fields are surfaced in the block editor sidebar via `PluginDo
 - **Date & Time** — start/end date pickers, start/end time pickers, all-day toggle, timezone selector
 - **Recurrence** — frequency, interval, day selectors, end condition, exception date picker
 - **Event Details** — status selector, cost fields, registration URL, capacity, featured toggle
-- **Venue** — `event_venue` taxonomy selector with inline term creation (name + address fields)
+- **Venue** — `blockendar_event_venue` taxonomy selector with inline term creation (name + address fields)
 
 ### 5.3 Venue Manager
 

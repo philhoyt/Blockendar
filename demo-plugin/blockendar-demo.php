@@ -3,7 +3,7 @@
  * Plugin Name:       Blockendar Demo Content
  * Plugin URI:        https://github.com/philhoyt/Blockendar
  * Description:       Seeds Blockendar with relative-dated demo events and a guided tour of the plugin's blocks. Built for WordPress Playground and local QA — not for production sites.
- * Version:           1.8.2
+ * Version:           2.0.0
  * Requires at least: 6.8
  * Requires PHP:      8.1
  * Author:            philhoyt
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'BLOCKENDAR_DEMO_VERSION', '1.8.2' );
+define( 'BLOCKENDAR_DEMO_VERSION', '2.0.0' );
 define( 'BLOCKENDAR_DEMO_FILE', __FILE__ );
 define( 'BLOCKENDAR_DEMO_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BLOCKENDAR_DEMO_URL', plugin_dir_url( __FILE__ ) );
@@ -36,7 +36,7 @@ define( 'BLOCKENDAR_DEMO_URL', plugin_dir_url( __FILE__ ) );
  * only as direct children of query-filters. On an older Blockendar the pages
  * still render, but the editor reports the filter blocks as not allowed there.
  */
-define( 'BLOCKENDAR_DEMO_MIN_BLOCKENDAR', '1.7.0' );
+define( 'BLOCKENDAR_DEMO_MIN_BLOCKENDAR', '2.0.0' );
 
 // Autoloader.
 spl_autoload_register(
