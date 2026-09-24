@@ -15,9 +15,16 @@
  * be seen. The only real user of that branch is the block dropped somewhere
  * without event meta — a page, a template — which is what fixture B is.
  *
- * `dateFormat` is pinned on both blocks so every assertion is an exact string
- * whatever the site's date format is. Times are HH:MM: the meta sanitizer is
+ * Both formats are pinned on the blocks so every assertion is an exact string
+ * whatever the site's formats are. Times are HH:MM: the meta sanitizer is
  * exact H:i and rejects HH:MM:SS to ''.
+ *
+ * The meta values are wall-clock dates and times in the event's own timezone,
+ * not instants. The same event is therefore also opened with the browser
+ * pinned to a zone on either side of the site's: a formatter that parses
+ * the naked value in the browser's zone and formats it in the site's shifts
+ * the time by the author's offset — and, from a zone ahead of the site, the
+ * date too. Those two tests are the detectors for that bug.
  *
  * Opacity is read from the wrapper's inline style attribute, which is exactly
  * what useBlockProps sets. getComputedStyle would also see core's Spotlight
@@ -28,7 +35,8 @@ const { test, expect } = require( '@playwright/test' );
 const { wpCli, wpCliId } = require( './wp-cli' );
 const { loginAsAdmin, openEditor } = require( './editor' );
 
-const BLOCK = '<!-- wp:blockendar/event-datetime {"dateFormat":"Y-m-d"} /-->';
+const BLOCK =
+	'<!-- wp:blockendar/event-datetime {"dateFormat":"Y-m-d","timeFormat":"H:i"} /-->';
 const START = { date: '2027-03-09', time: '19:30' };
 const END = { date: '2028-01-02', time: '21:00' };
 const PLACEHOLDER_START = '2025-06-15';
@@ -78,6 +86,21 @@ test.afterAll( () => {
 	);
 } );
 
+/**
+ * The authored values, exactly as pinned formats render them: `2027-03-09 @ 19:30`
+ * and `2028-01-02 @ 21:00`. toHaveText() collapses whitespace and matches whole.
+ *
+ * @param {Object} block Locator for the block wrapper.
+ */
+async function expectAuthoredDateTimes( block ) {
+	await expect(
+		block.locator( '.blockendar-event-datetime__start' )
+	).toHaveText( `${ START.date } @ ${ START.time }`, { timeout: 30000 } );
+	await expect(
+		block.locator( '.blockendar-event-datetime__end' )
+	).toHaveText( `${ END.date } @ ${ END.time }`, { timeout: 30000 } );
+}
+
 test( 'an event shows its real start and end dates, not the placeholder', async ( {
 	page,
 } ) => {
@@ -90,15 +113,9 @@ test( 'an event shows its real start and end dates, not the placeholder', async 
 	await expect( block ).toBeVisible( { timeout: 30000 } );
 
 	// Real data first, so a failure reads as "wrong data" rather than "no data".
-	await expect(
-		block.locator( '.blockendar-event-datetime__start' )
-	).toContainText( START.date, { timeout: 30000 } );
-
 	// The end date is in another year, so __end renders a date and the end
-	// meta key is covered as well — a same-day fixture would only show a time.
-	await expect(
-		block.locator( '.blockendar-event-datetime__end' )
-	).toContainText( END.date, { timeout: 30000 } );
+	// meta keys are covered as well — a same-day fixture would only show a time.
+	await expectAuthoredDateTimes( block );
 
 	await expect( block ).not.toContainText( '2025' );
 
@@ -124,3 +141,30 @@ test( 'the block in a page shows the faded placeholder', async ( { page } ) => {
 
 	await expect( block ).toHaveAttribute( 'style', /opacity:\s*0\.5/ );
 } );
+
+/*
+ * Site timezone is UTC. Sydney is ahead of it (the date can shift back a day),
+ * Los Angeles behind it (only the time shifts). Both must render the authored
+ * values unchanged.
+ */
+for ( const zone of [ 'Australia/Sydney', 'America/Los_Angeles' ] ) {
+	test.describe( `with the browser in ${ zone }`, () => {
+		test.use( { timezoneId: zone } );
+
+		test( 'an event still shows its authored dates and times', async ( {
+			page,
+		} ) => {
+			test.setTimeout( 120000 );
+
+			await loginAsAdmin( page );
+			const canvas = await openEditor( page, eventId );
+
+			const block = canvas
+				.locator( '.blockendar-event-datetime' )
+				.first();
+			await expect( block ).toBeVisible( { timeout: 30000 } );
+
+			await expectAuthoredDateTimes( block );
+		} );
+	} );
+}
