@@ -35,7 +35,7 @@
     "make-json": "node bin/i18n-map.js && wp-env run cli -- wp i18n make-json wp-content/plugins/blockendar/languages --no-purge --use-map=wp-content/plugins/blockendar/languages/.i18n-map.json --allow-root",
     "make-translations": "npm run make-pot && npm run make-json",
     "test:php": "vendor/bin/phpunit",
-    "test:integration": "wp-env run tests-cli --env-cwd=wp-content/plugins/blockendar -- vendor/bin/phpunit -c phpunit-integration.xml",
+    "test:integration": "node bin/test-integration.js",
     "test:js": "wp-scripts test-unit-js",
     "test:e2e": "playwright test"
   },
