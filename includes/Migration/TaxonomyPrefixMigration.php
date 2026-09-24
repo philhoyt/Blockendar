@@ -938,4 +938,147 @@ class TaxonomyPrefixMigration {
 			clean_taxonomy_cache( $new );
 		}
 	}
+
+	/**
+	 * Reverse this migration's own changes — and only those.
+	 *
+	 * Everything comes from the change record: term rows by the term_taxonomy_ids
+	 * that moved (a term created under a new name afterwards is not touched),
+	 * menu items by meta_id, templates by ID with their recorded slugs, posts by
+	 * ID from their backups, and the widget option whole. A post edited since the
+	 * migration started is left alone and reported, because restoring its backup
+	 * would discard that edit. The gate, cursor and record are cleared so the
+	 * site is exactly due for migration again.
+	 *
+	 * @return array<string, mixed> Counts per surface and the IDs of skipped posts.
+	 */
+	public function rollback(): array {
+		global $wpdb;
+
+		$log    = $this->log();
+		$since  = (string) ( $log['started_at'] ?? '' );
+		$report = [
+			'terms'          => 0,
+			'nav_menu_items' => 0,
+			'template_slugs' => 0,
+			'posts'          => 0,
+			'posts_skipped'  => [],
+			'block_widgets'  => false,
+		];
+
+		if ( array_key_exists( 'widget_block_original', $log ) ) {
+			update_option( 'widget_block', $log['widget_block_original'] );
+			$report['block_widgets'] = true;
+		}
+
+		foreach ( $log['posts'] ?? [] as $post_id ) {
+			$post_id = (int) $post_id;
+			$backup  = get_post_meta( $post_id, self::BACKUP_META, true );
+			$post    = get_post( $post_id );
+
+			if ( ! is_string( $backup ) || '' === $backup || ! $post ) {
+				continue;
+			}
+
+			if ( '' !== $since && $post->post_modified_gmt > $since ) {
+				$report['posts_skipped'][] = $post_id;
+				continue;
+			}
+
+			$wpdb->update( $wpdb->posts, [ 'post_content' => $backup ], [ 'ID' => $post_id ], [ '%s' ], [ '%d' ] );
+			clean_post_cache( $post_id );
+			delete_post_meta( $post_id, self::BACKUP_META );
+			++$report['posts'];
+		}
+
+		foreach ( array_reverse( $log['template_slugs'] ?? [] ) as $template ) {
+			$wpdb->update(
+				$wpdb->posts,
+				[ 'post_name' => $template['from'] ],
+				[
+					'ID'        => (int) $template['ID'],
+					'post_name' => $template['to'],
+				],
+				[ '%s' ],
+				[ '%d', '%s' ]
+			);
+
+			if ( $wpdb->rows_affected ) {
+				clean_post_cache( (int) $template['ID'] );
+				++$report['template_slugs'];
+			}
+		}
+
+		foreach ( self::MAP as $old => $new ) {
+			foreach ( $log['nav_menu_items'][ $new ] ?? [] as $meta_id ) {
+				$post_id = (int) $wpdb->get_var(
+					$wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_id = %d", (int) $meta_id )
+				);
+
+				$wpdb->update(
+					$wpdb->postmeta,
+					// Reversing the migration's own write, keyed by meta_id.
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+					[ 'meta_value' => $old ],
+					[ 'meta_id' => (int) $meta_id ],
+					[ '%s' ],
+					[ '%d' ]
+				);
+
+				if ( $wpdb->rows_affected ) {
+					wp_cache_delete( $post_id, 'post_meta' );
+					++$report['nav_menu_items'];
+				}
+			}
+
+			$tt_ids = array_map( 'intval', $log['term_taxonomy'][ $new ]['term_taxonomy_ids'] ?? [] );
+
+			if ( ! empty( $tt_ids ) ) {
+				$placeholders = implode( ', ', array_fill( 0, count( $tt_ids ), '%d' ) );
+				$args         = array_merge( [ $old, $new ], $tt_ids );
+
+				// Placeholder list sized at runtime from the recorded IDs; every value is bound.
+				// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+				$wpdb->query(
+					$wpdb->prepare(
+						"UPDATE {$wpdb->term_taxonomy} SET taxonomy = %s WHERE taxonomy = %s AND term_taxonomy_id IN ( {$placeholders} )",
+						$args
+					)
+				);
+				// phpcs:enable
+
+				$report['terms'] += (int) $wpdb->rows_affected;
+				clean_term_cache( $log['term_taxonomy'][ $new ]['term_ids'] ?? [], $old );
+			}
+
+			clean_taxonomy_cache( $old );
+			clean_taxonomy_cache( $new );
+		}
+
+		flush_rewrite_rules( false );
+		delete_option( self::GATE_OPTION );
+		delete_option( self::CURSOR_OPTION );
+		delete_option( self::LOG_OPTION );
+
+		return $report;
+	}
+
+	/**
+	 * Delete every stored backup and the change record, once a site is confirmed
+	 * good. Rollback is impossible afterwards, which is the point of asking.
+	 *
+	 * @return int Backups deleted.
+	 */
+	public function clear_backups(): int {
+		global $wpdb;
+
+		$count = (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = %s", self::BACKUP_META )
+		);
+
+		delete_post_meta_by_key( self::BACKUP_META );
+		delete_option( self::LOG_OPTION );
+
+		return $count;
+	}
 }
