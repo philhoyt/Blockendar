@@ -802,4 +802,140 @@ class TaxonomyPrefixMigration {
 
 		return $changed;
 	}
+
+	/**
+	 * Perform the migration.
+	 *
+	 * Idempotent: a migrated site returns true at once. A site another request
+	 * is migrating returns a `locked` error. A first pass runs the preflight and
+	 * records when it started; a resumed pass — one whose predecessor died after
+	 * moving some rows — skips the preflight, which would now see its own moved
+	 * rows under the new names and refuse, and relies on every step being a
+	 * no-op for what has already moved. The gate is written last, so anything
+	 * short of completion leaves the site due for another attempt.
+	 *
+	 * Term IDs do not change, so the occurrence index needs no rebuild for the
+	 * rename itself. One is queued anyway: a rebuild that ran before the term
+	 * rows moved (external cron, `wp cron event run`) read the new names against
+	 * old rows and wrote empty venue and type columns.
+	 *
+	 * @return bool|WP_Error True on completion (or when already migrated).
+	 */
+	public function run() {
+		if ( ! $this->needs_migration() ) {
+			return true;
+		}
+
+		if ( ! $this->acquire_lock() ) {
+			return new WP_Error(
+				'locked',
+				__( 'Another request is migrating the taxonomies right now.', 'blockendar' )
+			);
+		}
+
+		try {
+			$resuming = [] !== $this->log() || false !== get_option( self::CURSOR_OPTION );
+
+			if ( ! $resuming ) {
+				$preflight = $this->preflight();
+
+				if ( is_wp_error( $preflight ) ) {
+					return $preflight;
+				}
+
+				$this->save_log(
+					[
+						'started_at' => current_time( 'mysql', true ),
+						'version'    => BLOCKENDAR_VERSION,
+					]
+				);
+			}
+
+			$this->migrate_term_taxonomy();
+			$this->delete_orphan_children_options();
+			$this->migrate_nav_menu_items();
+			$this->migrate_template_slugs();
+			$this->migrate_post_content();
+			$this->migrate_block_widgets();
+
+			$this->clean_caches();
+			flush_rewrite_rules( false );
+
+			if ( ! wp_next_scheduled( 'blockendar_index_rebuild_after_upgrade' ) ) {
+				wp_schedule_single_event( time(), 'blockendar_index_rebuild_after_upgrade' );
+			}
+
+			delete_option( self::CURSOR_OPTION );
+			$this->mark_migrated();
+
+			return true;
+		} finally {
+			$this->release_lock();
+		}
+	}
+
+	/**
+	 * What a run would change, without changing it.
+	 *
+	 * @return array<string, mixed> Preflight result plus a count per surface.
+	 */
+	public function dry_run(): array {
+		return [
+			'preflight'        => $this->preflight(),
+			'terms'            => $this->migrate_term_taxonomy( true ),
+			'children_options' => $this->delete_orphan_children_options( true ),
+			'nav_menu_items'   => $this->migrate_nav_menu_items( true ),
+			'template_slugs'   => $this->migrate_template_slugs( true ),
+			'posts'            => $this->migrate_post_content( true ),
+			'block_widgets'    => $this->migrate_block_widgets( true ),
+		];
+	}
+
+	/**
+	 * Where this site stands, for `--status`.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function status(): array {
+		global $wpdb;
+
+		$log = $this->log();
+
+		return [
+			'migrated'        => ! $this->needs_migration(),
+			'migrated_by'     => (string) get_option( self::GATE_OPTION, '' ),
+			'in_progress'     => (int) get_option( self::LOCK_OPTION, 0 ),
+			'resume_from'     => (int) get_option( self::CURSOR_OPTION, 0 ),
+			'started_at'      => (string) ( $log['started_at'] ?? '' ),
+			'terms_moved'     => array_sum( array_map( fn( $t ) => count( $t['term_taxonomy_ids'] ?? [] ), $log['term_taxonomy'] ?? [] ) ),
+			'posts_rewritten' => count( $log['posts'] ?? [] ),
+			'backups_held'    => (int) $wpdb->get_var(
+				$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = %s", self::BACKUP_META )
+			),
+		];
+	}
+
+	/**
+	 * Drop every cache that could still serve a term under its old taxonomy.
+	 *
+	 * The UPDATEs bypass the object cache, so without this a persistent backend
+	 * keeps handing out WP_Term objects that name a taxonomy no longer
+	 * registered. clean_term_cache() clears each moved term and, through it,
+	 * the taxonomy's own entries; the old names are cleaned too so nothing
+	 * lingers under them.
+	 */
+	private function clean_caches(): void {
+		$log = $this->log();
+
+		foreach ( self::MAP as $old => $new ) {
+			$term_ids = $log['term_taxonomy'][ $new ]['term_ids'] ?? [];
+
+			if ( ! empty( $term_ids ) ) {
+				clean_term_cache( $term_ids, $new );
+			}
+
+			clean_taxonomy_cache( $old );
+			clean_taxonomy_cache( $new );
+		}
+	}
 }
