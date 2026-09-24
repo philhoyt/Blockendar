@@ -9,6 +9,7 @@
 const { test, expect } = require( '@playwright/test' );
 const { wpCli, wpCliId } = require( './wp-cli' );
 const { daysFromNow } = require( './dates' );
+const { ensureTerm } = require( './terms' );
 
 let pageId;
 let mismatchPageId;
@@ -56,30 +57,6 @@ function createEvent( title, ymd ) {
 }
 
 /**
- * Return an event_type term ID, creating the term only if it is missing.
- *
- * `wp term create` errors on an existing name, which would strand the suite
- * after any interrupted run.
- *
- * @param {string} name Term name.
- * @return {string} Term ID.
- */
-function ensureTerm( name ) {
-	const existing = wpCli( [
-		'term',
-		'list',
-		'event_type',
-		`--name=${ name }`,
-		'--field=term_id',
-	] ).trim();
-
-	return (
-		existing ||
-		wpCliId( [ 'term', 'create', 'event_type', name, '--porcelain' ] )
-	);
-}
-
-/**
  * Open the date filter's popover and submit the given start date through the
  * form's own Apply button — the same native GET submit a visitor performs.
  *
@@ -119,7 +96,7 @@ test.beforeAll( () => {
 	const eventA = createEvent( 'Switcher Event A', daysFromNow( 7 ) );
 	createEvent( 'Switcher Event B', daysFromNow( 14 ) );
 
-	ensureTerm( 'Switcher Type' );
+	ensureTerm( 'event_type', 'Switcher Type', 'switcher-type' );
 	wpCli( [ 'post', 'term', 'set', eventA, 'event_type', 'Switcher Type' ] );
 	// Re-save so the index builder picks up the term.
 	wpCli( [ 'post', 'update', eventA, '--post_title=Switcher Event A' ] );
