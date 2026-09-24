@@ -14,7 +14,7 @@ import {
 } from '@wordpress/components';
 import { useEntityProp, store as coreStore } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
-import { dateI18n, getSettings } from '@wordpress/date';
+import { dateI18n, getSettings, gmdateI18n } from '@wordpress/date';
 import { __ } from '@wordpress/i18n';
 
 const TIME_FORMAT_OPTIONS = [
@@ -71,12 +71,24 @@ export function Edit( { attributes, setAttributes, context } ) {
 	const effectiveDateFormat = dateFormat || siteDateFormat;
 	const effectiveTimeFormat = timeFormat || siteTimeFormat;
 
+	/*
+	 * The meta values are wall-clock dates and times in the event's own
+	 * timezone — "the 9th at 7:30 pm" — not instants. wp.date parses a naked
+	 * string in the browser's zone and then formats it in the site's, which
+	 * shifts the time by the author's offset and, from a zone ahead of the
+	 * site, the date as well. No timezone argument helps: buildMoment() runs
+	 * moment( value ) before it looks at one. Marking the value as UTC and
+	 * formatting in UTC is a round trip that converts nothing, so the authored
+	 * value comes out as typed — which is what render.php shows whenever the
+	 * event's timezone is the display timezone. (render.php's timezone_mode
+	 * conversion is not mirrored here.)
+	 */
 	const fmtDate = ( date ) =>
-		date ? dateI18n( effectiveDateFormat, date ) : '';
+		date ? gmdateI18n( effectiveDateFormat, `${ date }T00:00Z` ) : '';
 
 	const fmtTime = ( time, date ) =>
 		! allDay && time && date
-			? dateI18n( effectiveTimeFormat, `${ date }T${ time }` )
+			? gmdateI18n( effectiveTimeFormat, `${ date }T${ time }Z` )
 			: '';
 
 	// Use placeholder dates when no event data is set.
