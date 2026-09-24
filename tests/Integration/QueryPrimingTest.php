@@ -18,6 +18,7 @@ namespace Blockendar\Tests\Integration;
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\Schema;
 use Blockendar\ICS\Exporter;
+use Blockendar\Taxonomy\Venue;
 use WP_UnitTestCase;
 
 class QueryPrimingTest extends WP_UnitTestCase {
@@ -44,7 +45,7 @@ class QueryPrimingTest extends WP_UnitTestCase {
 	 * @return array<object> The index rows for them.
 	 */
 	private function seed_events( int $count ): array {
-		$venue_id = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+		$venue_id = self::factory()->term->create( [ 'taxonomy' => Venue::TAXONOMY ] );
 
 		for ( $i = 0; $i < $count; $i++ ) {
 			$day     = str_pad( (string) ( $i + 1 ), 2, '0', STR_PAD_LEFT );
@@ -61,7 +62,7 @@ class QueryPrimingTest extends WP_UnitTestCase {
 				]
 			);
 
-			wp_set_object_terms( $post_id, [ $venue_id ], 'event_venue' );
+			wp_set_object_terms( $post_id, [ $venue_id ], Venue::TAXONOMY );
 			update_post_meta( $post_id, 'blockendar_cost', '10' );
 
 			$this->index->insert(
@@ -113,7 +114,7 @@ class QueryPrimingTest extends WP_UnitTestCase {
 				foreach ( $few as $row ) {
 					get_permalink( (int) $row->post_id );
 					get_post_meta( (int) $row->post_id, 'blockendar_cost', true );
-					get_the_terms( (int) $row->post_id, 'event_venue' );
+					get_the_terms( (int) $row->post_id, Venue::TAXONOMY );
 				}
 			}
 		);
@@ -129,7 +130,7 @@ class QueryPrimingTest extends WP_UnitTestCase {
 				foreach ( $many as $row ) {
 					get_permalink( (int) $row->post_id );
 					get_post_meta( (int) $row->post_id, 'blockendar_cost', true );
-					get_the_terms( (int) $row->post_id, 'event_venue' );
+					get_the_terms( (int) $row->post_id, Venue::TAXONOMY );
 				}
 			}
 		);

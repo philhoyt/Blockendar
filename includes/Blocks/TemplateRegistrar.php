@@ -54,11 +54,11 @@ class TemplateRegistrar {
 		);
 
 		register_block_template(
-			'blockendar//taxonomy-event_type',
+			'blockendar//taxonomy-blockendar_event_type',
 			[
 				'title'       => __( 'Event Type Archive', 'blockendar' ),
 				'description' => __( 'Displays a calendar filtered to a single event type.', 'blockendar' ),
-				'content'     => (string) file_get_contents( BLOCKENDAR_DIR . 'templates/taxonomy-event_type.html' ),
+				'content'     => (string) file_get_contents( BLOCKENDAR_DIR . 'templates/taxonomy-blockendar_event_type.html' ),
 			]
 		);
 	}

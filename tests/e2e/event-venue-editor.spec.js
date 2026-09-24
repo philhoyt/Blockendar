@@ -3,7 +3,7 @@
  *
  * The block reads its term IDs off the edited post entity. That record keys
  * taxonomy terms by the taxonomy's rest_base ('event-venues'), not by its name
- * ('event_venue') — see WP_REST_Posts_Controller::get_item_schema(). Reading the
+ * ('blockendar_event_venue') — see WP_REST_Posts_Controller::get_item_schema(). Reading the
  * name returned undefined, so termIds was always empty and the block rendered
  * its hardcoded PLACEHOLDER ("The Grand Ballroom") no matter which venue was
  * assigned. Nothing caught it, because the placeholder looks like a real venue.
@@ -31,7 +31,7 @@ test.beforeAll( () => {
 	venueTermId = wpCliId( [
 		'term',
 		'create',
-		'event_venue',
+		'blockendar_event_venue',
 		VENUE_NAME,
 		'--slug=e2e-riverside-hall',
 		'--porcelain',
@@ -84,7 +84,7 @@ test.beforeAll( () => {
 		'term',
 		'set',
 		eventId,
-		'event_venue',
+		'blockendar_event_venue',
 		'e2e-riverside-hall',
 	] );
 
@@ -105,7 +105,7 @@ test.afterAll( () => {
 	createdPosts.forEach( ( id ) =>
 		wpCli( [ 'post', 'delete', id, '--force' ] )
 	);
-	wpCli( [ 'term', 'delete', 'event_venue', venueTermId ] );
+	wpCli( [ 'term', 'delete', 'blockendar_event_venue', venueTermId ] );
 } );
 
 test( 'the block shows the assigned venue, not the placeholder', async ( {

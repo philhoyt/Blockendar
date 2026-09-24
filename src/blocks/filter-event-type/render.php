@@ -33,7 +33,7 @@ $param_name = FilterContext::param_name( 'type', $query_id );
 $active_ids = FilterContext::get_active_filters( $query_id )['type_ids'];
 
 $term_args = [
-	'taxonomy'   => 'event_type',
+	'taxonomy'   => \Blockendar\Taxonomy\EventType::TAXONOMY,
 	'orderby'    => 'name',
 	'order'      => 'ASC',
 

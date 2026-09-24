@@ -14,6 +14,7 @@ declare( strict_types=1 );
 namespace Blockendar\Tests\Integration;
 
 use Blockendar\Meta\VenueMeta;
+use Blockendar\Taxonomy\Venue;
 use WP_UnitTestCase;
 
 class VenueMetaSanitizersTest extends WP_UnitTestCase {
@@ -114,7 +115,7 @@ class VenueMetaSanitizersTest extends WP_UnitTestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_save_venue_fields_ignores_users_without_manage_categories(): void {
-		$term_id = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+		$term_id = self::factory()->term->create( [ 'taxonomy' => Venue::TAXONOMY ] );
 
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
 
@@ -130,7 +131,7 @@ class VenueMetaSanitizersTest extends WP_UnitTestCase {
 	}
 
 	public function test_save_venue_fields_sanitises_for_permitted_users(): void {
-		$term_id = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+		$term_id = self::factory()->term->create( [ 'taxonomy' => Venue::TAXONOMY ] );
 
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
 

@@ -16,6 +16,7 @@ namespace Blockendar\Tests\Integration;
 
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\Schema;
+use Blockendar\Taxonomy\Venue;
 use WP_UnitTestCase;
 
 class EventIndexTest extends WP_UnitTestCase {
@@ -222,8 +223,8 @@ class EventIndexTest extends WP_UnitTestCase {
 	// -------------------------------------------------------------------------
 
 	public function test_only_terms_with_upcoming_events_are_returned(): void {
-		$upcoming = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
-		$finished = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+		$upcoming = self::factory()->term->create( [ 'taxonomy' => Venue::TAXONOMY ] );
+		$finished = self::factory()->term->create( [ 'taxonomy' => Venue::TAXONOMY ] );
 
 		$future = gmdate( 'Y-m-d', strtotime( '+30 days' ) );
 		$past   = gmdate( 'Y-m-d', strtotime( '-30 days' ) );
@@ -243,7 +244,7 @@ class EventIndexTest extends WP_UnitTestCase {
 
 	public function test_an_event_in_progress_still_counts(): void {
 		// Ends in the future, started in the past — a multi-day festival mid-run.
-		$term = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+		$term = self::factory()->term->create( [ 'taxonomy' => Venue::TAXONOMY ] );
 
 		$post_id = self::factory()->post->create(
 			[
@@ -272,7 +273,7 @@ class EventIndexTest extends WP_UnitTestCase {
 	}
 
 	public function test_hidden_events_do_not_keep_a_term_alive(): void {
-		$term = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+		$term = self::factory()->term->create( [ 'taxonomy' => Venue::TAXONOMY ] );
 
 		$this->seed_event(
 			gmdate( 'Y-m-d', strtotime( '+30 days' ) ),
@@ -290,7 +291,7 @@ class EventIndexTest extends WP_UnitTestCase {
 	}
 
 	public function test_draft_events_do_not_keep_a_term_alive(): void {
-		$term = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+		$term = self::factory()->term->create( [ 'taxonomy' => Venue::TAXONOMY ] );
 
 		$post_id = self::factory()->post->create(
 			[
@@ -321,7 +322,7 @@ class EventIndexTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_term_list_refreshes_when_an_event_is_added(): void {
-		$term = self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
+		$term = self::factory()->term->create( [ 'taxonomy' => Venue::TAXONOMY ] );
 
 		$this->assertNotContains(
 			$term,

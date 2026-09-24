@@ -20,11 +20,11 @@ let pageId;
 const created = [];
 
 /**
- * Create a published event on a given date, assigned to an event_type term.
+ * Create a published event on a given date, assigned to an blockendar_event_type term.
  *
  * @param {string} title Event title.
  * @param {string} ymd   Y-m-d date.
- * @param {string} type  event_type term name.
+ * @param {string} type  blockendar_event_type term name.
  * @return {string} Post ID.
  */
 function createEvent( title, ymd, type ) {
@@ -50,7 +50,7 @@ function createEvent( title, ymd, type ) {
 		wpCli( [ 'post', 'meta', 'update', id, key, value ] );
 	} );
 
-	wpCli( [ 'post', 'term', 'set', id, 'event_type', type ] );
+	wpCli( [ 'post', 'term', 'set', id, 'blockendar_event_type', type ] );
 	// Re-save so the index builder picks up meta and terms.
 	wpCli( [ 'post', 'update', id, `--post_title=${ title }` ] );
 
@@ -61,8 +61,8 @@ function createEvent( title, ymd, type ) {
 let concertTermId;
 
 test.beforeAll( () => {
-	concertTermId = ensureTerm( 'event_type', 'Concert', 'concert' );
-	ensureTerm( 'event_type', 'Workshop', 'workshop' );
+	concertTermId = ensureTerm( 'blockendar_event_type', 'Concert', 'concert' );
+	ensureTerm( 'blockendar_event_type', 'Workshop', 'workshop' );
 
 	createEvent( CONCERT, daysFromNow( 7 ), 'Concert' );
 	createEvent( WORKSHOP, daysFromNow( 14 ), 'Workshop' );

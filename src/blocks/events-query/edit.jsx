@@ -145,7 +145,7 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 
 	const terms = useSelect(
 		( select ) =>
-			select( coreStore ).getEntityRecords( 'taxonomy', 'event_type', {
+			select( coreStore ).getEntityRecords( 'taxonomy', 'blockendar_event_type', {
 				per_page: -1,
 				_fields: [ 'id', 'name' ],
 			} ),

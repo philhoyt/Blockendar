@@ -10,6 +10,8 @@ declare( strict_types=1 );
 namespace Blockendar\Tests\Integration;
 
 use Blockendar\Blocks\ScriptProbe;
+use Blockendar\Taxonomy\EventType;
+use Blockendar\Taxonomy\Venue;
 use WP_UnitTestCase;
 
 class ScriptProbeTest extends WP_UnitTestCase {
@@ -39,8 +41,8 @@ class ScriptProbeTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_probe_prints_once_per_request(): void {
-		self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
-		self::factory()->term->create( [ 'taxonomy' => 'event_type' ] );
+		self::factory()->term->create( [ 'taxonomy' => Venue::TAXONOMY ] );
+		self::factory()->term->create( [ 'taxonomy' => EventType::TAXONOMY ] );
 
 		$html = do_blocks(
 			'<!-- wp:blockendar/filter-date-range /-->'

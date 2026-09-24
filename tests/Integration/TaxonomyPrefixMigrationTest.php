@@ -403,24 +403,27 @@ class TaxonomyPrefixMigrationTest extends WP_UnitTestCase {
 	}
 
 	public function test_a_cached_term_reports_the_new_taxonomy_after_the_run(): void {
+		global $wpdb;
+
 		$type = $this->seed_legacy_term( 'event_type', 'Concerts' );
 
-		// Prime the term cache under the old name, as any earlier read in the
-		// request would. Without cache cleanup this stale object survives the
+		// Model a persistent object cache still holding the WP_Term a request read
+		// before the upgrade. Nothing registers 'event_type' any more, so it cannot
+		// be primed through get_term(); seed the terms group the way that read
+		// would have left it. Without cache cleanup this stale object survives the
 		// UPDATE, which bypasses the object cache entirely.
-		$before = get_term( $type['term_id'], 'event_type' );
-		$this->assertSame( 'event_type', $before->taxonomy );
-		$this->assertNotFalse( wp_cache_get( $type['term_id'], 'terms' ), 'the read must have primed the cache' );
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT t.*, tt.* FROM {$wpdb->terms} AS t INNER JOIN {$wpdb->term_taxonomy} AS tt ON t.term_id = tt.term_id WHERE t.term_id = %d", $type['term_id'] ) );
+		$this->assertSame( 'event_type', $row->taxonomy );
+		wp_cache_set( $type['term_id'], new \WP_Term( $row ), 'terms' );
+		$this->assertSame( 'event_type', wp_cache_get( $type['term_id'], 'terms' )->taxonomy, 'the stale object must be in the cache' );
 
 		$this->assertTrue( $this->migration->run() );
 
-		// The durable property, whatever is registered: the stale object is gone.
-		$this->assertFalse( wp_cache_get( $type['term_id'], 'terms' ), 'the stale WP_Term must be evicted from the terms group' );
-
-		// Reading it back through the API needs the new name registered.
-		if ( taxonomy_exists( 'blockendar_event_type' ) ) {
-			$this->assertSame( 'blockendar_event_type', get_term( $type['term_id'] )->taxonomy );
-		}
+		// A later read inside run() may re-prime the group under the new name;
+		// what must not be there is the object read before the UPDATE.
+		$cached = wp_cache_get( $type['term_id'], 'terms' );
+		$this->assertTrue( false === $cached || 'blockendar_event_type' === $cached->taxonomy, 'the stale WP_Term must not survive in the terms group' );
+		$this->assertSame( 'blockendar_event_type', get_term( $type['term_id'] )->taxonomy );
 	}
 
 	public function test_dry_run_reports_without_writing(): void {

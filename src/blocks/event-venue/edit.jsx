@@ -32,7 +32,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 			// The post object keys its taxonomy terms by the taxonomy's
 			// rest_base, not its name — see WP_REST_Posts_Controller::
 			// get_item_schema(). Venue.php registers rest_base as
-			// 'event-venues', so 'event_venue' here reads undefined and the
+			// 'event-venues', so 'blockendar_event_venue' here reads undefined and the
 			// block silently falls back to PLACEHOLDER forever.
 			return post?.[ 'event-venues' ] ?? [];
 		},
@@ -46,7 +46,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 			const records = termIds.map( ( id ) =>
 				select( coreStore ).getEntityRecord(
 					'taxonomy',
-					'event_venue',
+					'blockendar_event_venue',
 					id
 				)
 			);

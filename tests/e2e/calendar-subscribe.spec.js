@@ -39,7 +39,7 @@ test.beforeAll( () => {
 	venueTermId = wpCliId( [
 		'term',
 		'create',
-		'event_venue',
+		'blockendar_event_venue',
 		'E2E Subscribe Venue',
 		'--porcelain',
 	] );
@@ -47,7 +47,7 @@ test.beforeAll( () => {
 	typeTermId = wpCliId( [
 		'term',
 		'create',
-		'event_type',
+		'blockendar_event_type',
 		'E2E Subscribe Type',
 		'--porcelain',
 	] );
@@ -83,8 +83,8 @@ test.afterAll( () => {
 	} );
 
 	[
-		[ 'event_venue', venueTermId ],
-		[ 'event_type', typeTermId ],
+		[ 'blockendar_event_venue', venueTermId ],
+		[ 'blockendar_event_type', typeTermId ],
 	].forEach( ( [ taxonomy, termId ] ) => {
 		if ( termId ) {
 			wpCli( [ 'term', 'delete', taxonomy, termId ] );

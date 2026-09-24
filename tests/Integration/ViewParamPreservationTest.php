@@ -19,6 +19,8 @@ namespace Blockendar\Tests\Integration;
 use Blockendar\Blocks\FilterContext;
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\Schema;
+use Blockendar\Taxonomy\EventType;
+use Blockendar\Taxonomy\Venue;
 use WP_UnitTestCase;
 
 class ViewParamPreservationTest extends WP_UnitTestCase {
@@ -37,8 +39,8 @@ class ViewParamPreservationTest extends WP_UnitTestCase {
 
 		// Terms are enough for the venue and type filters to render once the
 		// blocks are told to keep empty terms; no indexed event needs to carry them.
-		self::factory()->term->create( [ 'taxonomy' => 'event_venue' ] );
-		self::factory()->term->create( [ 'taxonomy' => 'event_type' ] );
+		self::factory()->term->create( [ 'taxonomy' => Venue::TAXONOMY ] );
+		self::factory()->term->create( [ 'taxonomy' => EventType::TAXONOMY ] );
 	}
 
 	public function tear_down(): void {

@@ -161,7 +161,7 @@ test.describe( 'demo guided tour', () => {
 		const termId = wpCli( [
 			'term',
 			'list',
-			'event_type',
+			'blockendar_event_type',
 			'--slug=tech',
 			'--field=term_id',
 		] ).trim();

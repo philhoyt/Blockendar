@@ -16,6 +16,7 @@ namespace Blockendar\Tests\Integration;
 
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\Schema;
+use Blockendar\Taxonomy\EventType;
 use WP_UnitTestCase;
 
 class ExcludeTypeFilterTest extends WP_UnitTestCase {
@@ -47,8 +48,8 @@ class ExcludeTypeFilterTest extends WP_UnitTestCase {
 		$wpdb->query( "DELETE FROM {$events}" ); // phpcs:ignore WordPress.DB
 		$wpdb->query( "DELETE FROM {$junction}" ); // phpcs:ignore WordPress.DB
 
-		$this->exhibit_term = self::factory()->term->create( [ 'taxonomy' => 'event_type' ] );
-		$this->talk_term    = self::factory()->term->create( [ 'taxonomy' => 'event_type' ] );
+		$this->exhibit_term = self::factory()->term->create( [ 'taxonomy' => EventType::TAXONOMY ] );
+		$this->talk_term    = self::factory()->term->create( [ 'taxonomy' => EventType::TAXONOMY ] );
 
 		$this->exhibit_id = $this->seed_event( '2025-09-10', [ $this->exhibit_term ] );
 		$this->talk_id    = $this->seed_event( '2025-09-11', [ $this->talk_term ] );

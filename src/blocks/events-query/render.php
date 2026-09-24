@@ -179,9 +179,9 @@ if ( $inherit ) {
 	$inherit_venue = null;
 
 	if ( $queried instanceof \WP_Term ) {
-		if ( 'event_type' === $queried->taxonomy ) {
+		if ( \Blockendar\Taxonomy\EventType::TAXONOMY === $queried->taxonomy ) {
 			$inherit_type = [ $queried->term_id ];
-		} elseif ( 'event_venue' === $queried->taxonomy ) {
+		} elseif ( \Blockendar\Taxonomy\Venue::TAXONOMY === $queried->taxonomy ) {
 			$inherit_venue = [ $queried->term_id ];
 		}
 		// event_tag and other taxonomies: no additional filter — show all events.
@@ -203,8 +203,8 @@ if ( $inherit ) {
 	}
 } elseif ( 'none' !== $related_to && $current_post_id ) {
 	// Resolve the current event's taxonomy terms for related-events mode.
-	$type_terms  = get_the_terms( $current_post_id, 'event_type' );
-	$venue_terms = get_the_terms( $current_post_id, 'event_venue' );
+	$type_terms  = get_the_terms( $current_post_id, \Blockendar\Taxonomy\EventType::TAXONOMY );
+	$venue_terms = get_the_terms( $current_post_id, \Blockendar\Taxonomy\Venue::TAXONOMY );
 
 	$rel_type_ids  = ( ! is_wp_error( $type_terms ) && ! empty( $type_terms ) )
 		? array_column( (array) $type_terms, 'term_id' )

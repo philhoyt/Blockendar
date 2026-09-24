@@ -22,7 +22,7 @@ use Blockendar\CPT\EventPostType;
  */
 class EventType {
 
-	const TAXONOMY = 'event_type';
+	const TAXONOMY = 'blockendar_event_type';
 
 	/**
 	 * Attach hooks.
@@ -80,12 +80,12 @@ class EventType {
 
 		add_rewrite_rule(
 			'^' . $base . '/type/([^/]+)/page/([0-9]{1,})/?$',
-			'index.php?event_type=$matches[1]&paged=$matches[2]',
+			'index.php?' . self::TAXONOMY . '=$matches[1]&paged=$matches[2]',
 			'top'
 		);
 		add_rewrite_rule(
 			'^' . $base . '/type/([^/]+)/?$',
-			'index.php?event_type=$matches[1]',
+			'index.php?' . self::TAXONOMY . '=$matches[1]',
 			'top'
 		);
 	}

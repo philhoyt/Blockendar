@@ -18,6 +18,7 @@ namespace Blockendar\Tests\Integration;
 use Blockendar\Blocks\Cutoff;
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\Schema;
+use Blockendar\Taxonomy\Venue;
 use WP_UnitTestCase;
 
 class HideAfterCutoffTest extends WP_UnitTestCase {
@@ -275,7 +276,7 @@ class HideAfterCutoffTest extends WP_UnitTestCase {
 	public function test_a_venue_whose_only_event_ended_earlier_today_is_still_offered(): void {
 		$venue = self::factory()->term->create(
 			[
-				'taxonomy' => 'event_venue',
+				'taxonomy' => Venue::TAXONOMY,
 				'name'     => 'Lounge Upstairs',
 			]
 		);
