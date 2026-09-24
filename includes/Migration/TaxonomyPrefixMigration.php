@@ -651,4 +651,155 @@ class TaxonomyPrefixMigration {
 
 		return $out;
 	}
+
+	/**
+	 * Post types whose content is swept: the block-theme storage types plus every
+	 * public type. Revisions are deliberately absent — restoring a pre-2.0.0
+	 * revision re-injects the old names, and the upgrade notice says so.
+	 *
+	 * @return string[]
+	 */
+	private function swept_post_types(): array {
+		$types = array_merge(
+			[ 'wp_template', 'wp_template_part', 'wp_block', 'wp_navigation' ],
+			array_values( get_post_types( [ 'public' => true ] ) )
+		);
+
+		return array_values( array_unique( $types ) );
+	}
+
+	/**
+	 * Rewrite every post whose block markup refers to an old taxonomy name.
+	 *
+	 * Walks the swept post types in ID order, in batches, resuming from the
+	 * cursor a previous run left if it died partway. SQL pre-filters to posts
+	 * that contain block markup and one of the old names, so the rewriter only
+	 * parses candidates; the rewriter then decides, returning null for a post
+	 * whose match was in prose rather than an attribute.
+	 *
+	 * The original content is kept in post meta before the write. add_post_meta()
+	 * with $unique = true refuses to add a second copy, so a resumed or repeated
+	 * pass can never overwrite a real backup with already-migrated content. The
+	 * write itself is $wpdb->update(): wp_update_post() would run kses on any
+	 * request without unfiltered_html (every anonymous front-end request where
+	 * init fires) and strip scripts, iframes, style attributes and inline SVG;
+	 * it would also bump post_modified, fire save_post and write revisions.
+	 *
+	 * @param bool $dry_run Count posts that would change without writing.
+	 * @return int Posts rewritten (or that would be).
+	 */
+	private function migrate_post_content( bool $dry_run = false ): int {
+		global $wpdb;
+
+		$batch     = 200;
+		$rewritten = 0;
+		$log       = $this->log();
+		$cursor    = $dry_run ? 0 : (int) get_option( self::CURSOR_OPTION, 0 );
+
+		$type_list = implode( ', ', array_fill( 0, count( $this->swept_post_types() ), '%s' ) );
+		$name_like = array_map( fn( $old ) => '%' . $wpdb->esc_like( $old ) . '%', array_keys( self::MAP ) );
+		$name_list = implode( ' OR ', array_fill( 0, count( $name_like ), 'post_content LIKE %s' ) );
+
+		do {
+			// prepare() takes its values as one array here: PHP does not allow a positional
+			// argument after `...` unpacking, and there are two runtime-sized lists to bind.
+			$args = array_merge( [ $cursor ], $this->swept_post_types(), [ '%<!-- wp:%' ], $name_like, [ $batch ] );
+
+			// The two placeholder lists are built above from constants and every value is
+			// bound through $args; phpcs cannot count runtime placeholder lists.
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT ID, post_content FROM {$wpdb->posts}
+					WHERE ID > %d AND post_type IN ( {$type_list} ) AND post_status <> 'auto-draft'
+					AND post_content LIKE %s AND ( {$name_list} )
+					ORDER BY ID ASC LIMIT %d",
+					$args
+				)
+			);
+			// phpcs:enable
+
+			$fetched = count( $rows );
+
+			foreach ( $rows as $row ) {
+				$id     = (int) $row->ID;
+				$cursor = $id;
+				$new    = $this->rewrite_block_markup( (string) $row->post_content );
+
+				if ( null === $new ) {
+					continue;
+				}
+
+				++$rewritten;
+
+				if ( $dry_run ) {
+					continue;
+				}
+
+				add_post_meta( $id, self::BACKUP_META, $row->post_content, true );
+				$wpdb->update( $wpdb->posts, [ 'post_content' => $new ], [ 'ID' => $id ], [ '%s' ], [ '%d' ] );
+				clean_post_cache( $id );
+
+				$log['posts'][] = $id;
+			}
+
+			if ( ! $dry_run && ! empty( $rows ) ) {
+				$this->save_log( $log );
+				update_option( self::CURSOR_OPTION, $cursor, false );
+			}
+		} while ( $fetched === $batch );
+
+		return $rewritten;
+	}
+
+	/**
+	 * Rewrite block widgets, which live in the `widget_block` option, not in posts.
+	 *
+	 * WP_Widget_Block stores every block widget's markup under this one option,
+	 * so a Query Loop or Categories block in a widget area is invisible to the
+	 * post sweep. The option's original value is kept in the change record once,
+	 * before the first write, so rollback restores it whole.
+	 *
+	 * @param bool $dry_run Count widgets that would change without writing.
+	 * @return int Widgets rewritten (or that would be).
+	 */
+	private function migrate_block_widgets( bool $dry_run = false ): int {
+		$widgets = get_option( 'widget_block', [] );
+
+		if ( ! is_array( $widgets ) ) {
+			return 0;
+		}
+
+		$changed = 0;
+
+		foreach ( $widgets as $key => $widget ) {
+			if ( ! is_array( $widget ) || ! is_string( $widget['content'] ?? null ) ) {
+				continue;
+			}
+
+			$new = $this->rewrite_block_markup( $widget['content'] );
+
+			if ( null === $new ) {
+				continue;
+			}
+
+			++$changed;
+			$widgets[ $key ]['content'] = $new;
+		}
+
+		if ( 0 === $changed || $dry_run ) {
+			return $changed;
+		}
+
+		$log = $this->log();
+
+		if ( ! array_key_exists( 'widget_block_original', $log ) ) {
+			$log['widget_block_original'] = get_option( 'widget_block', [] );
+			$this->save_log( $log );
+		}
+
+		update_option( 'widget_block', $widgets );
+
+		return $changed;
+	}
 }
