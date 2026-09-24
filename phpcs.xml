@@ -9,6 +9,7 @@
 	<file>src/blocks/</file>
 	<file>demo-plugin/</file>
 	<file>tests/</file>
+	<file>bin/bench/</file>
 
 	<arg name="extensions" value="php"/>
 
@@ -121,6 +122,12 @@
 	     query it for reads/writes that can't go through WP_Query. -->
 	<rule ref="WordPress.DB.DirectDatabaseQuery">
 		<exclude-pattern>includes/</exclude-pattern>
+		<exclude-pattern>bin/bench/</exclude-pattern>
+	</rule>
+	<!-- Benchmark scripts exist to run raw SQL against the index, so both
+	     database sniffs are relaxed for that directory only. -->
+	<rule ref="WordPress.DB.PreparedSQL">
+		<exclude-pattern>bin/bench/</exclude-pattern>
 	</rule>
 	<!-- NOTE: SQL preparation is NOT excluded here. Queries that interpolate
 	     table names (which cannot be parameterised) or build placeholder lists
