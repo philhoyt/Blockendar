@@ -404,10 +404,6 @@ class TaxonomyPrefixMigration {
 		$updated = 0;
 
 		foreach ( self::MAP as $old => $new ) {
-			// A meta_value lookup, which the sniff flags as slow: it is one query per
-			// taxonomy, once per site, pre-filtered on meta_key (indexed) and restricted
-			// by the join to menu items of type taxonomy — a handful of rows.
-			// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT pm.meta_id, pm.post_id FROM {$wpdb->postmeta} pm
@@ -417,7 +413,6 @@ class TaxonomyPrefixMigration {
 					$old
 				)
 			);
-			// phpcs:enable WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 
 			if ( empty( $rows ) ) {
 				continue;
@@ -432,6 +427,8 @@ class TaxonomyPrefixMigration {
 			foreach ( $rows as $row ) {
 				$wpdb->update(
 					$wpdb->postmeta,
+					// One-time, per-site write to a handful of menu-item rows, keyed by meta_id.
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 					[ 'meta_value' => $new ],
 					[ 'meta_id' => (int) $row->meta_id ],
 					[ '%s' ],
@@ -646,7 +643,7 @@ class TaxonomyPrefixMigration {
 		foreach ( $map as $taxonomy => $terms ) {
 			if ( is_string( $taxonomy ) && isset( self::MAP[ $taxonomy ] ) ) {
 				$out[ self::MAP[ $taxonomy ] ] = $terms;
-				$changed                        = true;
+				$changed                       = true;
 			} else {
 				$out[ $taxonomy ] = $terms;
 			}
