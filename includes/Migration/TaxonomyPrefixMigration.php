@@ -444,4 +444,65 @@ class TaxonomyPrefixMigration {
 
 		return $updated;
 	}
+
+	/**
+	 * Rename Site Editor template customisations that follow the taxonomy name.
+	 *
+	 * A user's customised copy of a template is a `wp_template` post whose slug
+	 * the template hierarchy resolves: `taxonomy-{name}`, and per-term forms
+	 * such as `taxonomy-{name}-{slug}`. The editor lets a user create any of
+	 * these for any of the three taxonomies, whether or not the plugin ships a
+	 * file for it, and keeps a copy per theme — so the match is a prefix over
+	 * all three names and is not scoped to one theme. The old name's `_` is a
+	 * LIKE wildcard and is escaped.
+	 *
+	 * @param bool $dry_run Count without writing.
+	 * @return int Templates renamed (or that would be).
+	 */
+	private function migrate_template_slugs( bool $dry_run = false ): int {
+		global $wpdb;
+
+		$log     = $this->log();
+		$renamed = 0;
+
+		foreach ( self::MAP as $old => $new ) {
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT ID, post_name FROM {$wpdb->posts}
+					WHERE post_type = 'wp_template' AND ( post_name = %s OR post_name LIKE %s )",
+					"taxonomy-{$old}",
+					$wpdb->esc_like( "taxonomy-{$old}-" ) . '%'
+				)
+			);
+
+			if ( empty( $rows ) ) {
+				continue;
+			}
+
+			$renamed += count( $rows );
+
+			if ( $dry_run ) {
+				continue;
+			}
+
+			foreach ( $rows as $row ) {
+				$to = "taxonomy-{$new}" . substr( $row->post_name, strlen( "taxonomy-{$old}" ) );
+
+				$wpdb->update( $wpdb->posts, [ 'post_name' => $to ], [ 'ID' => (int) $row->ID ], [ '%s' ], [ '%d' ] );
+				clean_post_cache( (int) $row->ID );
+
+				$log['template_slugs'][] = [
+					'ID'   => (int) $row->ID,
+					'from' => $row->post_name,
+					'to'   => $to,
+				];
+			}
+		}
+
+		if ( ! $dry_run ) {
+			$this->save_log( $log );
+		}
+
+		return $renamed;
+	}
 }
