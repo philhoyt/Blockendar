@@ -404,6 +404,10 @@ class TaxonomyPrefixMigration {
 		$updated = 0;
 
 		foreach ( self::MAP as $old => $new ) {
+			// A meta_value lookup, which the sniff flags as slow: it is one query per
+			// taxonomy, once per site, pre-filtered on meta_key (indexed) and restricted
+			// by the join to menu items of type taxonomy — a handful of rows.
+			// phpcs:disable WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT pm.meta_id, pm.post_id FROM {$wpdb->postmeta} pm
@@ -413,6 +417,7 @@ class TaxonomyPrefixMigration {
 					$old
 				)
 			);
+			// phpcs:enable WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 
 			if ( empty( $rows ) ) {
 				continue;
@@ -504,5 +509,149 @@ class TaxonomyPrefixMigration {
 		}
 
 		return $renamed;
+	}
+
+	/**
+	 * Rewrite the taxonomy names inside a post's block markup.
+	 *
+	 * Seven core block attributes carry a taxonomy name: `core/post-terms`
+	 * (`term`); `core/categories`, `core/tag-cloud` and
+	 * `core/post-navigation-link` (`taxonomy`); `core/navigation-link` and
+	 * `core/navigation-submenu` (`type`, when `kind` is `taxonomy` — a submenu
+	 * is what every navigation item with children serialises to); and
+	 * `core/query`, whose `taxQuery` lives *inside* its `query` attribute in
+	 * either the pre-7.0 shape `{"event_type":[4]}` or the 7.0+ shape
+	 * `{"include":{"event_type":[4]},"exclude":{…}}`. Inner blocks are walked.
+	 *
+	 * Returns null when nothing in the markup referred to an old name, so a
+	 * caller never rewrites a post that did not need it — serialize_blocks() can
+	 * normalise attribute order and whitespace, and that churn is only worth
+	 * paying where a rename actually happened.
+	 *
+	 * @param string $content Raw post_content.
+	 * @return string|null Rewritten markup, or null when unchanged.
+	 */
+	public function rewrite_block_markup( string $content ): ?string {
+		if ( ! has_blocks( $content ) ) {
+			return null;
+		}
+
+		$changed = false;
+		$blocks  = $this->rewrite_blocks( parse_blocks( $content ), $changed );
+
+		return $changed ? serialize_blocks( $blocks ) : null;
+	}
+
+	/**
+	 * Walk a parsed block tree, renaming taxonomy references in place.
+	 *
+	 * @param array<int, array<string, mixed>> $blocks  Parsed blocks.
+	 * @param bool                             $changed Set true when any rename happens.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function rewrite_blocks( array $blocks, bool &$changed ): array {
+		foreach ( $blocks as &$block ) {
+			$attrs = is_array( $block['attrs'] ?? null ) ? $block['attrs'] : [];
+
+			switch ( $block['blockName'] ?? '' ) {
+				case 'core/post-terms':
+					$this->rename_attribute( $attrs, 'term', $changed );
+					break;
+
+				case 'core/categories':
+				case 'core/tag-cloud':
+				case 'core/post-navigation-link':
+					$this->rename_attribute( $attrs, 'taxonomy', $changed );
+					break;
+
+				case 'core/navigation-link':
+				case 'core/navigation-submenu':
+					if ( 'taxonomy' === ( $attrs['kind'] ?? '' ) ) {
+						$this->rename_attribute( $attrs, 'type', $changed );
+					}
+					break;
+
+				case 'core/query':
+					if ( isset( $attrs['query']['taxQuery'] ) && is_array( $attrs['query']['taxQuery'] ) ) {
+						$attrs['query']['taxQuery'] = $this->rename_tax_query( $attrs['query']['taxQuery'], $changed );
+					}
+					break;
+			}
+
+			if ( [] !== $attrs || isset( $block['attrs'] ) ) {
+				$block['attrs'] = $attrs;
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				$block['innerBlocks'] = $this->rewrite_blocks( $block['innerBlocks'], $changed );
+			}
+		}
+		unset( $block );
+
+		return $blocks;
+	}
+
+	/**
+	 * Rename one string attribute when it holds an old taxonomy name.
+	 *
+	 * @param array<string, mixed> $attrs   Block attributes, modified in place.
+	 * @param string               $key     Attribute name.
+	 * @param bool                 $changed Set true on rename.
+	 */
+	private function rename_attribute( array &$attrs, string $key, bool &$changed ): void {
+		$value = $attrs[ $key ] ?? null;
+
+		if ( is_string( $value ) && isset( self::MAP[ $value ] ) ) {
+			$attrs[ $key ] = self::MAP[ $value ];
+			$changed       = true;
+		}
+	}
+
+	/**
+	 * Rename the taxonomy keys of a Query Loop `taxQuery`, in either shape.
+	 *
+	 * Core tells the shapes apart the same way (build_query_vars_from_query_block):
+	 * keys other than `include`/`exclude` mean the old flat map.
+	 *
+	 * @param array<string, mixed> $tax_query The taxQuery value.
+	 * @param bool                 $changed   Set true on rename.
+	 * @return array<string, mixed>
+	 */
+	private function rename_tax_query( array $tax_query, bool &$changed ): array {
+		$is_new_shape = [] === array_diff( array_keys( $tax_query ), [ 'include', 'exclude' ] );
+
+		if ( ! $is_new_shape ) {
+			return $this->rename_keys( $tax_query, $changed );
+		}
+
+		foreach ( [ 'include', 'exclude' ] as $side ) {
+			if ( isset( $tax_query[ $side ] ) && is_array( $tax_query[ $side ] ) ) {
+				$tax_query[ $side ] = $this->rename_keys( $tax_query[ $side ], $changed );
+			}
+		}
+
+		return $tax_query;
+	}
+
+	/**
+	 * Rename the keys of a taxonomy => terms map, preserving order and values.
+	 *
+	 * @param array<string, mixed> $map     Taxonomy name => term IDs.
+	 * @param bool                 $changed Set true on rename.
+	 * @return array<string, mixed>
+	 */
+	private function rename_keys( array $map, bool &$changed ): array {
+		$out = [];
+
+		foreach ( $map as $taxonomy => $terms ) {
+			if ( is_string( $taxonomy ) && isset( self::MAP[ $taxonomy ] ) ) {
+				$out[ self::MAP[ $taxonomy ] ] = $terms;
+				$changed                        = true;
+			} else {
+				$out[ $taxonomy ] = $terms;
+			}
+		}
+
+		return $out;
 	}
 }
