@@ -51,6 +51,35 @@ touching the code they cover rather than on every commit:
   so leftovers from earlier tests can satisfy a precondition on their own. A test that
   passes alone and fails in the full suite is usually this.
 
+- **Both suites fail on PHP errors that used to scroll past.** `npm run test:e2e` records
+  the dev site's `debug.log` length before any test runs (the `debug-log-mark` project)
+  and fails after the last one if a PHP notice, warning, deprecation, fatal or
+  `WordPress database error` was appended (`debug-log-check`). That covers every request
+  the suite makes, every `wpCli()` fixture command, and WP-Cron firing from a page load —
+  all of them boot WordPress with `WP_DEBUG` on. Ctrl-C ends a run before the check; it
+  exits non-zero anyway. `npm run test:integration` goes through
+  `bin/test-integration.js`, which scans PHPUnit's stderr for the same shape and fails on
+  a hit even when PHPUnit said OK — that is where errors raised outside a test (plugin
+  load, `Schema::create_tables()`) and database errors end up. A line that is genuinely
+  not ours belongs in `ALLOWLIST` in `tests/debug-log.js`, with a reason.
+- **The tests site runs `WP_DEBUG` on and logs to stderr.** wp-env's default for the tests
+  environment is off, which masks `E_NOTICE` and `E_DEPRECATED` before PHPUnit's handler
+  ever sees them — the suite had never reported a raw PHP notice or an 8.x deprecation.
+  `.wp-env.json` `env.tests.config` turns it on and sets `WP_DEBUG_LOG` false so
+  `error_log` stays at the CLI default `/dev/stderr`, where the wrapper reads it.
+  `phpunit-integration.xml` converts deprecations to exceptions and treats output during
+  a test as risky, so a database error inside a test fails that test by name.
+  `ErrorConversionTest` guards all of this.
+- **wp-env's `ℹ`/`✔` status lines go to stderr.** `execFileSync` returns stdout, so they
+  never appear in `wpCli()` output; they do appear in the wrapper's stderr buffer, which
+  is why the error pattern is anchored on `PHP <level>:` and never on a bare `Warning`.
+- **Benchmark scripts live in `bin/bench/`** and run with
+  `npx wp-env run cli -- wp eval-file wp-content/plugins/blockendar/bin/bench/<name>.php`.
+  The plugin directory is already mounted into every container, so nothing needs copying
+  anywhere. Each script's first statement is the `WP_CLI` guard (a Jest test enforces it);
+  the directory is served over HTTP like the rest of the plugin, so `.htaccess` denies it
+  as well. Scripts are tracked and linted.
+
 ## Version bumps
 
 When bumping the plugin version, update **all** of the following in one commit:
