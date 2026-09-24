@@ -1,34 +1,47 @@
 /**
- * Shared WP-CLI helper for end-to-end tests.
+ * Shared wp-env helpers for end-to-end tests.
  *
- * Commands run inside the wp-env container, so the suite needs `npm run env:start`
+ * Commands run inside a wp-env container, so the suite needs `npm run env:start`
  * before it will pass.
  */
 
 const { execFileSync } = require( 'child_process' );
 
 /**
- * Run a WP-CLI command inside wp-env and return its output.
+ * Run a command inside a wp-env container and return its stdout.
  *
- * @param {string[]} args WP-CLI arguments.
- * @return {string} Command output with wp-env's own status lines removed.
+ * wp-env's own status lines ("ℹ Starting …", "✔ Ran …") are written by ora to
+ * stderr, which execFileSync passes through to the terminal rather than
+ * capturing, so they never appear in the returned text — only the command's
+ * own stdout does. Blank lines are dropped so callers can split on newlines
+ * without guarding against them.
+ *
+ * @param {string}   container Container name: 'cli' or 'tests-cli'.
+ * @param {string[]} args      Command and arguments to run inside it.
+ * @return {string} Trimmed stdout with carriage returns and blank lines removed.
  */
-function wpCli( args ) {
+function wpEnvRun( container, args ) {
 	const raw = execFileSync(
 		'npx',
-		[ 'wp-env', 'run', 'cli', '--', 'wp', ...args ],
+		[ 'wp-env', 'run', container, '--', ...args ],
 		{ encoding: 'utf8', cwd: process.cwd() }
 	).replace( /\r/g, '' );
 
-	// wp-env wraps output in its own status lines ("ℹ Starting …", "✔ Ran …");
-	// strip them so callers see only what wp itself printed.
 	return raw
 		.split( '\n' )
-		.filter(
-			( line ) => ! /^\s*[ℹ✔✖⚠]/.test( line ) && '' !== line.trim()
-		)
+		.filter( ( line ) => '' !== line.trim() )
 		.join( '\n' )
 		.trim();
+}
+
+/**
+ * Run a WP-CLI command inside wp-env's cli container and return its output.
+ *
+ * @param {string[]} args WP-CLI arguments.
+ * @return {string} Command output.
+ */
+function wpCli( args ) {
+	return wpEnvRun( 'cli', [ 'wp', ...args ] );
 }
 
 /**
@@ -50,4 +63,4 @@ function wpCliId( args ) {
 	return match[ 0 ];
 }
 
-module.exports = { wpCli, wpCliId };
+module.exports = { wpEnvRun, wpCli, wpCliId };
