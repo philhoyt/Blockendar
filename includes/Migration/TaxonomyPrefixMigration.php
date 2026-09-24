@@ -302,4 +302,56 @@ class TaxonomyPrefixMigration {
 	private function save_log( array $log ): void {
 		update_option( self::LOG_OPTION, $log, false );
 	}
+
+	/**
+	 * Claim the in-progress lock, or return false when another request holds it.
+	 *
+	 * MySQL's GET_LOCK() rather than add_option(). Core's add_option() is an
+	 * INSERT … ON DUPLICATE KEY UPDATE behind a get_option() pre-check
+	 * (wp-includes/option.php), so two requests that both miss the pre-check
+	 * both succeed — it is not atomic. GET_LOCK() is: exactly one connection
+	 * holds a named lock, and the server releases it when that connection ends,
+	 * so a run that dies partway leaves nothing behind for the next one to wait
+	 * on. The name carries the table prefix so sites on a network lock
+	 * independently.
+	 *
+	 * An informational option is written alongside so `--status` can report a
+	 * run in progress, and since when, without a database session of its own.
+	 *
+	 * @return bool True when this request now holds the lock.
+	 */
+	private function acquire_lock(): bool {
+		global $wpdb;
+
+		$got = $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK( %s, 0 )', $this->lock_name() ) );
+
+		if ( '1' !== (string) $got ) {
+			return false;
+		}
+
+		update_option( self::LOCK_OPTION, (string) time(), false );
+
+		return true;
+	}
+
+	/**
+	 * Release the lock taken by acquire_lock().
+	 */
+	private function release_lock(): void {
+		global $wpdb;
+
+		$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK( %s )', $this->lock_name() ) );
+		delete_option( self::LOCK_OPTION );
+	}
+
+	/**
+	 * Per-site name for the database lock (GET_LOCK names are limited to 64 bytes).
+	 *
+	 * @return string
+	 */
+	private function lock_name(): string {
+		global $wpdb;
+
+		return substr( 'blockendar_tax_migration_' . $wpdb->prefix, 0, 64 );
+	}
 }
