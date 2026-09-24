@@ -156,6 +156,11 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 1.8.2
+- Fixed: the Event Venue block always showed its sample venue, "The Grand Ballroom", in the editor instead of the venue assigned to the event. It was reading the wrong field from the REST API. Visitors were never affected.
+- Fixed: the Event Date & Time block showed the wrong date and time in the editor for anyone whose browser timezone differed from the site's. The values were shifted by the difference, and from a timezone ahead of the site the date moved back a day. Visitors were never affected.
+- Changed: the automated test suites now fail on any PHP notice, warning, deprecation or database error, which used to be logged and ignored, and the editor previews of the Calendar View, Events Query and Event Date & Time blocks are covered by browser tests.
+
 ### 1.8.1
 - Changed: listings of past events are faster on sites with a large archive. Two database indexes are added on update, which happens once and does not rebuild your events.
 - Fixed: the plugin rewrote the columns of all three of its database tables on every page load. The table definitions were laid out in aligned columns, which WordPress reads as a changed column type, so it issued a rewrite each time it checked.

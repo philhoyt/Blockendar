@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 1.8.1
+Stable tag: 1.8.2
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -102,6 +102,11 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 1.8.2 =
+* Fixed: the Event Venue block always showed its sample venue, "The Grand Ballroom", in the editor instead of the venue assigned to the event. It was reading the wrong field from the REST API. Visitors were never affected.
+* Fixed: the Event Date & Time block showed the wrong date and time in the editor for anyone whose browser timezone differed from the site's. The values were shifted by the difference, and from a timezone ahead of the site the date moved back a day. Visitors were never affected.
+* Changed: the automated test suites now fail on any PHP notice, warning, deprecation or database error, which used to be logged and ignored, and the editor previews of the Calendar View, Events Query and Event Date & Time blocks are covered by browser tests.
 
 = 1.8.1 =
 * Changed: listings of past events are faster on sites with a large archive. Two database indexes are added on update, which happens once and does not rebuild your events.
@@ -318,6 +323,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 1.8.2 =
+Fixes two editor display bugs. The Event Venue block showed its sample venue rather than the one assigned, and the Event Date & Time block showed dates and times shifted by the difference between your browser's timezone and the site's. Neither affected what visitors saw. No database changes.
 
 = 1.8.1 =
 Speeds up listings of past events and stops the plugin rewriting its database tables on every page load. The update adds two indexes to the events table; on a site with 200,000 occurrences this took about half a second and did not touch event data.
