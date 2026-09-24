@@ -97,6 +97,17 @@ function mark( container ) {
  *         lines, whether the whole file had to be read, and its current size.
  */
 function newErrorLines( container, byteMark ) {
+	// A NaN or a string here would not throw on its own: `size < NaN` is false,
+	// `tail -c +NaN` fails quietly under `|| true`, and the result is an empty
+	// list — a silent pass. Refuse anything that is not a byte count.
+	if ( ! Number.isInteger( byteMark ) || byteMark < 0 ) {
+		throw new TypeError(
+			`newErrorLines(): byteMark must be a non-negative integer, got ${ JSON.stringify(
+				byteMark
+			) }`
+		);
+	}
+
 	const size = mark( container );
 	const truncated = size < byteMark;
 	const from = truncated ? 1 : byteMark + 1;

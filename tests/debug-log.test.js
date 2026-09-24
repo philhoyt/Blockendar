@@ -166,4 +166,12 @@ describe( 'newErrorLines', () => {
 
 		expect( newErrorLines( 'cli', 8000 ).lines ).toEqual( [] );
 	} );
+
+	it( 'refuses a mark that is not a byte count — a NaN would otherwise pass silently', () => {
+		for ( const bad of [ NaN, -1, 1.5, '7000', undefined ] ) {
+			expect( () => newErrorLines( 'cli', bad ) ).toThrow( TypeError );
+		}
+
+		expect( wpEnvRun ).not.toHaveBeenCalled();
+	} );
 } );
