@@ -78,11 +78,20 @@ test.beforeAll( () => {
 		wpCli( [ 'post', 'meta', 'update', eventId, key, value ] );
 	} );
 
-	wpCli( [ 'post', 'term', 'set', eventId, 'event_venue', 'e2e-riverside-hall' ] );
+	wpCli( [
+		'post',
+		'term',
+		'set',
+		eventId,
+		'event_venue',
+		'e2e-riverside-hall',
+	] );
 } );
 
 test.afterAll( () => {
-	createdPosts.forEach( ( id ) => wpCli( [ 'post', 'delete', id, '--force' ] ) );
+	createdPosts.forEach( ( id ) =>
+		wpCli( [ 'post', 'delete', id, '--force' ] )
+	);
 	wpCli( [ 'term', 'delete', 'event_venue', venueTermId ] );
 } );
 
@@ -95,9 +104,10 @@ test( 'the block shows the assigned venue, not the placeholder', async ( {
 	const block = canvas.locator( '.blockendar-event-venue' ).first();
 	await expect( block ).toBeVisible( { timeout: 30000 } );
 
-	await expect(
-		block.locator( '.blockendar-event-venue__name' )
-	).toHaveText( VENUE_NAME, { timeout: 30000 } );
+	await expect( block.locator( '.blockendar-event-venue__name' ) ).toHaveText(
+		VENUE_NAME,
+		{ timeout: 30000 }
+	);
 
 	// The bug rendered the placeholder in place of the real venue, so the
 	// absence of it is the half of this test that actually fails on the bug.
