@@ -223,4 +223,83 @@ class TaxonomyPrefixMigration {
 	private static function own_names(): array {
 		return [ EventType::TAXONOMY, EventTag::TAXONOMY, Venue::TAXONOMY ];
 	}
+
+	/**
+	 * Move every term row from an old taxonomy name to its new one.
+	 *
+	 * The row is the whole story for terms: relationships key off
+	 * term_taxonomy_id and term meta off term_id, so both follow it. Every
+	 * term_taxonomy_id moved is recorded under the new name, so that rollback
+	 * reverses exactly these rows and never drags back a term created under the
+	 * new name afterwards; every term_id is recorded so the term cache can be
+	 * cleaned for exactly these terms at the end of the run.
+	 *
+	 * @param bool $dry_run Count what would move without writing anything.
+	 * @return int Rows moved (or that would move).
+	 */
+	private function migrate_term_taxonomy( bool $dry_run = false ): int {
+		global $wpdb;
+
+		$log   = $this->log();
+		$moved = 0;
+
+		foreach ( self::MAP as $old => $new ) {
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT term_taxonomy_id, term_id FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s",
+					$old
+				)
+			);
+
+			if ( empty( $rows ) ) {
+				continue;
+			}
+
+			$moved += count( $rows );
+
+			if ( $dry_run ) {
+				continue;
+			}
+
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$wpdb->term_taxonomy} SET taxonomy = %s WHERE taxonomy = %s",
+					$new,
+					$old
+				)
+			);
+
+			$log['term_taxonomy'][ $new ] = [
+				'term_taxonomy_ids' => array_map( fn( $r ) => (int) $r->term_taxonomy_id, $rows ),
+				'term_ids'          => array_map( fn( $r ) => (int) $r->term_id, $rows ),
+			];
+		}
+
+		if ( ! $dry_run ) {
+			$this->save_log( $log );
+		}
+
+		return $moved;
+	}
+
+	/**
+	 * The record of what this migration changed, for rollback and cache cleanup.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function log(): array {
+		$log = get_option( self::LOG_OPTION, [] );
+
+		return is_array( $log ) ? $log : [];
+	}
+
+	/**
+	 * Persist the change record. Not autoloaded: it is read on rollback and at
+	 * the end of a run, never on an ordinary request.
+	 *
+	 * @param array<string, mixed> $log The record.
+	 */
+	private function save_log( array $log ): void {
+		update_option( self::LOG_OPTION, $log, false );
+	}
 }
