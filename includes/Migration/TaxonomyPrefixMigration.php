@@ -13,6 +13,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\CPT\EventPostType;
+use Blockendar\Taxonomy\EventTag;
+use Blockendar\Taxonomy\EventType;
+use Blockendar\Taxonomy\Venue;
+use WP_Error;
+
 /**
  * Moves a site's data from `event_type`, `event_tag` and `event_venue` to
  * `blockendar_event_type`, `blockendar_event_tag` and `blockendar_event_venue`.
@@ -108,5 +114,113 @@ class TaxonomyPrefixMigration {
 	 */
 	public function mark_migrated(): void {
 		update_option( self::GATE_OPTION, BLOCKENDAR_VERSION, false );
+	}
+
+	/**
+	 * Refuse to run when this site's data cannot be moved safely.
+	 *
+	 * Two conditions abort, each under its own error code so a notice or the
+	 * CLI can say which:
+	 *
+	 * - `target_occupied` — rows already exist under a new name. Any rows, not
+	 *   only ones sharing a term_id with something about to move: someone has
+	 *   been here, and moving more rows on top would merge two datasets.
+	 * - `shared_bucket` — another plugin's data lives under an old name. A term
+	 *   carries no record of who created it, so a shared bucket cannot be split
+	 *   and has to be resolved by hand. Detected two ways, because neither alone
+	 *   is enough: the old name is still a registered taxonomy once Blockendar
+	 *   has stopped registering it itself (which misses a plugin that registers
+	 *   later than init 30), and any term in the bucket attached to a post of
+	 *   another type (evidence in the data, whatever the load order).
+	 *
+	 * Pure read; nothing is written. Safe to call from `--dry-run`.
+	 *
+	 * @return true|WP_Error True when every taxonomy can move, else every reason.
+	 */
+	public function preflight() {
+		global $wpdb;
+
+		$errors = new WP_Error();
+
+		foreach ( self::MAP as $old => $new ) {
+			$occupied = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s",
+					$new
+				)
+			);
+
+			if ( $occupied > 0 ) {
+				$errors->add(
+					'target_occupied',
+					sprintf(
+						/* translators: 1: number of rows, 2: taxonomy name. */
+						_n(
+							'%1$d term already exists under the taxonomy "%2$s", so the migration cannot use that name.',
+							'%1$d terms already exist under the taxonomy "%2$s", so the migration cannot use that name.',
+							$occupied,
+							'blockendar'
+						),
+						$occupied,
+						$new
+					)
+				);
+			}
+
+			if ( ! in_array( $old, self::own_names(), true ) && taxonomy_exists( $old ) ) {
+				$errors->add(
+					'shared_bucket',
+					sprintf(
+						/* translators: %s: taxonomy name. */
+						__( 'Another plugin registers the taxonomy "%s", so its terms and Blockendar\'s share one table and cannot be told apart.', 'blockendar' ),
+						$old
+					)
+				);
+			}
+
+			$foreign = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->term_taxonomy} tt
+					JOIN {$wpdb->term_relationships} tr ON tr.term_taxonomy_id = tt.term_taxonomy_id
+					JOIN {$wpdb->posts} p ON p.ID = tr.object_id
+					WHERE tt.taxonomy = %s AND p.post_type <> %s",
+					$old,
+					EventPostType::POST_TYPE
+				)
+			);
+
+			if ( $foreign > 0 ) {
+				$errors->add(
+					'shared_bucket',
+					sprintf(
+						/* translators: 1: number of relationships, 2: taxonomy name, 3: post type. */
+						_n(
+							'%1$d relationship under the taxonomy "%2$s" belongs to a post that is not a %3$s, so another plugin appears to use that taxonomy too.',
+							'%1$d relationships under the taxonomy "%2$s" belong to posts that are not a %3$s, so another plugin appears to use that taxonomy too.',
+							$foreign,
+							'blockendar'
+						),
+						$foreign,
+						$old,
+						EventPostType::POST_TYPE
+					)
+				);
+			}
+		}
+
+		return $errors->has_errors() ? $errors : true;
+	}
+
+	/**
+	 * The taxonomy names Blockendar registers in this version of the plugin.
+	 *
+	 * Before the rename these are the old names, so "the old name is still
+	 * registered" says nothing; after it, an old name that is still registered
+	 * was registered by someone else.
+	 *
+	 * @return string[]
+	 */
+	private static function own_names(): array {
+		return [ EventType::TAXONOMY, EventTag::TAXONOMY, Venue::TAXONOMY ];
 	}
 }
