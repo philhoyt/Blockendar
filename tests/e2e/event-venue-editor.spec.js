@@ -134,11 +134,11 @@ test( 'the assigned venue renders at full opacity', async ( { page } ) => {
 	const block = canvas.locator( '.blockendar-event-venue' ).first();
 	await expect( block ).toBeVisible( { timeout: 30000 } );
 
-	// isPlaceholder applies opacity 0.5 inline; a resolved venue must not.
-	const opacity = await block.evaluate(
-		( node ) => getComputedStyle( node ).opacity
-	);
-	expect( opacity ).toBe( '1' );
+	// isPlaceholder sets an inline opacity; a resolved venue must not. Read the
+	// inline attribute, not the computed value: on this same element the editor
+	// dims every unselected block to 0.2 under Spotlight mode — a persisted
+	// preference — and to 0.1 while dragging.
+	await expect( block ).not.toHaveAttribute( 'style', /opacity/ );
 } );
 
 test( 'the address from term meta reaches the editor', async ( { page } ) => {
@@ -172,9 +172,6 @@ test( 'an event with no venue still shows the placeholder', async ( {
 	await expect( block ).toContainText( PLACEHOLDER_NAME, { timeout: 30000 } );
 
 	// The placeholder is the faded state, which is how an author tells it from
-	// a real venue.
-	const opacity = await block.evaluate(
-		( node ) => getComputedStyle( node ).opacity
-	);
-	expect( opacity ).toBe( '0.5' );
+	// a real venue. Inline attribute, for the reason given above.
+	await expect( block ).toHaveAttribute( 'style', /opacity:\s*0\.5/ );
 } );

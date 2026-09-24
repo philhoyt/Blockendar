@@ -11,6 +11,7 @@
 const { test, expect } = require( '@playwright/test' );
 const { wpCli, wpCliId } = require( './wp-cli' );
 const { daysFromNow } = require( './dates' );
+const { ensureTerm } = require( './terms' );
 
 const CONCERT = 'E2E Concert';
 const WORKSHOP = 'E2E Workshop';
@@ -57,36 +58,11 @@ function createEvent( title, ymd, type ) {
 	return id;
 }
 
-/**
- * Return an event_type term ID, creating the term only if it is missing.
- *
- * `wp term create` errors on an existing name, which would strand the suite
- * after any interrupted run.
- *
- * @param {string} name Term name.
- * @return {string} Term ID.
- */
-function ensureTerm( name ) {
-	const existing = wpCli( [
-		'term',
-		'list',
-		'event_type',
-		`--name=${ name }`,
-		'--field=term_id',
-	] ).trim();
-
-	if ( existing ) {
-		return existing;
-	}
-
-	return wpCliId( [ 'term', 'create', 'event_type', name, '--porcelain' ] );
-}
-
 let concertTermId;
 
 test.beforeAll( () => {
-	concertTermId = ensureTerm( 'Concert' );
-	ensureTerm( 'Workshop' );
+	concertTermId = ensureTerm( 'event_type', 'Concert', 'concert' );
+	ensureTerm( 'event_type', 'Workshop', 'workshop' );
 
 	createEvent( CONCERT, daysFromNow( 7 ), 'Concert' );
 	createEvent( WORKSHOP, daysFromNow( 14 ), 'Workshop' );
