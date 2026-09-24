@@ -60,6 +60,12 @@ function blockendar_uninstall_site(): void {
 		 * case a site set it by hand to work around that bug.
 		 */
 		'blockendar_horizon_days',
+
+		// State of the 2.0.0 taxonomy rename.
+		Blockendar\Migration\TaxonomyPrefixMigration::GATE_OPTION,
+		Blockendar\Migration\TaxonomyPrefixMigration::LOCK_OPTION,
+		Blockendar\Migration\TaxonomyPrefixMigration::CURSOR_OPTION,
+		Blockendar\Migration\TaxonomyPrefixMigration::LOG_OPTION,
 	];
 
 	foreach ( $options as $option ) {
@@ -69,6 +75,10 @@ function blockendar_uninstall_site(): void {
 	// Set by CalendarController when an ICS feed is truncated; a week-long
 	// transient outlives the plugin otherwise.
 	delete_transient( 'blockendar_ics_truncated' );
+	delete_transient( Blockendar\Migration\TaxonomyPrefixMigration::BLOCKED_TRANSIENT );
+
+	// Per-post originals the taxonomy migration kept for rollback.
+	delete_post_meta_by_key( Blockendar\Migration\TaxonomyPrefixMigration::BACKUP_META );
 }
 
 if ( is_multisite() ) {

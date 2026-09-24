@@ -34,7 +34,9 @@ use Blockendar\Admin\SettingsPage;
 use Blockendar\Admin\VenueGeocode;
 use Blockendar\Upgrader;
 use Blockendar\CLI\ImportTribeCommand;
+use Blockendar\CLI\MigrateTaxonomiesCommand;
 use Blockendar\CLI\RebuildIndexCommand;
+use Blockendar\Migration\TaxonomyPrefixMigration;
 
 /**
  * Bootstraps all plugin components.
@@ -65,6 +67,9 @@ class Plugin {
 
 		// Version change → flush rewrite rules once (updates never re-activate).
 		( new Upgrader() )->register();
+
+		// 2.0.0 taxonomy rename: moves a 1.x site's data once, on init 30.
+		( new TaxonomyPrefixMigration() )->register();
 
 		// Background rebuild triggered by a schema upgrade (fires via WP-Cron).
 		add_action(
@@ -102,6 +107,7 @@ class Plugin {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			\WP_CLI::add_command( 'blockendar rebuild-index', [ new RebuildIndexCommand(), 'rebuild' ] );
 			\WP_CLI::add_command( 'blockendar import-tribe', [ new ImportTribeCommand(), 'import' ] );
+			\WP_CLI::add_command( 'blockendar migrate-taxonomies', [ new MigrateTaxonomiesCommand(), 'migrate' ] );
 		}
 
 		// Register block category.

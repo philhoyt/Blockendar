@@ -87,6 +87,15 @@ register_activation_hook(
 		( new Blockendar\Taxonomy\EventTag() )->register_taxonomy();
 		( new Blockendar\Taxonomy\Venue() )->register_taxonomy();
 		flush_rewrite_rules();
+
+		// A fresh install has nothing to move to the 2.0.0 taxonomy names; gate it
+		// so the migration never runs here — which matters when another plugin owns
+		// `event_type`. A 1.x site re-activated by hand keeps its gate unset and
+		// migrates on its first request.
+		$migration = new Blockendar\Migration\TaxonomyPrefixMigration();
+		if ( $migration->is_fresh_install() ) {
+			$migration->mark_migrated();
+		}
 	}
 );
 register_deactivation_hook(

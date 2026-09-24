@@ -17,6 +17,7 @@ use Blockendar\CPT\EventPostType;
 use Blockendar\Taxonomy\EventTag;
 use Blockendar\Taxonomy\EventType;
 use Blockendar\Taxonomy\Venue;
+use Blockendar\Upgrader;
 use WP_Error;
 
 /**
@@ -80,6 +81,103 @@ class TaxonomyPrefixMigration {
 	const BACKUP_META = '_blockendar_taxonomy_migration_backup';
 
 	/**
+	 * Why the last automatic run refused, kept for the admin notice. While it
+	 * exists `init` does not retry, so a blocked site pays for one preflight an
+	 * hour rather than one per request. A successful run — from any entry
+	 * point — deletes it.
+	 */
+	const BLOCKED_TRANSIENT = 'blockendar_taxonomy_prefix_migration_blocked';
+
+	/**
+	 * Attach hooks.
+	 *
+	 * Its own `init` action, not a call inside Upgrader::maybe_upgrade(): that
+	 * method early-returns once the version option matches, so hooked there the
+	 * first request after an upgrade would be the only one ever to attempt the
+	 * migration, and a refusal from preflight — meant to leave the gate unset for
+	 * a retry — would become permanent. Priority 30 because the taxonomies
+	 * register at 10 and clean_taxonomy_cache() asks is_taxonomy_hierarchical().
+	 */
+	public function register(): void {
+		add_action( 'init', [ $this, 'maybe_run_on_init' ], 30 );
+		add_action( 'admin_notices', [ $this, 'render_blocked_notice' ] );
+	}
+
+	/**
+	 * Run the migration on an ordinary request that still needs it.
+	 *
+	 * A refusal other than the lock is recorded for the admin notice and holds
+	 * further attempts for an hour; `wp blockendar migrate-taxonomies --run`
+	 * retries at once.
+	 */
+	public function maybe_run_on_init(): void {
+		if ( ! $this->should_run_on_init() || false !== get_transient( self::BLOCKED_TRANSIENT ) ) {
+			return;
+		}
+
+		$result = $this->run();
+
+		if ( is_wp_error( $result ) && 'locked' !== $result->get_error_code() ) {
+			set_transient(
+				self::BLOCKED_TRANSIENT,
+				[
+					'code'    => $result->get_error_code(),
+					'message' => implode( ' ', $result->get_error_messages() ),
+				],
+				HOUR_IN_SECONDS
+			);
+		}
+	}
+
+	/**
+	 * Tell administrators why the site's event data is not showing.
+	 */
+	public function render_blocked_notice(): void {
+		if ( ! current_user_can( 'manage_options' ) || ! $this->needs_migration() ) {
+			return;
+		}
+
+		$blocked = get_transient( self::BLOCKED_TRANSIENT );
+
+		if ( ! is_array( $blocked ) ) {
+			return;
+		}
+		?>
+		<div class="notice notice-error">
+			<p>
+				<strong><?php esc_html_e( 'Blockendar could not move its event types, tags and venues to their new taxonomy names.', 'blockendar' ); ?></strong>
+				<?php echo esc_html( (string) ( $blocked['message'] ?? '' ) ); ?>
+			</p>
+			<p><?php esc_html_e( 'Until this is resolved, events show no type, tag or venue. Run `wp blockendar migrate-taxonomies --status` for details and `--run` to retry once the conflict is cleared.', 'blockendar' ); ?></p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Whether Blockendar has never run on this site before.
+	 *
+	 * Activation marks a fresh install migrated so it never runs the migration
+	 * at all — which matters when another plugin owns `event_type`. But
+	 * activation also fires when a 1.x site is deactivated and 2.0.0 activated by
+	 * hand, and marking that site migrated would strand its data under the old
+	 * names. A site that has run before carries the version option Upgrader
+	 * writes on its first request, or events; a fresh one has neither.
+	 */
+	public function is_fresh_install(): bool {
+		global $wpdb;
+
+		if ( false !== get_option( Upgrader::VERSION_OPTION ) ) {
+			return false;
+		}
+
+		$events = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", EventPostType::POST_TYPE )
+		);
+
+		return 0 === $events;
+	}
+
+	/**
 	 * Whether this site still holds data under the old names.
 	 *
 	 * @return bool True until the gate option has been written.
@@ -113,7 +211,8 @@ class TaxonomyPrefixMigration {
 	 * migration at all — which matters when another plugin owns `event_type`.
 	 */
 	public function mark_migrated(): void {
-		update_option( self::GATE_OPTION, BLOCKENDAR_VERSION, false );
+		// Autoloaded: needs_migration() reads it on every request.
+		update_option( self::GATE_OPTION, BLOCKENDAR_VERSION, true );
 	}
 
 	/**
@@ -866,6 +965,7 @@ class TaxonomyPrefixMigration {
 			}
 
 			delete_option( self::CURSOR_OPTION );
+			delete_transient( self::BLOCKED_TRANSIENT );
 			$this->mark_migrated();
 
 			return true;
