@@ -23,6 +23,7 @@ const VENUE_CITY = 'Portland';
 const PLACEHOLDER_NAME = 'The Grand Ballroom';
 
 let eventId;
+let venuelessEventId;
 let venueTermId;
 const createdPosts = [];
 
@@ -86,6 +87,18 @@ test.beforeAll( () => {
 		'event_venue',
 		'e2e-riverside-hall',
 	] );
+
+	// An event with no venue at all, to hold the placeholder branch in place.
+	venuelessEventId = wpCliId( [
+		'post',
+		'create',
+		'--post_type=blockendar_event',
+		'--post_title=E2E Venueless Event',
+		'--post_status=publish',
+		'--post_content=<!-- wp:blockendar/event-venue /-->',
+		'--porcelain',
+	] );
+	createdPosts.push( venuelessEventId );
 } );
 
 test.afterAll( () => {
@@ -140,4 +153,28 @@ test( 'the address from term meta reaches the editor', async ( { page } ) => {
 	await expect(
 		block.locator( '.blockendar-event-venue__address' )
 	).toContainText( VENUE_CITY, { timeout: 30000 } );
+} );
+
+/*
+ * The other branch of the conditional the fix touched. This one passed before
+ * the fix too — it is a regression guard, not proof of the bug: reading the
+ * right field must not cost the placeholder that an unassigned block relies on.
+ */
+test( 'an event with no venue still shows the placeholder', async ( {
+	page,
+} ) => {
+	await loginAsAdmin( page );
+	const canvas = await openEditor( page, venuelessEventId );
+
+	const block = canvas.locator( '.blockendar-event-venue' ).first();
+	await expect( block ).toBeVisible( { timeout: 30000 } );
+
+	await expect( block ).toContainText( PLACEHOLDER_NAME, { timeout: 30000 } );
+
+	// The placeholder is the faded state, which is how an author tells it from
+	// a real venue.
+	const opacity = await block.evaluate(
+		( node ) => getComputedStyle( node ).opacity
+	);
+	expect( opacity ).toBe( '0.5' );
 } );
