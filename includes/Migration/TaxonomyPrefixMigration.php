@@ -354,4 +354,33 @@ class TaxonomyPrefixMigration {
 
 		return substr( 'blockendar_tax_migration_' . $wpdb->prefix, 0, 64 );
 	}
+
+	/**
+	 * Delete the `{taxonomy}_children` options that belonged to the old names.
+	 *
+	 * clean_taxonomy_cache() deletes and regenerates the option for the *new*
+	 * name from the database at the end of the run, so renaming these would be
+	 * thrown away immediately. Rollback needs no record: clean_taxonomy_cache()
+	 * on the old names regenerates them the same way.
+	 *
+	 * @param bool $dry_run Count without deleting.
+	 * @return int Options deleted (or that would be).
+	 */
+	private function delete_orphan_children_options( bool $dry_run = false ): int {
+		$deleted = 0;
+
+		foreach ( array_keys( self::MAP ) as $old ) {
+			if ( false === get_option( "{$old}_children" ) ) {
+				continue;
+			}
+
+			++$deleted;
+
+			if ( ! $dry_run ) {
+				delete_option( "{$old}_children" );
+			}
+		}
+
+		return $deleted;
+	}
 }
