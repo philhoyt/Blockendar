@@ -58,9 +58,12 @@ for ( const signal of [ 'SIGINT', 'SIGTERM' ] ) {
 	process.on( signal, () => child.kill( signal ) );
 }
 
+// process.exitCode rather than process.exit(): stdout is a pipe under npm and
+// in CI, and process.exit() can drop writes still queued on it. With the child
+// closed nothing keeps the event loop alive, so the process ends on its own.
 child.on( 'error', ( error ) => {
 	process.stderr.write( `Could not start wp-env: ${ error.message }\n` );
-	process.exit( 1 );
+	process.exitCode = 1;
 } );
 
 child.on( 'close', ( code, signal ) => {
@@ -80,13 +83,15 @@ child.on( 'close', ( code, signal ) => {
 				hits.join( '\n' ) +
 				'\n\nLines that are not ours to fix belong in ALLOWLIST in tests/debug-log.js, with a reason.\n'
 		);
-		process.exit( 1 );
+		process.exitCode = 1;
+		return;
 	}
 
 	if ( signal ) {
 		process.stderr.write( `PHPUnit was stopped by ${ signal }.\n` );
-		process.exit( 1 );
+		process.exitCode = 1;
+		return;
 	}
 
-	process.exit( code === null ? 1 : code );
+	process.exitCode = code === null ? 1 : code;
 } );
