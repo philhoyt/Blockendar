@@ -9,12 +9,20 @@ const { test, expect } = require( '@playwright/test' );
 const { wpCli, wpCliId } = require( './wp-cli' );
 const { daysFromNow } = require( './dates' );
 const { loginAsAdmin, openEditor } = require( './editor' );
+const { ensureTerm, deleteTerm } = require( './terms' );
 
 let postId;
 let switcherPostId;
+let filterTypeId;
 const created = [];
 
 test.beforeAll( () => {
+	filterTypeId = ensureTerm(
+		'event_type',
+		'E2E Filter Type',
+		'e2e-filter-type'
+	);
+
 	[ 'Editor E2E One', 'Editor E2E Two', 'Editor E2E Three' ].forEach(
 		( title, i ) => {
 			const id = wpCliId( [
@@ -74,7 +82,31 @@ test.beforeAll( () => {
 
 test.afterAll( () => {
 	created.forEach( ( id ) => wpCli( [ 'post', 'delete', id, '--force' ] ) );
+	deleteTerm( 'event_type', filterTypeId );
 } );
+
+/**
+ * Select the first Events Query block through the data store and open the
+ * block sidebar. Clicking through the iframed canvas is intercepted by the
+ * block's own overlays, so selection goes through wp.data instead.
+ *
+ * @param {import('@playwright/test').Page} page Playwright page.
+ */
+async function selectEventsQueryBlock( page ) {
+	await page.evaluate( () => {
+		const query = window.wp.data
+			.select( 'core/block-editor' )
+			.getBlocks()
+			.find( ( block ) => block.name === 'blockendar/events-query' );
+
+		window.wp.data
+			.dispatch( 'core/block-editor' )
+			.selectBlock( query.clientId );
+		window.wp.data
+			.dispatch( 'core/edit-post' )
+			?.openGeneralSidebar?.( 'edit-post/block' );
+	} );
+}
 
 test( 'the block previews real events rather than placeholder bars', async ( {
 	page,
@@ -247,20 +279,7 @@ test( 'the Hide events control offers three rules and a slider for the hours one
 		canvas.locator( '.blockendar-events-query' ).first()
 	).toBeVisible( { timeout: 30000 } );
 
-	// Select through the store and open the sidebar, as the other tests do.
-	await page.evaluate( () => {
-		const query = window.wp.data
-			.select( 'core/block-editor' )
-			.getBlocks()
-			.find( ( block ) => block.name === 'blockendar/events-query' );
-
-		window.wp.data
-			.dispatch( 'core/block-editor' )
-			.selectBlock( query.clientId );
-		window.wp.data
-			.dispatch( 'core/edit-post' )
-			?.openGeneralSidebar?.( 'edit-post/block' );
-	} );
+	await selectEventsQueryBlock( page );
 
 	const queryPanel = page.getByRole( 'button', {
 		name: 'Query',
@@ -527,4 +546,36 @@ test( 'undoing a layout change takes the switcher back with it', async ( {
 			defaultView: 'list',
 			dirty: false,
 		} );
+} );
+
+test( 'the type filter offers the seeded event type', async ( { page } ) => {
+	test.setTimeout( 120000 );
+
+	await loginAsAdmin( page );
+	const canvas = await openEditor( page, postId );
+	await expect(
+		canvas.locator( '.blockendar-events-query' ).first()
+	).toBeVisible( { timeout: 30000 } );
+
+	await selectEventsQueryBlock( page );
+
+	// The panel is closed by default and PanelBody renders its children only
+	// while open. With the taxonomy fetch broken, `terms` stays null and the
+	// whole panel is skipped — so the toggle is asserted, not guarded: this is
+	// where the test fails under that mutation, by name.
+	const toggle = page.getByRole( 'button', {
+		name: 'Filter by Event Type',
+		exact: true,
+	} );
+	await expect( toggle ).toBeVisible( { timeout: 20000 } );
+
+	if ( 'false' === ( await toggle.getAttribute( 'aria-expanded' ) ) ) {
+		await toggle.click();
+	}
+
+	// Scoped to this panel: "Exclude Event Types" renders the same names.
+	const panel = page.locator( '.components-panel__body', { has: toggle } );
+	await expect(
+		panel.getByRole( 'checkbox', { name: 'E2E Filter Type', exact: true } )
+	).toHaveCount( 1, { timeout: 20000 } );
 } );
