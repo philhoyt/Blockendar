@@ -647,35 +647,14 @@ class TaxonomyPrefixMigration {
 	 */
 	private function rewrite_blocks( array $blocks, bool &$changed ): array {
 		foreach ( $blocks as &$block ) {
-			$attrs = is_array( $block['attrs'] ?? null ) ? $block['attrs'] : [];
+			$attrs = $this->rewrite_block_attributes(
+				(string) ( $block['blockName'] ?? '' ),
+				is_array( $block['attrs'] ?? null ) ? $block['attrs'] : []
+			);
 
-			switch ( $block['blockName'] ?? '' ) {
-				case 'core/post-terms':
-					$this->rename_attribute( $attrs, 'term', $changed );
-					break;
-
-				case 'core/categories':
-				case 'core/tag-cloud':
-				case 'core/post-navigation-link':
-					$this->rename_attribute( $attrs, 'taxonomy', $changed );
-					break;
-
-				case 'core/navigation-link':
-				case 'core/navigation-submenu':
-					if ( 'taxonomy' === ( $attrs['kind'] ?? '' ) ) {
-						$this->rename_attribute( $attrs, 'type', $changed );
-					}
-					break;
-
-				case 'core/query':
-					if ( isset( $attrs['query']['taxQuery'] ) && is_array( $attrs['query']['taxQuery'] ) ) {
-						$attrs['query']['taxQuery'] = $this->rename_tax_query( $attrs['query']['taxQuery'], $changed );
-					}
-					break;
-			}
-
-			if ( [] !== $attrs || isset( $block['attrs'] ) ) {
+			if ( null !== $attrs ) {
 				$block['attrs'] = $attrs;
+				$changed        = true;
 			}
 
 			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
@@ -685,6 +664,50 @@ class TaxonomyPrefixMigration {
 		unset( $block );
 
 		return $blocks;
+	}
+
+	/**
+	 * Rename the taxonomy references in one block's attributes.
+	 *
+	 * The seven core attributes that name a taxonomy: `post-terms.term`,
+	 * `categories`/`tag-cloud`/`post-navigation-link.taxonomy`,
+	 * `navigation-link`/`navigation-submenu.type` when `kind` is `taxonomy`,
+	 * and the Query Loop `taxQuery` in either of its shapes. Shared by the
+	 * one-shot content sweep and the render-time shim in LegacyBlockAttributes.
+	 *
+	 * @param string               $block_name Block name, e.g. `core/post-terms`.
+	 * @param array<string, mixed> $attrs      Block attributes.
+	 * @return array<string, mixed>|null The renamed attributes, or null when nothing referred to an old name.
+	 */
+	public function rewrite_block_attributes( string $block_name, array $attrs ): ?array {
+		$changed = false;
+
+		switch ( $block_name ) {
+			case 'core/post-terms':
+				$this->rename_attribute( $attrs, 'term', $changed );
+				break;
+
+			case 'core/categories':
+			case 'core/tag-cloud':
+			case 'core/post-navigation-link':
+				$this->rename_attribute( $attrs, 'taxonomy', $changed );
+				break;
+
+			case 'core/navigation-link':
+			case 'core/navigation-submenu':
+				if ( 'taxonomy' === ( $attrs['kind'] ?? '' ) ) {
+					$this->rename_attribute( $attrs, 'type', $changed );
+				}
+				break;
+
+			case 'core/query':
+				if ( isset( $attrs['query']['taxQuery'] ) && is_array( $attrs['query']['taxQuery'] ) ) {
+					$attrs['query']['taxQuery'] = $this->rename_tax_query( $attrs['query']['taxQuery'], $changed );
+				}
+				break;
+		}
+
+		return $changed ? $attrs : null;
 	}
 
 	/**

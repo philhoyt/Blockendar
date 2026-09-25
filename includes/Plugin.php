@@ -36,6 +36,7 @@ use Blockendar\Upgrader;
 use Blockendar\CLI\ImportTribeCommand;
 use Blockendar\CLI\MigrateTaxonomiesCommand;
 use Blockendar\CLI\RebuildIndexCommand;
+use Blockendar\Migration\LegacyBlockAttributes;
 use Blockendar\Migration\TaxonomyPrefixMigration;
 
 /**
@@ -70,6 +71,10 @@ class Plugin {
 
 		// 2.0.0 taxonomy rename: moves a 1.x site's data once, on init 30.
 		( new TaxonomyPrefixMigration() )->register();
+
+		// Block markup in theme files, parts, patterns and restored revisions still
+		// naming the old taxonomies keeps rendering.
+		( new LegacyBlockAttributes() )->register();
 
 		// Background rebuild triggered by a schema upgrade (fires via WP-Cron).
 		add_action(
