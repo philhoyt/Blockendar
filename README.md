@@ -156,6 +156,9 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 2.0.1
+- Changed: blocks register from a single metadata file written at build time instead of reading and decoding sixteen `block.json` files on every request. Reduces the time WordPress spends in `init`; the gain depends on how fast the host's file system is. No database changes.
+
 ### 2.0.0
 - Changed: the three taxonomies are renamed from `event_type`, `event_tag` and `event_venue` to `blockendar_event_type`, `blockendar_event_tag` and `blockendar_event_venue`, so they can no longer collide with another events plugin that uses the same names. Existing sites are migrated the first time a page loads after the update: event types, tags and venues with their assignments and settings, classic menu items that point at them, Site Editor template customisations, and the core blocks that name a taxonomy (Post Terms, Categories List, Tag Cloud, Post Navigation Link, Navigation links, Query Loop filters) in pages and block widgets are all moved. Permalinks, REST routes and calendar feed URLs are unchanged.
 - Changed: block markup in theme files, template parts, patterns and restored revisions that still names an old taxonomy — a Post Terms block with `term: event_type`, a Query Loop filtered by it, a navigation link to one of its terms — keeps working. The migration cannot rewrite files, so those attributes are translated as each block renders and as the Site Editor loads a theme template.

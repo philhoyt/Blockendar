@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -102,6 +102,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 2.0.1 =
+* Changed: blocks register from a single metadata file written at build time instead of reading and decoding sixteen block.json files on every request. Reduces the time WordPress spends in init; the gain depends on how fast the host's file system is. No database changes.
 
 = 2.0.0 =
 * Changed: the three taxonomies are renamed from event_type, event_tag and event_venue to blockendar_event_type, blockendar_event_tag and blockendar_event_venue, so they can no longer collide with another events plugin that uses the same names. Existing sites are migrated the first time a page loads after the update: event types, tags and venues with their assignments and settings, classic menu items that point at them, Site Editor template customisations, and the core blocks that name a taxonomy (Post Terms, Categories List, Tag Cloud, Post Navigation Link, Navigation links, Query Loop filters) in pages and block widgets are all moved. Permalinks, REST routes and calendar feed URLs are unchanged.
@@ -331,6 +334,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 2.0.1 =
+Performance only: blocks register from one metadata file written at build time instead of sixteen block.json reads per request. No database changes and nothing to configure.
 
 = 2.0.0 =
 Renames the event type, tag and venue taxonomies to prefixed names. Existing sites migrate on the first page load after updating; run `wp blockendar migrate-taxonomies --dry-run` first to see what will change, and `--rollback` reverses it. Update by hand where present: theme or snippet code naming event_type, event_tag or event_venue or hooking created_event_venue and similar; CSS targeting core's taxonomy-event_type classes; SEO and translation plugin settings stored per taxonomy name. Hidden editor metaboxes reset, and restoring a pre-2.0.0 revision brings the old names back into that post.
