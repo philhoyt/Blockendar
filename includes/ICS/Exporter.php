@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Blockendar\DB\EventIndex;
+use Blockendar\Taxonomy\Venue;
 
 /**
  * Generates iCal (.ics) content from event index rows.
@@ -436,7 +437,7 @@ class Exporter {
 			return '';
 		}
 
-		$term = get_term( $venue_term_id, 'event_venue' );
+		$term = get_term( $venue_term_id, Venue::TAXONOMY );
 
 		if ( is_wp_error( $term ) || null === $term ) {
 			return '';
@@ -511,7 +512,7 @@ class Exporter {
 			return null;
 		}
 
-		$terms         = get_the_terms( $post_id, 'event_venue' );
+		$terms         = get_the_terms( $post_id, Venue::TAXONOMY );
 		$venue_term_id = ( ! is_wp_error( $terms ) && ! empty( $terms ) ) ? $terms[0]->term_id : null;
 
 		return (object) [

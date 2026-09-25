@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\Migration\TaxonomyPrefixMigration;
+
 /**
  * Registers plugin block templates via register_block_template().
  */
@@ -25,41 +27,153 @@ class TemplateRegistrar {
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_templates' ] );
+		add_filter( 'get_block_templates', [ $this, 'hide_superseded_theme_files' ], 10, 3 );
 	}
 
 	/**
 	 * Register all plugin templates.
+	 *
+	 * A theme file still named after a pre-2.0.0 taxonomy is served under the
+	 * new slug from here, replacing the plugin default of the same slug, so
+	 * the design keeps applying; see legacy_theme_templates().
 	 */
 	public function register_templates(): void {
 		if ( ! function_exists( 'register_block_template' ) ) {
 			return;
 		}
 
-		register_block_template(
-			'blockendar//single-blockendar_event',
-			[
+		$templates = [
+			'single-blockendar_event'        => [
 				'title'       => __( 'Single Event', 'blockendar' ),
 				'description' => __( 'Displays a single event with date, venue, description, and related events.', 'blockendar' ),
 				'content'     => (string) file_get_contents( BLOCKENDAR_DIR . 'templates/single-blockendar_event.html' ),
-			]
-		);
-
-		register_block_template(
-			'blockendar//archive-blockendar_event',
-			[
+			],
+			'archive-blockendar_event'       => [
 				'title'       => __( 'Events Archive', 'blockendar' ),
 				'description' => __( 'Displays all events in a calendar view.', 'blockendar' ),
 				'content'     => (string) file_get_contents( BLOCKENDAR_DIR . 'templates/archive-blockendar_event.html' ),
-			]
-		);
-
-		register_block_template(
-			'blockendar//taxonomy-event_type',
-			[
+			],
+			'taxonomy-blockendar_event_type' => [
 				'title'       => __( 'Event Type Archive', 'blockendar' ),
 				'description' => __( 'Displays a calendar filtered to a single event type.', 'blockendar' ),
-				'content'     => (string) file_get_contents( BLOCKENDAR_DIR . 'templates/taxonomy-event_type.html' ),
-			]
-		);
+				'content'     => (string) file_get_contents( BLOCKENDAR_DIR . 'templates/taxonomy-blockendar_event_type.html' ),
+			],
+		];
+
+		foreach ( $this->legacy_theme_templates() as $slug => $override ) {
+			$templates[ $slug ] = array_merge( $templates[ $slug ] ?? [], $override );
+		}
+
+		foreach ( $templates as $slug => $args ) {
+			register_block_template( 'blockendar//' . $slug, $args );
+		}
+	}
+
+	/**
+	 * Keep the old-named theme files out of the Site Editor's template list.
+	 *
+	 * WordPress lists every file in the theme's templates folder, so beside
+	 * "Event Type Archive" (served from the file) an editor would also see
+	 * "taxonomy-event_type" — a template that can never match a request again
+	 * and whose edits go nowhere. Only whole listings are trimmed; a lookup by
+	 * slug is left alone.
+	 *
+	 * @param mixed  $templates     Templates found.
+	 * @param array  $query         The query.
+	 * @param string $template_type wp_template or wp_template_part.
+	 * @return mixed
+	 */
+	public function hide_superseded_theme_files( $templates, $query, $template_type ) {
+		if ( 'wp_template' !== $template_type || ! is_array( $templates ) || ! empty( $query['slug__in'] ) ) {
+			return $templates;
+		}
+
+		foreach ( $templates as $key => $template ) {
+			if ( ! is_object( $template ) || 'theme' !== ( $template->source ?? '' ) ) {
+				continue;
+			}
+
+			foreach ( array_keys( TaxonomyPrefixMigration::MAP ) as $old ) {
+				$rest = substr( (string) $template->slug, strlen( "taxonomy-{$old}" ) );
+
+				if ( str_starts_with( (string) $template->slug, "taxonomy-{$old}" ) && ( '' === $rest || '-' === $rest[0] ) ) {
+					unset( $templates[ $key ] );
+					break;
+				}
+			}
+		}
+
+		return array_values( $templates );
+	}
+
+	/**
+	 * Theme template files still named after the pre-2.0.0 taxonomies.
+	 *
+	 * A theme template is matched by its file name, and WordPress now asks for
+	 * `taxonomy-blockendar_event_type`; a theme's `taxonomy-event_type.html`
+	 * would never match again and the archive would fall back to the plugin
+	 * default — a design lost without a word. The migration renames Site
+	 * Editor copies in the database but cannot rename files, so each such file
+	 * is served under its new slug as a plugin template: below a theme file at
+	 * the new name and any Site Editor customisation, exactly where the theme
+	 * file itself would sit once renamed. Per-term files
+	 * (`taxonomy-event_type-concerts.html`) are carried the same way. The
+	 * child theme's file wins over the parent's, as it does for the theme
+	 * itself.
+	 *
+	 * @return array<string, array<string, string>> New slug => title, description and content.
+	 */
+	private function legacy_theme_templates(): array {
+		$folder = get_block_theme_folders()['wp_template'] ?? 'templates';
+		$dirs   = array_unique( [ get_stylesheet_directory(), get_template_directory() ] );
+		$found  = [];
+
+		foreach ( $dirs as $dir ) {
+			foreach ( TaxonomyPrefixMigration::MAP as $old => $new ) {
+				foreach ( glob( "{$dir}/{$folder}/taxonomy-{$old}*.html" ) ?: [] as $file ) {
+					$rest = substr( basename( $file, '.html' ), strlen( "taxonomy-{$old}" ) );
+
+					// taxonomy-event_typography.html belongs to someone else.
+					if ( '' !== $rest && '-' !== $rest[0] ) {
+						continue;
+					}
+
+					$slug = "taxonomy-{$new}{$rest}";
+
+					if ( isset( $found[ $slug ] ) ) {
+						continue;
+					}
+
+					foreach ( $dirs as $other ) {
+						if ( file_exists( "{$other}/{$folder}/{$slug}.html" ) ) {
+							continue 2; // The theme has caught up; its file wins on its own.
+						}
+					}
+
+					$relative = $folder . '/' . basename( $file );
+
+					$taxonomy = get_taxonomy( $new );
+					$label    = $taxonomy ? $taxonomy->labels->singular_name : $new;
+					$term     = '' === $rest ? '' : substr( $rest, 1 );
+
+					$found[ $slug ] = [
+						'title'       => '' === $term
+							/* translators: %s: taxonomy singular name, e.g. Venue. */
+							? sprintf( __( '%s Archive', 'blockendar' ), $label )
+							/* translators: 1: taxonomy singular name, e.g. Venue; 2: term slug. */
+							: sprintf( __( '%1$s Archive: %2$s', 'blockendar' ), $label, $term ),
+						'description' => sprintf(
+							/* translators: 1: path of the template file inside the theme, 2: the file name it should have now. */
+							__( 'Served from your theme’s %1$s, which is named after a taxonomy renamed in Blockendar 2.0.0. Rename that file to %2$s to edit it as a theme template again.', 'blockendar' ),
+							$relative,
+							$slug . '.html'
+						),
+						'content'     => (string) file_get_contents( $file ),
+					];
+				}
+			}
+		}
+
+		return $found;
 	}
 }

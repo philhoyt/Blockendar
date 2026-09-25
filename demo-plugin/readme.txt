@@ -3,7 +3,7 @@ Contributors: philhoyt
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 1.8.2
+Stable tag: 2.0.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,6 +26,9 @@ setting. Content of your own is never touched.
 Requires Blockendar 1.7.0 or newer.
 
 == Changelog ==
+
+= 2.0.0 =
+* Changed: the seeder creates its event types and venues under the prefixed taxonomy names Blockendar 2.0.0 registers, and now requires Blockendar 2.0.0 or later.
 
 = 1.8.2 =
 * Changed: version only, to stay in step with Blockendar 1.8.2. The demo content and the seeder are unchanged.

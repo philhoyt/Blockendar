@@ -96,8 +96,15 @@ test.beforeAll( () => {
 	const eventA = createEvent( 'Switcher Event A', daysFromNow( 7 ) );
 	createEvent( 'Switcher Event B', daysFromNow( 14 ) );
 
-	ensureTerm( 'event_type', 'Switcher Type', 'switcher-type' );
-	wpCli( [ 'post', 'term', 'set', eventA, 'event_type', 'Switcher Type' ] );
+	ensureTerm( 'blockendar_event_type', 'Switcher Type', 'switcher-type' );
+	wpCli( [
+		'post',
+		'term',
+		'set',
+		eventA,
+		'blockendar_event_type',
+		'Switcher Type',
+	] );
 	// Re-save so the index builder picks up the term.
 	wpCli( [ 'post', 'update', eventA, '--post_title=Switcher Event A' ] );
 

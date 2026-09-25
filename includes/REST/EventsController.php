@@ -17,6 +17,9 @@ use Blockendar\DB\EventIndex;
 use Blockendar\DB\IndexBuilder;
 use Blockendar\Recurrence\RuleRepository;
 use Blockendar\Recurrence\Generator;
+use Blockendar\Taxonomy\EventTag;
+use Blockendar\Taxonomy\EventType;
+use Blockendar\Taxonomy\Venue;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
@@ -564,7 +567,7 @@ class EventsController extends AbstractController {
 	 * @param int $post_id Post ID.
 	 */
 	private function get_venue_data( int $post_id ): ?array {
-		$terms = get_the_terms( $post_id, 'event_venue' );
+		$terms = get_the_terms( $post_id, Venue::TAXONOMY );
 
 		if ( is_wp_error( $terms ) || empty( $terms ) ) {
 			return null;
@@ -593,7 +596,7 @@ class EventsController extends AbstractController {
 	 * @return array[]
 	 */
 	private function get_type_data( int $post_id ): array {
-		$terms = get_the_terms( $post_id, 'event_type' );
+		$terms = get_the_terms( $post_id, EventType::TAXONOMY );
 
 		if ( is_wp_error( $terms ) || empty( $terms ) ) {
 			return [];
@@ -617,7 +620,7 @@ class EventsController extends AbstractController {
 	 * @return array[]
 	 */
 	private function get_tag_data( int $post_id ): array {
-		$terms = get_the_terms( $post_id, 'event_tag' );
+		$terms = get_the_terms( $post_id, EventTag::TAXONOMY );
 
 		if ( is_wp_error( $terms ) || empty( $terms ) ) {
 			return [];

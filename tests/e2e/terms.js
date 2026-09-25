@@ -17,7 +17,7 @@ const { wpCli, wpCliId } = require( './wp-cli' );
 /**
  * Return the ID of a term, creating it if it does not exist.
  *
- * @param {string} taxonomy Taxonomy name, e.g. 'event_type'.
+ * @param {string} taxonomy Taxonomy name, e.g. 'blockendar_event_type'.
  * @param {string} name     Human-readable term name.
  * @param {string} slug     Slug to create it with, and to find it by.
  * @return {string} The term ID.

@@ -89,7 +89,7 @@ export function Edit( { attributes, setAttributes } ) {
 
 	const venues = useSelect(
 		( select ) =>
-			select( coreStore ).getEntityRecords( 'taxonomy', 'event_venue', {
+			select( coreStore ).getEntityRecords( 'taxonomy', 'blockendar_event_venue', {
 				per_page: 100,
 				hide_empty: false,
 			} ) ?? [],
@@ -98,7 +98,7 @@ export function Edit( { attributes, setAttributes } ) {
 
 	const types = useSelect(
 		( select ) =>
-			select( coreStore ).getEntityRecords( 'taxonomy', 'event_type', {
+			select( coreStore ).getEntityRecords( 'taxonomy', 'blockendar_event_type', {
 				per_page: 100,
 				hide_empty: false,
 			} ) ?? [],

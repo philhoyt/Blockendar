@@ -19,13 +19,19 @@ test.beforeAll( () => {
 		const existing = wpCli( [
 			'term',
 			'list',
-			'event_type',
+			'blockendar_event_type',
 			`--name=${ name }`,
 			'--field=term_id',
 		] ).trim();
 
 		if ( ! existing ) {
-			wpCli( [ 'term', 'create', 'event_type', name, '--porcelain' ] );
+			wpCli( [
+				'term',
+				'create',
+				'blockendar_event_type',
+				name,
+				'--porcelain',
+			] );
 		}
 	} );
 
@@ -153,13 +159,19 @@ test( 'a narrow trigger widens the panel to its options rather than wrapping the
 	const existing = wpCli( [
 		'term',
 		'list',
-		'event_type',
+		'blockendar_event_type',
 		`--name=${ longName }`,
 		'--field=term_id',
 	] ).trim();
 
 	if ( ! existing ) {
-		wpCli( [ 'term', 'create', 'event_type', longName, '--porcelain' ] );
+		wpCli( [
+			'term',
+			'create',
+			'blockendar_event_type',
+			longName,
+			'--porcelain',
+		] );
 	}
 
 	// A nowrap Row squeezes the filter to its trigger label's width.

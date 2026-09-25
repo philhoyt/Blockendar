@@ -21,6 +21,7 @@ use Blockendar\Demo\Fixtures;
 use Blockendar\Demo\Pages;
 use Blockendar\Demo\Plugin;
 use Blockendar\Demo\Seeder;
+use Blockendar\Taxonomy\EventType;
 use WP_UnitTestCase;
 
 class DemoSeederTest extends WP_UnitTestCase {
@@ -361,7 +362,7 @@ class DemoSeederTest extends WP_UnitTestCase {
 
 		$their_term = self::factory()->term->create(
 			[
-				'taxonomy' => 'event_type',
+				'taxonomy' => EventType::TAXONOMY,
 				'name'     => 'Music',
 				'slug'     => 'music',
 			]
@@ -382,7 +383,7 @@ class DemoSeederTest extends WP_UnitTestCase {
 		$this->seeder->reset();
 
 		$this->assertInstanceOf( \WP_Post::class, get_post( $their_page ), 'Reset deleted a page it did not create.' );
-		$this->assertInstanceOf( \WP_Term::class, get_term( $their_term, 'event_type' ), 'Reset deleted a term it did not create.' );
+		$this->assertInstanceOf( \WP_Term::class, get_term( $their_term, EventType::TAXONOMY ), 'Reset deleted a term it did not create.' );
 		$this->assertSame( 'calendar', get_post( $their_page )->post_name );
 	}
 

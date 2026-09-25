@@ -17,6 +17,8 @@ use Blockendar\DB\EventIndex;
 use Blockendar\DB\IndexBuilder;
 use Blockendar\Recurrence\Generator;
 use Blockendar\Recurrence\RuleRepository;
+use Blockendar\Taxonomy\EventType;
+use Blockendar\Taxonomy\Venue;
 
 /**
  * Seeds and tears down the demo dataset.
@@ -257,7 +259,7 @@ class Seeder {
 		$ids = [];
 
 		foreach ( Fixtures::event_types() as $type ) {
-			$term_id = $this->ensure_term( $type['name'], $type['slug'], 'event_type', $state );
+			$term_id = $this->ensure_term( $type['name'], $type['slug'], EventType::TAXONOMY, $state );
 
 			if ( ! $term_id ) {
 				continue;
@@ -280,7 +282,7 @@ class Seeder {
 		$ids = [];
 
 		foreach ( Fixtures::venues() as $venue ) {
-			$term_id = $this->ensure_term( $venue['name'], $venue['slug'], 'event_venue', $state );
+			$term_id = $this->ensure_term( $venue['name'], $venue['slug'], Venue::TAXONOMY, $state );
 
 			if ( ! $term_id ) {
 				continue;
@@ -407,7 +409,7 @@ class Seeder {
 
 		$venue_slug = (string) ( $fixture['venue'] ?? '' );
 		if ( '' !== $venue_slug && isset( $venue_ids[ $venue_slug ] ) ) {
-			wp_set_object_terms( $post_id, [ (int) $venue_ids[ $venue_slug ] ], 'event_venue' );
+			wp_set_object_terms( $post_id, [ (int) $venue_ids[ $venue_slug ] ], Venue::TAXONOMY );
 		}
 
 		$types = [];
@@ -417,7 +419,7 @@ class Seeder {
 			}
 		}
 		if ( $types ) {
-			wp_set_object_terms( $post_id, $types, 'event_type' );
+			wp_set_object_terms( $post_id, $types, EventType::TAXONOMY );
 		}
 
 		$image_key = (string) ( $fixture['image'] ?? '' );

@@ -10,9 +10,9 @@
  * block must show "All", which is only ever rendered after the fetch resolved.
  * Neither passes with the fetch broken.
  *
- * On the dev site other specs leave `event_type` terms behind, so the types
+ * On the dev site other specs leave `blockendar_event_type` terms behind, so the types
  * row would render there without this spec's fixture; no spec leaves
- * `event_venue` terms, so the venue path — and CI's fresh install — exercise
+ * `blockendar_event_venue` terms, so the venue path — and CI's fresh install — exercise
  * the gate from zero.
  */
 
@@ -31,8 +31,8 @@ let unfilteredPageId;
 const createdPosts = [];
 
 test.beforeAll( () => {
-	venueId = ensureTerm( 'event_venue', VENUE.name, VENUE.slug );
-	typeId = ensureTerm( 'event_type', TYPE.name, TYPE.slug );
+	venueId = ensureTerm( 'blockendar_event_venue', VENUE.name, VENUE.slug );
+	typeId = ensureTerm( 'blockendar_event_type', TYPE.name, TYPE.slug );
 
 	// IDs are interpolated unquoted: the block compares `t.id` to the attribute
 	// with strict equality, and a quoted string never matches a number.
@@ -63,8 +63,8 @@ test.afterAll( () => {
 	createdPosts.forEach( ( id ) =>
 		wpCli( [ 'post', 'delete', id, '--force' ] )
 	);
-	deleteTerm( 'event_venue', venueId );
-	deleteTerm( 'event_type', typeId );
+	deleteTerm( 'blockendar_event_venue', venueId );
+	deleteTerm( 'blockendar_event_type', typeId );
 } );
 
 /**

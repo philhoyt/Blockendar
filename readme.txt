@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 1.8.2
+Stable tag: 2.0.0
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -102,6 +102,14 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 2.0.0 =
+* Changed: the three taxonomies are renamed from event_type, event_tag and event_venue to blockendar_event_type, blockendar_event_tag and blockendar_event_venue, so they can no longer collide with another events plugin that uses the same names. Existing sites are migrated the first time a page loads after the update: event types, tags and venues with their assignments and settings, classic menu items that point at them, Site Editor template customisations, and the core blocks that name a taxonomy (Post Terms, Categories List, Tag Cloud, Post Navigation Link, Navigation links, Query Loop filters) in pages and block widgets are all moved. Permalinks, REST routes and calendar feed URLs are unchanged.
+* Changed: block markup in theme files, template parts, patterns and restored revisions that still names an old taxonomy — a Post Terms block with term: event_type, a Query Loop filtered by it, a navigation link to one of its terms — keeps working. The migration cannot rewrite files, so those attributes are translated as each block renders and as the Site Editor loads a theme template.
+* Changed: a theme template file still named after an old taxonomy, such as templates/taxonomy-event_type.html, keeps applying to that archive. The migration cannot rename files, so the plugin serves the file under the new name until the theme renames it; the Site Editor says which file to rename.
+* Added: wp blockendar migrate-taxonomies with --status, --dry-run, --run, --rollback and --clear-backups. Under WP-CLI the migration runs only when asked, so a site can be inspected before its first page load.
+* Changed: when another plugin already has data under the old names, or anything exists under the new ones, the migration refuses to run, shows administrators a notice saying why, and retries hourly. Nothing is moved until the conflict is resolved.
+* Not migrated, and needing a manual update where present: theme or snippet code that names the old taxonomies or hooks into created_event_venue, event_type_edit_form_fields and similar; custom CSS targeting core's taxonomy-event_type or tax-event_type classes; SEO and translation plugin settings stored per taxonomy name; hidden or reordered editor metaboxes, which reset; and restoring a revision saved before 2.0.0, which brings the old names back into that post.
 
 = 1.8.2 =
 * Fixed: the Event Venue block always showed its sample venue, "The Grand Ballroom", in the editor instead of the venue assigned to the event. It was reading the wrong field from the REST API. Visitors were never affected.
@@ -323,6 +331,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 2.0.0 =
+Renames the event type, tag and venue taxonomies to prefixed names. Existing sites migrate on the first page load after updating; run `wp blockendar migrate-taxonomies --dry-run` first to see what will change, and `--rollback` reverses it. Update by hand where present: theme or snippet code naming event_type, event_tag or event_venue or hooking created_event_venue and similar; CSS targeting core's taxonomy-event_type classes; SEO and translation plugin settings stored per taxonomy name. Hidden editor metaboxes reset, and restoring a pre-2.0.0 revision brings the old names back into that post.
 
 = 1.8.2 =
 Fixes two editor display bugs. The Event Venue block showed its sample venue rather than the one assigned, and the Event Date & Time block showed dates and times shifted by the difference between your browser's timezone and the site's. Neither affected what visitors saw. No database changes.

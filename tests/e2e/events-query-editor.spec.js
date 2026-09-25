@@ -18,7 +18,7 @@ const created = [];
 
 test.beforeAll( () => {
 	filterTypeId = ensureTerm(
-		'event_type',
+		'blockendar_event_type',
 		'E2E Filter Type',
 		'e2e-filter-type'
 	);
@@ -82,7 +82,7 @@ test.beforeAll( () => {
 
 test.afterAll( () => {
 	created.forEach( ( id ) => wpCli( [ 'post', 'delete', id, '--force' ] ) );
-	deleteTerm( 'event_type', filterTypeId );
+	deleteTerm( 'blockendar_event_type', filterTypeId );
 } );
 
 /**

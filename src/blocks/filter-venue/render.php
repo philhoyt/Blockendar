@@ -30,7 +30,7 @@ $param_name = FilterContext::param_name( 'venue', $query_id );
 $active_id  = FilterContext::get_active_filters( $query_id )['venue_id'];
 
 $term_args = [
-	'taxonomy'   => 'event_venue',
+	'taxonomy'   => \Blockendar\Taxonomy\Venue::TAXONOMY,
 	'orderby'    => 'name',
 	'order'      => 'ASC',
 

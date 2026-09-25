@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Blockendar\DB\EventIndex;
 use Blockendar\ICS\Exporter;
+use Blockendar\Taxonomy\EventType;
+use Blockendar\Taxonomy\Venue;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
@@ -373,7 +375,7 @@ class CalendarController extends AbstractController {
 			return null;
 		}
 
-		$term = get_term( $venue_term_id, 'event_venue' );
+		$term = get_term( $venue_term_id, Venue::TAXONOMY );
 
 		if ( is_wp_error( $term ) || null === $term ) {
 			return null;
@@ -396,7 +398,7 @@ class CalendarController extends AbstractController {
 		$types = [];
 
 		foreach ( $type_ids as $type_id ) {
-			$term = get_term( (int) $type_id, 'event_type' );
+			$term = get_term( (int) $type_id, EventType::TAXONOMY );
 
 			if ( is_wp_error( $term ) || null === $term ) {
 				continue;

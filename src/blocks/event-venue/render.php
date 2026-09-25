@@ -19,7 +19,7 @@ if ( ! $post_id ) {
 
 $show_addr = (bool) ( $attributes['showAddress'] ?? true );
 
-$terms = get_the_terms( $post_id, 'event_venue' );
+$terms = get_the_terms( $post_id, \Blockendar\Taxonomy\Venue::TAXONOMY );
 if ( is_wp_error( $terms ) || empty( $terms ) ) {
 	return;
 }

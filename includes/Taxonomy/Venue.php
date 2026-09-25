@@ -23,7 +23,7 @@ use Blockendar\CPT\EventPostType;
  */
 class Venue {
 
-	const TAXONOMY = 'event_venue';
+	const TAXONOMY = 'blockendar_event_venue';
 
 	/**
 	 * Attach hooks.
@@ -78,12 +78,12 @@ class Venue {
 
 		add_rewrite_rule(
 			'^' . $base . '/venue/([^/]+)/page/([0-9]{1,})/?$',
-			'index.php?event_venue=$matches[1]&paged=$matches[2]',
+			'index.php?' . self::TAXONOMY . '=$matches[1]&paged=$matches[2]',
 			'top'
 		);
 		add_rewrite_rule(
 			'^' . $base . '/venue/([^/]+)/?$',
-			'index.php?event_venue=$matches[1]',
+			'index.php?' . self::TAXONOMY . '=$matches[1]',
 			'top'
 		);
 	}

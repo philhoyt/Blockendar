@@ -3,7 +3,7 @@
  * Plugin Name:       Blockendar - Events and Calendars
  * Plugin URI:        https://github.com/philhoyt/Blockendar
  * Description:       A block-native WordPress events plugin. No shortcodes. No legacy widgets. The block editor is the UI.
- * Version:           1.8.2
+ * Version:           2.0.0
  * Requires at least: 6.8
  * Requires PHP:      8.1
  * Author:            philhoyt
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Constants.
-define( 'BLOCKENDAR_VERSION', '1.8.2' );
+define( 'BLOCKENDAR_VERSION', '2.0.0' );
 define( 'BLOCKENDAR_FILE', __FILE__ );
 define( 'BLOCKENDAR_DIR', plugin_dir_path( __FILE__ ) );
 
@@ -87,6 +87,15 @@ register_activation_hook(
 		( new Blockendar\Taxonomy\EventTag() )->register_taxonomy();
 		( new Blockendar\Taxonomy\Venue() )->register_taxonomy();
 		flush_rewrite_rules();
+
+		// A fresh install has nothing to move to the 2.0.0 taxonomy names; gate it
+		// so the migration never runs here — which matters when another plugin owns
+		// `event_type`. A 1.x site re-activated by hand keeps its gate unset and
+		// migrates on its first request.
+		$migration = new Blockendar\Migration\TaxonomyPrefixMigration();
+		if ( $migration->is_fresh_install() ) {
+			$migration->mark_migrated();
+		}
 	}
 );
 register_deactivation_hook(

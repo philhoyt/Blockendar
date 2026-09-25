@@ -72,7 +72,7 @@ Renders event type terms as a filterable list or dropdown.
 - `label` (string, default `""`) — optional visible label above the control.
 - `triggerLabel` (string, default `"All types"`) — text on the closed dropdown.
 
-**render.php:** Fetches `event_type` terms, renders checkboxes (multi-select) or `<select multiple>`. Marks active terms from `$_GET`. Preserves other active filter params as hidden inputs.
+**render.php:** Fetches `blockendar_event_type` terms, renders checkboxes (multi-select) or `<select multiple>`. Marks active terms from `$_GET`. Preserves other active filter params as hidden inputs.
 
 **view.js:** Intercepts checkbox/select change, strips `blockendar_page` param, updates URL via `location.assign()`.
 
@@ -89,7 +89,7 @@ Renders venue terms as a filterable list or dropdown. Single-select (one venue p
 - `label` (string, default `""`) — optional visible label above the control.
 - `triggerLabel` (string, default `"All venues"`) — text on the closed dropdown.
 
-**render.php:** Fetches `event_venue` terms, optionally filters out virtual venues. Renders radio buttons or `<select>`. Includes an "All venues" option that clears the filter. Marks active venue.
+**render.php:** Fetches `blockendar_event_venue` terms, optionally filters out virtual venues. Renders radio buttons or `<select>`. Includes an "All venues" option that clears the filter. Marks active venue.
 
 **view.js:** Auto-submit on radio/select change.
 
