@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Blockendar\CPT\EventPostType;
 
 /**
- * Registers blocks from their block.json metadata files and enqueues
+ * Registers every block from the build-time blocks manifest and enqueues
  * the editor sidebar panel script for the blockendar_event post type.
  */
 class BlockRegistrar {
@@ -30,18 +30,35 @@ class BlockRegistrar {
 	}
 
 	/**
-	 * Register every block from its block.json file.
+	 * Register every block from build/blocks-manifest.php.
+	 *
+	 * wp-scripts writes the metadata of every built block.json into that one
+	 * PHP array (the --blocks-manifest flag on the build and start scripts),
+	 * keyed by block directory name. Registering it as a metadata collection
+	 * lets core take each block's metadata from memory, where OPcache keeps
+	 * it, instead of reading and decoding sixteen JSON files on every request.
+	 * The built block.json files stay where they are: core still resolves the
+	 * file: asset paths relative to them.
+	 *
+	 * The paths are built from BLOCKENDAR_DIR rather than WP_PLUGIN_DIR because
+	 * __FILE__ resolves symlinks. On a dev site that symlinks the checkout the
+	 * collection registers under the real path, and every later lookup has to
+	 * use the same one.
 	 */
 	public function register_blocks(): void {
-		$blocks_dir = BLOCKENDAR_DIR . 'build/blocks/';
+		$manifest = BLOCKENDAR_DIR . 'build/blocks-manifest.php';
 
-		if ( ! is_dir( $blocks_dir ) ) {
+		// Core raises _doing_it_wrong() twice for a missing manifest: once
+		// registering the collection, once listing its blocks. An unbuilt
+		// checkout should register nothing, quietly, as it always has.
+		if ( ! file_exists( $manifest ) ) {
 			return;
 		}
 
-		foreach ( glob( $blocks_dir . '*', GLOB_ONLYDIR ) as $block_dir ) {
-			register_block_type( $block_dir );
-		}
+		wp_register_block_types_from_metadata_collection(
+			BLOCKENDAR_DIR . 'build/blocks',
+			$manifest
+		);
 	}
 
 	/**

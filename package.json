@@ -1,6 +1,6 @@
 {
   "name": "blockendar",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Block-native WordPress events plugin",
   "license": "GPL-2.0-or-later",
   "private": true,
@@ -17,8 +17,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "wp-scripts build",
-    "start": "wp-scripts start",
+    "build": "wp-scripts build --blocks-manifest",
+    "start": "wp-scripts start --blocks-manifest",
     "lint:js": "wp-scripts lint-js",
     "lint:css": "wp-scripts lint-style",
     "packages-update": "wp-scripts packages-update",
