@@ -129,6 +129,7 @@ class BlockManifestRegistrationTest extends WP_UnitTestCase {
 		$seen = array_fill_keys( array_keys( $asset_keys ), false );
 
 		foreach ( $this->manifest() as $dir => $metadata ) {
+			$this->assertArrayHasKey( $metadata['name'], $blocks, "$dir did not register" );
 			$block = $blocks[ $metadata['name'] ];
 
 			$this->assertSame(
