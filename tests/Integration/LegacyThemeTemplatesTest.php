@@ -110,8 +110,25 @@ class LegacyThemeTemplatesTest extends WP_UnitTestCase {
 
 		$this->re_register();
 
-		$this->assertStringContainsString( 'concerts', $this->resolved( 'taxonomy-blockendar_event_type-concerts' )->content );
-		$this->assertStringContainsString( 'venues', $this->resolved( 'taxonomy-blockendar_event_venue' )->content );
+		$concerts = $this->resolved( 'taxonomy-blockendar_event_type-concerts' );
+		$venues   = $this->resolved( 'taxonomy-blockendar_event_venue' );
+		$this->assertStringContainsString( 'concerts', $concerts->content );
+		$this->assertSame( 'Event Type Archive: concerts', $concerts->title );
+		$this->assertStringContainsString( 'venues', $venues->content );
+		$this->assertSame( 'Venue Archive', $venues->title, 'named after the taxonomy, not humanised from the slug' );
+	}
+
+	public function test_the_site_editor_list_hides_the_superseded_file_but_a_lookup_still_finds_it(): void {
+		$this->theme_file( 'taxonomy-event_type.html', '<!-- wp:paragraph --><p>legacy</p><!-- /wp:paragraph -->' );
+		$this->theme_file( 'taxonomy-event_typography.html', '<!-- wp:paragraph --><p>not ours</p><!-- /wp:paragraph -->' );
+
+		$this->re_register();
+
+		$listed = array_map( fn( $t ) => $t->slug, get_block_templates() );
+		$this->assertNotContains( 'taxonomy-event_type', $listed, 'the orphan file is not offered for editing' );
+		$this->assertContains( 'taxonomy-blockendar_event_type', $listed, 'its content is, under the new name' );
+		$this->assertContains( 'taxonomy-event_typography', $listed, 'a file that merely starts with the old name stays listed' );
+		$this->assertNotEmpty( get_block_templates( [ 'slug__in' => [ 'taxonomy-event_type' ] ] ), 'a direct lookup is not second-guessed' );
 	}
 
 	public function test_a_file_that_merely_starts_with_an_old_name_is_left_alone(): void {

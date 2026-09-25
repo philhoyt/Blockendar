@@ -27,6 +27,7 @@ class TemplateRegistrar {
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_templates' ] );
+		add_filter( 'get_block_templates', [ $this, 'hide_superseded_theme_files' ], 10, 3 );
 	}
 
 	/**
@@ -60,12 +61,49 @@ class TemplateRegistrar {
 		];
 
 		foreach ( $this->legacy_theme_templates() as $slug => $override ) {
-			$templates[ $slug ] = array_merge( $templates[ $slug ] ?? [ 'title' => $slug ], $override );
+			$templates[ $slug ] = array_merge( $templates[ $slug ] ?? [], $override );
 		}
 
 		foreach ( $templates as $slug => $args ) {
 			register_block_template( 'blockendar//' . $slug, $args );
 		}
+	}
+
+	/**
+	 * Keep the old-named theme files out of the Site Editor's template list.
+	 *
+	 * WordPress lists every file in the theme's templates folder, so beside
+	 * "Event Type Archive" (served from the file) an editor would also see
+	 * "taxonomy-event_type" — a template that can never match a request again
+	 * and whose edits go nowhere. Only whole listings are trimmed; a lookup by
+	 * slug is left alone.
+	 *
+	 * @param mixed  $templates     Templates found.
+	 * @param array  $query         The query.
+	 * @param string $template_type wp_template or wp_template_part.
+	 * @return mixed
+	 */
+	public function hide_superseded_theme_files( $templates, $query, $template_type ) {
+		if ( 'wp_template' !== $template_type || ! is_array( $templates ) || ! empty( $query['slug__in'] ) ) {
+			return $templates;
+		}
+
+		foreach ( $templates as $key => $template ) {
+			if ( ! is_object( $template ) || 'theme' !== ( $template->source ?? '' ) ) {
+				continue;
+			}
+
+			foreach ( array_keys( TaxonomyPrefixMigration::MAP ) as $old ) {
+				$rest = substr( (string) $template->slug, strlen( "taxonomy-{$old}" ) );
+
+				if ( str_starts_with( (string) $template->slug, "taxonomy-{$old}" ) && ( '' === $rest || '-' === $rest[0] ) ) {
+					unset( $templates[ $key ] );
+					break;
+				}
+			}
+		}
+
+		return array_values( $templates );
 	}
 
 	/**
@@ -114,7 +152,16 @@ class TemplateRegistrar {
 
 					$relative = $folder . '/' . basename( $file );
 
+					$taxonomy = get_taxonomy( $new );
+					$label    = $taxonomy ? $taxonomy->labels->singular_name : $new;
+					$term     = '' === $rest ? '' : substr( $rest, 1 );
+
 					$found[ $slug ] = [
+						'title'       => '' === $term
+							/* translators: %s: taxonomy singular name, e.g. Venue. */
+							? sprintf( __( '%s Archive', 'blockendar' ), $label )
+							/* translators: 1: taxonomy singular name, e.g. Venue; 2: term slug. */
+							: sprintf( __( '%1$s Archive: %2$s', 'blockendar' ), $label, $term ),
 						'description' => sprintf(
 							/* translators: 1: path of the template file inside the theme, 2: the file name it should have now. */
 							__( 'Served from your theme’s %1$s, which is named after a taxonomy renamed in Blockendar 2.0.0. Rename that file to %2$s to edit it as a theme template again.', 'blockendar' ),
