@@ -17,8 +17,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "wp-scripts build",
-    "start": "wp-scripts start",
+    "build": "wp-scripts build --blocks-manifest",
+    "start": "wp-scripts start --blocks-manifest",
     "lint:js": "wp-scripts lint-js",
     "lint:css": "wp-scripts lint-style",
     "packages-update": "wp-scripts packages-update",
