@@ -65,8 +65,19 @@ class Plugin {
 			return;
 		}
 
-		// Clear first: a fatal part-way through must not retry on every request.
-		delete_option( self::SEED_FLAG );
+		/*
+		 * Claim the flag by deleting it, and stop if there was nothing to
+		 * delete. Two requests can both read the flag as set; only one of them
+		 * removes the row. Seeding without that check ran twice, and the second
+		 * run's record of what it created replaced the first's, leaving a whole
+		 * set of demo content that reset could no longer find.
+		 *
+		 * Cleared before seeding, so a fatal part-way through does not retry on
+		 * every request.
+		 */
+		if ( ! delete_option( self::SEED_FLAG ) ) {
+			return;
+		}
 
 		if ( ! Dependency::is_satisfied() ) {
 			set_transient( Dependency::NOTICE_KEY, Dependency::failure_reason(), MINUTE_IN_SECONDS );
