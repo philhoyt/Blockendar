@@ -118,8 +118,9 @@ export function RestApiSection( { settings, update } ) {
 			<ToggleControl
 				label={ __( 'Public REST endpoints', 'blockendar' ) }
 				help={ __(
-					'Allow unauthenticated access to /blockendar/v1/events and /blockendar/v1/calendar. ' +
-						'Disable to require authentication for all event data.',
+					'Allow anyone to read event data over the REST API. ' +
+						'When off, a reader must be logged in: this covers the /blockendar/v1 routes and the WordPress routes for events, venues, event types and event tags. ' +
+						'Calendar blocks then show events to logged-in visitors only.',
 					'blockendar'
 				) }
 				checked={ isPublic }
