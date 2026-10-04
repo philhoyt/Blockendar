@@ -280,3 +280,20 @@
 .blockendar-calendar-fallback__item time {
 	opacity: 0.75;
 }
+
+/* Shown above the grid when the events request fails after the calendar has
+   mounted. The server-rendered list is gone by then, so this is all the
+   visitor has to go on. */
+.blockendar-calendar-error {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5em 1em;
+	margin-block-end: 1em;
+	padding: 0.75em 1em;
+	border: 1px solid color-mix(in srgb, currentcolor 30%, transparent);
+}
+
+.blockendar-calendar-error p {
+	margin: 0;
+}

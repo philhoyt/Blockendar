@@ -11,9 +11,15 @@ const VIEW_OPTIONS = [
 	{ label: __( 'List (Week)', 'blockendar' ), value: 'listWeek' },
 ];
 
+// All seven: the default follows WordPress's "Week Starts On", which can be
+// any of them, and a default that is not in the list could not be reselected.
 const FIRST_DAY_OPTIONS = [
 	{ label: __( 'Sunday', 'blockendar' ), value: 0 },
 	{ label: __( 'Monday', 'blockendar' ), value: 1 },
+	{ label: __( 'Tuesday', 'blockendar' ), value: 2 },
+	{ label: __( 'Wednesday', 'blockendar' ), value: 3 },
+	{ label: __( 'Thursday', 'blockendar' ), value: 4 },
+	{ label: __( 'Friday', 'blockendar' ), value: 5 },
 	{ label: __( 'Saturday', 'blockendar' ), value: 6 },
 ];
 
