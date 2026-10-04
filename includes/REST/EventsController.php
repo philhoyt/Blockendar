@@ -245,6 +245,12 @@ class EventsController extends AbstractController {
 			return new WP_Error( 'blockendar_forbidden', __( 'You do not have permission to view this event.', 'blockendar' ), [ 'status' => 403 ] );
 		}
 
+		// A password-protected event answers as if it did not exist, the same as
+		// the single-event ICS route.
+		if ( ! $this->can_read_event( $post ) ) {
+			return new WP_Error( 'blockendar_not_found', __( 'Event not found.', 'blockendar' ), [ 'status' => 404 ] );
+		}
+
 		$meta      = $this->get_full_meta( $post_id );
 		$rule      = $this->rules->get( $post_id );
 		$instances = $this->index->get_upcoming_instances( $post_id, 10 );
@@ -283,6 +289,11 @@ class EventsController extends AbstractController {
 		// its whole schedule anonymously. Mirror the guard get_event() uses.
 		if ( 'publish' !== $post->post_status && ! current_user_can( 'edit_post', $post_id ) ) {
 			return new WP_Error( 'blockendar_forbidden', __( 'You do not have permission to view this event.', 'blockendar' ), [ 'status' => 403 ] );
+		}
+
+		// The index holds rows for a password-protected event too.
+		if ( ! $this->can_read_event( $post ) ) {
+			return new WP_Error( 'blockendar_not_found', __( 'Event not found.', 'blockendar' ), [ 'status' => 404 ] );
 		}
 
 		$rows = $this->index->get_by_post_id( $post_id );

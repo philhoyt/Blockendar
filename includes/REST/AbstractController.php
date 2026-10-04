@@ -104,6 +104,24 @@ abstract class AbstractController {
 	}
 
 	/**
+	 * Whether the current user may read one event through a public read route.
+	 *
+	 * Every route that returns a single event's data MUST pass through this. A
+	 * password-protected event is still 'publish', so a status check alone hands
+	 * out the title, dates and venue the password exists to withhold. The
+	 * collection routes make the same decision in SQL, in EventIndex.
+	 *
+	 * @param \WP_Post $post Event the caller wants to read.
+	 */
+	public function can_read_event( \WP_Post $post ): bool {
+		if ( 'publish' === $post->post_status && '' === $post->post_password ) {
+			return true;
+		}
+
+		return current_user_can( 'edit_post', $post->ID );
+	}
+
+	/**
 	 * Check if the current user can manage options (for admin endpoints).
 	 */
 	public function can_manage(): bool {
