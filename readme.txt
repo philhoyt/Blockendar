@@ -35,6 +35,10 @@ import them with WP-CLI:
 `wp blockendar import-tribe ./tribe-events.xml --dry-run`
 `wp blockendar import-tribe ./tribe-events.xml`
 
+Each event keeps its status and its password. Events in the trash are skipped,
+and a status Blockendar does not use becomes a draft. Run with `--dry-run` first:
+it lists every value the import would change or leave out, event by event.
+
 There is no upload screen. A one-off migration does not need a permanent HTTP
 endpoint, and a real export runs to thousands of events — more than a single web
 request can parse and insert before it times out.

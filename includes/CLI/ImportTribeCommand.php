@@ -43,6 +43,10 @@ class ImportTribeCommand {
 	 * On the source site go to Tools > Export and export only "Events", then
 	 * run this against the resulting file.
 	 *
+	 * Each event keeps its status and password. Events in the trash are
+	 * skipped, and a status Blockendar does not use becomes a draft. Run with
+	 * --dry-run first: it lists every value the import would change or drop.
+	 *
 	 * ## OPTIONS
 	 *
 	 * <file>
@@ -82,6 +86,18 @@ class ImportTribeCommand {
 
 		foreach ( $results['errors'] as $error ) {
 			\WP_CLI::warning( $error );
+		}
+
+		// What the import changed or left out, event by event. On a dry run
+		// this is the reason to run it.
+		foreach ( $results['events'] as $event ) {
+			if ( 'skipped' === $event['status'] ) {
+				\WP_CLI::log( sprintf( 'Skipped "%1$s": %2$s', $event['title'], $event['message'] ) );
+			}
+
+			foreach ( $event['notes'] ?? [] as $note ) {
+				\WP_CLI::log( sprintf( '"%1$s": %2$s', $event['title'], $note ) );
+			}
 		}
 
 		$imported = (int) $results['imported'];

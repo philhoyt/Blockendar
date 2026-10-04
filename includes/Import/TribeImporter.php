@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\Admin\SettingsPage;
 use Blockendar\CPT\EventPostType;
 use Blockendar\Taxonomy\EventType;
 use Blockendar\DB\IndexBuilder;
@@ -22,6 +23,14 @@ use Blockendar\DB\IndexBuilder;
  * Blockendar events from tribe_events items.
  */
 class TribeImporter {
+
+	/**
+	 * Post statuses carried over as they are.
+	 *
+	 * Core's export writes every status except auto-draft, so a file holds
+	 * pending, scheduled and trashed events alongside the published ones.
+	 */
+	private const KEPT_STATUSES = [ 'publish', 'draft', 'private', 'pending', 'future' ];
 
 	/**
 	 * Import events from raw WXR XML.
@@ -88,7 +97,7 @@ class TribeImporter {
 	 * @param \DOMElement  $item    The <item> element.
 	 * @param IndexBuilder $builder Index builder for post-insert indexing.
 	 * @param bool         $dry_run Skip writes when true.
-	 * @return array{ title: string, status: string, message: string }
+	 * @return array{ title: string, status: string, message: string, notes: string[] }
 	 */
 	private function import_item(
 		\DOMXPath $xpath,
@@ -96,27 +105,91 @@ class TribeImporter {
 		IndexBuilder $builder,
 		bool $dry_run
 	): array {
-		$title   = $this->node_text( $xpath, 'title', $item );
-		$slug    = $this->node_text( $xpath, 'wp:post_name', $item );
-		$status  = $this->node_text( $xpath, 'wp:status', $item );
-		$content = $this->node_text( $xpath, 'content:encoded', $item );
-		$pub_gmt = $this->node_text( $xpath, 'wp:post_date_gmt', $item );
+		$title    = $this->node_text( $xpath, 'title', $item );
+		$slug     = $this->node_text( $xpath, 'wp:post_name', $item );
+		$status   = $this->node_text( $xpath, 'wp:status', $item );
+		$content  = $this->node_text( $xpath, 'content:encoded', $item );
+		$pub_gmt  = $this->node_text( $xpath, 'wp:post_date_gmt', $item );
+		$password = $this->node_text( $xpath, 'wp:post_password', $item );
 
-		$post_status = in_array( $status, [ 'publish', 'draft', 'private' ], true )
-			? $status
-			: 'publish';
+		// Everything the importer changes or drops, for the operator to read.
+		$notes = [];
+
+		// Checked before anything else, so a trashed item can never reach the
+		// update branch and overwrite the event an earlier run created.
+		if ( 'trash' === $status ) {
+			return [
+				'title'   => $title,
+				'status'  => 'skipped',
+				'message' => __( 'In the trash at the source.', 'blockendar' ),
+				'notes'   => [],
+			];
+		}
+
+		// Never fall back to 'publish': an unrecognised status is far more
+		// likely to mean "not public" than "public".
+		$post_status = $status;
+
+		if ( ! in_array( $status, self::KEPT_STATUSES, true ) ) {
+			$post_status = 'draft';
+			$notes[]     = sprintf(
+				/* translators: %s: a post status from the import file. */
+				__( 'Status "%s" is not one Blockendar keeps; imported as a draft.', 'blockendar' ),
+				$status
+			);
+		}
 
 		// Build meta map.
-		$meta = $this->extract_meta( $xpath, $item );
+		$meta  = $this->extract_meta( $xpath, $item );
+		$first = static fn( string $key ): string => $meta[ $key ][0] ?? '';
 
-		$start_raw = $meta['_EventStartDate'] ?? '';
-		$end_raw   = $meta['_EventEndDate'] ?? '';
+		$start_raw = $first( '_EventStartDate' );
+		$end_raw   = $first( '_EventEndDate' );
 		// TEC v5+ stores 'yes'; older versions stored '1'.
-		$all_day_raw = strtolower( trim( $meta['_EventAllDay'] ?? '' ) );
+		$all_day_raw = strtolower( trim( $first( '_EventAllDay' ) ) );
 		$all_day     = in_array( $all_day_raw, [ '1', 'yes', 'true' ], true );
-		$timezone    = $meta['_EventTimezone'] ?? '';
-		$cost        = $meta['_EventCost'] ?? '';
-		$url         = $meta['_EventURL'] ?? '';
+		$url         = $first( '_EventURL' );
+
+		$timezone_raw = $first( '_EventTimezone' );
+		$timezone     = blockendar_normalize_timezone( $timezone_raw );
+
+		if ( $timezone !== $timezone_raw ) {
+			$notes[] = sprintf(
+				/* translators: 1: the timezone in the import file, 2: the timezone stored. */
+				__( 'Timezone "%1$s" stored as "%2$s".', 'blockendar' ),
+				$timezone_raw,
+				$timezone
+			);
+		}
+
+		$cost_rows = array_values(
+			array_unique(
+				array_filter(
+					$meta['_EventCost'] ?? [],
+					static fn( string $value ): bool => '' !== $value
+				)
+			)
+		);
+		$cost_raw  = $cost_rows[0] ?? '';
+		$cost      = $this->cost_with_currency( $cost_raw, $first( '_EventCurrencySymbol' ), $first( '_EventCurrencyPosition' ) );
+
+		if ( count( $cost_rows ) > 1 ) {
+			$notes[] = sprintf(
+				/* translators: 1: how many cost values the event has, 2: the one kept. */
+				__( '%1$d cost values found; kept the first, "%2$s".', 'blockendar' ),
+				count( $cost_rows ),
+				$cost_raw
+			);
+		}
+
+		if ( $cost !== $cost_raw ) {
+			$notes[] = sprintf(
+				/* translators: 1: the cost in the import file, 2: the cost stored. */
+				__( 'Cost "%1$s" stored as "%2$s" to keep its currency.', 'blockendar' ),
+				$cost_raw,
+				$cost
+			);
+		}
 
 		if ( ! $start_raw ) {
 			return [
@@ -127,6 +200,7 @@ class TribeImporter {
 					__( 'Missing start date: %s', 'blockendar' ),
 					$title
 				),
+				'notes'   => [],
 			];
 		}
 
@@ -144,21 +218,34 @@ class TribeImporter {
 					$start_raw,
 					$title
 				),
+				'notes'   => [],
 			];
 		}
 
 		$start_date = $start_dt->format( 'Y-m-d' );
 		$end_date   = $end_dt ? $end_dt->format( 'Y-m-d' ) : $start_date;
 
-		// For all-day events don't store a time. For timed events keep whatever TEC stored,
-		// except strip the 23:59:59 TEC all-day sentinel on the end time.
+		// All-day events store no time. Timed events keep exactly what TEC
+		// stored: 23:59 on a timed event is a real end time, and blanking it
+		// leaves the index to fall back to the start.
 		if ( $all_day ) {
 			$start_time = '';
 			$end_time   = '';
+
+			$stored_end_date = $end_date;
+			$end_date        = $this->all_day_end_date( $start_dt, $end_dt );
+
+			if ( $end_date !== $stored_end_date ) {
+				$notes[] = sprintf(
+					/* translators: 1: the end datetime in the import file, 2: the end date stored. */
+					__( 'All-day end "%1$s" read as %2$s.', 'blockendar' ),
+					$end_raw,
+					$end_date
+				);
+			}
 		} else {
-			$start_time   = $start_dt->format( 'H:i' );
-			$raw_end_time = $end_dt ? $end_dt->format( 'H:i' ) : '';
-			$end_time     = ( '23:59' === $raw_end_time ) ? '' : $raw_end_time;
+			$start_time = $start_dt->format( 'H:i' );
+			$end_time   = $end_dt ? $end_dt->format( 'H:i' ) : '';
 		}
 
 		// Check for existing post by slug — update it rather than skip.
@@ -177,29 +264,31 @@ class TribeImporter {
 				'message' => $existing_id
 					? __( '(dry run — would update)', 'blockendar' )
 					: __( '(dry run)', 'blockendar' ),
+				'notes'   => $notes,
 			];
 		}
 
+		// Shared by both branches, so a status or password changed at the
+		// source arrives on a re-import, including a password that was removed.
+		$postarr = [
+			'post_title'    => wp_strip_all_tags( $title ),
+			'post_content'  => $content,
+			'post_status'   => $post_status,
+			'post_password' => $password,
+		];
+
 		if ( $existing_id ) {
-			$post_id = wp_update_post(
-				[
-					'ID'           => $existing_id,
-					'post_title'   => wp_strip_all_tags( $title ),
-					'post_content' => $content,
-					'post_status'  => $post_status,
-				],
-				true
-			);
+			$post_id = wp_update_post( array_merge( $postarr, [ 'ID' => $existing_id ] ), true );
 		} else {
 			$post_id = wp_insert_post(
-				[
-					'post_title'    => wp_strip_all_tags( $title ),
-					'post_name'     => $slug,
-					'post_content'  => $content,
-					'post_status'   => $post_status,
-					'post_type'     => EventPostType::POST_TYPE,
-					'post_date_gmt' => $pub_gmt ?: current_time( 'mysql', true ),
-				],
+				array_merge(
+					$postarr,
+					[
+						'post_name'     => $slug,
+						'post_type'     => EventPostType::POST_TYPE,
+						'post_date_gmt' => $pub_gmt ?: current_time( 'mysql', true ),
+					]
+				),
 				true
 			);
 		}
@@ -209,7 +298,19 @@ class TribeImporter {
 				'title'   => $title,
 				'status'  => 'error',
 				'message' => $post_id->get_error_message(),
+				'notes'   => [],
 			];
+		}
+
+		// Core blanks the slug of a pending post unless the current user can
+		// publish, and an import run from WP-CLI has no user. The slug is how a
+		// second run finds this event again, so put the source's back.
+		if ( 'pending' === $post_status && '' !== $slug && get_post_field( 'post_name', $post_id ) !== $slug ) {
+			global $wpdb;
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- wp_update_post() would blank it again; the cache is cleared below.
+			$wpdb->update( $wpdb->posts, [ 'post_name' => $slug ], [ 'ID' => $post_id ] );
+			clean_post_cache( $post_id );
 		}
 
 		// Set event meta.
@@ -222,7 +323,8 @@ class TribeImporter {
 		if ( $timezone ) {
 			update_post_meta( $post_id, 'blockendar_timezone', $timezone );
 		}
-		if ( $cost ) {
+		// Not a truthiness test: TEC stores a free event's cost as "0".
+		if ( '' !== $cost ) {
 			update_post_meta( $post_id, 'blockendar_cost', sanitize_text_field( $cost ) );
 		}
 		if ( $url ) {
@@ -239,15 +341,81 @@ class TribeImporter {
 			'title'   => $title,
 			'status'  => 'imported',
 			'message' => '',
+			'notes'   => $notes,
 		];
 	}
 
 	/**
-	 * Build a key→value map of all wp:postmeta for an item.
+	 * Work out the last day of an all-day event.
+	 *
+	 * TEC's days run from its "end of day cutoff", not from midnight. An
+	 * all-day event starts at the cutoff on its first day
+	 * (tribe_beginning_of_day()) and ends one second before the cutoff on the
+	 * day after its last (tribe_end_of_day()). With no cutoff that end is
+	 * 23:59:59 on the last day; with a 06:00 cutoff it is 05:59:59 on the day
+	 * after, and taking the date part as it stands makes the event a day too
+	 * long. The start's time of day is the cutoff, so shifting the end back by
+	 * it puts the end inside the calendar day it belongs to.
+	 *
+	 * @param \DateTimeInterface      $start Parsed _EventStartDate.
+	 * @param \DateTimeInterface|null $end   Parsed _EventEndDate, if there is one.
+	 * @return string Y-m-d.
+	 */
+	private function all_day_end_date( \DateTimeInterface $start, ?\DateTimeInterface $end ): string {
+		$start_date = $start->format( 'Y-m-d' );
+
+		if ( ! $end ) {
+			return $start_date;
+		}
+
+		$cutoff = ( (int) $start->format( 'G' ) * HOUR_IN_SECONDS )
+			+ ( (int) $start->format( 'i' ) * MINUTE_IN_SECONDS )
+			+ (int) $start->format( 's' );
+
+		$end_date = \DateTimeImmutable::createFromInterface( $end )
+			->modify( "-{$cutoff} seconds" )
+			->format( 'Y-m-d' );
+
+		// Never before the start, whatever the file holds.
+		return max( $end_date, $start_date );
+	}
+
+	/**
+	 * Give a numeric cost its own currency symbol when it is not the site's.
+	 *
+	 * The cost block puts the site's currency symbol on a bare number. TEC
+	 * stores the number and the symbol separately, so an event priced in euros
+	 * would arrive as a bare 10 and be shown in dollars. A cost of 0 is left
+	 * bare: it means free in any currency.
+	 *
+	 * @param string $cost     _EventCost.
+	 * @param string $symbol   _EventCurrencySymbol.
+	 * @param string $position _EventCurrencyPosition: 'prefix', 'suffix' or 'postfix'.
+	 */
+	private function cost_with_currency( string $cost, string $symbol, string $position ): string {
+		if ( '' === $symbol || ! is_numeric( $cost ) || 0.0 === (float) $cost ) {
+			return $cost;
+		}
+
+		$site_symbol = blockendar_currency_symbol( (string) SettingsPage::get( 'default_currency' ) );
+
+		if ( $symbol === $site_symbol ) {
+			return $cost;
+		}
+
+		return in_array( $position, [ 'suffix', 'postfix' ], true ) ? $cost . $symbol : $symbol . $cost;
+	}
+
+	/**
+	 * Build a key→values map of all wp:postmeta for an item.
+	 *
+	 * Values are kept in file order, and a key can repeat: TEC writes more than
+	 * one _EventCost row for an event with several prices. The first value is
+	 * the one get_post_meta( …, true ) returned at the source.
 	 *
 	 * @param \DOMXPath   $xpath XPath evaluator.
 	 * @param \DOMElement $item  The <item> element.
-	 * @return array<string,string>
+	 * @return array<string, list<string>>
 	 */
 	private function extract_meta( \DOMXPath $xpath, \DOMElement $item ): array {
 		$map   = [];
@@ -261,7 +429,7 @@ class TribeImporter {
 			$key   = $this->node_text( $xpath, 'wp:meta_key', $node );
 			$value = $this->node_text( $xpath, 'wp:meta_value', $node );
 			if ( $key ) {
-				$map[ $key ] = $value;
+				$map[ $key ][] = $value;
 			}
 		}
 
