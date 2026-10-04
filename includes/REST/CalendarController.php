@@ -113,12 +113,14 @@ class CalendarController extends AbstractController {
 
 		$start = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'start' ) ?? '' ),
-			$default_start
+			$default_start,
+			'start'
 		);
 
 		$end = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'end' ) ?? '' ),
-			$default_end
+			$default_end,
+			'end'
 		);
 
 		if ( is_wp_error( $start ) ) {

@@ -42,13 +42,29 @@ class IcsEndpoint {
 				'callback'            => [ $this, 'serve_ics' ],
 				'permission_callback' => [ $this, 'check_permission' ],
 				'args'                => [
-					'id' => [
+					'id'              => [
 						'validate_callback' => fn( $v ) => is_numeric( $v ),
 						'sanitize_callback' => 'absint',
+					],
+					'occurrence_date' => [
+						'description'       => __( 'Start date (Y-m-d) of the occurrence of a recurring event to export. Defaults to the next one.', 'blockendar' ),
+						'type'              => 'string',
+						'validate_callback' => [ $this, 'is_date' ],
 					],
 				],
 			]
 		);
+	}
+
+	/**
+	 * Whether a value is a real calendar date written as Y-m-d.
+	 *
+	 * @param mixed $value Raw param value.
+	 */
+	public function is_date( mixed $value ): bool {
+		return is_string( $value )
+			&& 1 === preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $value, $parts )
+			&& checkdate( (int) $parts[2], (int) $parts[3], (int) $parts[1] );
 	}
 
 	/**
@@ -101,16 +117,25 @@ class IcsEndpoint {
 		 * feed — a client holding both saw two unrelated events — and skipped
 		 * line folding, venue, status and revision properties.
 		 */
-		$ics = ( new Exporter() )->generate_single( $post_id );
+		$occurrence_date = $request->get_param( 'occurrence_date' );
+		$occurrence_date = is_string( $occurrence_date ) && '' !== $occurrence_date ? $occurrence_date : null;
+
+		$ics = ( new Exporter() )->generate_single( $post_id, $occurrence_date );
 
 		if ( null === $ics ) {
-			wp_die( esc_html__( 'Event has no date.', 'blockendar' ), 404 );
+			wp_die(
+				null === $occurrence_date
+					? esc_html__( 'Event has no date.', 'blockendar' )
+					: esc_html__( 'Occurrence not found.', 'blockendar' ),
+				404
+			);
 		}
 
-		$slug = get_post_field( 'post_name', $post_id );
+		// One file per occurrence, so two downloads from a series do not share a name.
+		$filename = get_post_field( 'post_name', $post_id ) . ( null === $occurrence_date ? '' : '-' . $occurrence_date );
 
 		header( 'Content-Type: text/calendar; charset=utf-8' );
-		header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $slug ) . '.ics"' );
+		header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( $filename ) . '.ics"' );
 		header( 'Cache-Control: no-cache, must-revalidate' );
 
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- iCalendar body, escaped by Exporter per RFC 5545.

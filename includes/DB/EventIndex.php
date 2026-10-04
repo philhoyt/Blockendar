@@ -507,6 +507,32 @@ class EventIndex {
 	}
 
 	/**
+	 * Get the last occurrence indexed for a post, whenever it is.
+	 *
+	 * What a series that is already over falls back to, where
+	 * next_occurrence() has nothing to return.
+	 *
+	 * @param int $post_id The event post ID.
+	 * @return object|null Index row, or null if the post has none.
+	 */
+	public static function last_occurrence( int $post_id ): ?object {
+		global $wpdb;
+
+		$table = Schema::events_table();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE post_id = %d ORDER BY start_datetime DESC LIMIT 1",
+				$post_id
+			)
+		);
+		// phpcs:enable
+
+		return $row ?: null;
+	}
+
+	/**
 	 * Get the first occurrence for a post matching a specific start date.
 	 *
 	 * Used by blockendar_resolve_occurrence() to honour ?occurrence_date= links

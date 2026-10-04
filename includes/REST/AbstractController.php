@@ -54,20 +54,41 @@ abstract class AbstractController {
 	}
 
 	/**
-	 * Parse and validate a UTC datetime param (Y-m-d or Y-m-d H:i:s).
-	 * Returns a Y-m-d H:i:s string or a WP_Error.
+	 * Turn a start or end param into the UTC datetime the index is queried with.
+	 *
+	 * Three forms are accepted:
+	 *
+	 * - Y-m-d — a calendar day in the site's timezone. As a start it is that
+	 *   day's local midnight; as an end it is the next local midnight, so the
+	 *   named day is included. The same date as both bounds is that whole day.
+	 * - Y-m-d H:i:s — a UTC datetime, used as it is.
+	 * - ISO 8601 — honoured with its offset, and read as UTC when it has none.
 	 *
 	 * @param string $value    Raw param value.
-	 * @param string $fallback Fallback value if empty.
+	 * @param string $fallback Value to use when the param is empty; already UTC.
+	 * @param string $bound    'start' or 'end': which edge of the range this is.
+	 * @return string|WP_Error Y-m-d H:i:s in UTC, or an error for a value that is not a date.
 	 */
-	protected function parse_datetime_param( string $value, string $fallback = '' ): string|WP_Error {
+	protected function parse_datetime_param( string $value, string $fallback = '', string $bound = 'start' ): string|WP_Error {
 		if ( '' === $value ) {
 			return $fallback;
 		}
 
-		// Accept Y-m-d (date only — assume start/end of day upstream).
-		if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) ) {
-			return $value . ' 00:00:00';
+		$utc = new \DateTimeZone( 'UTC' );
+
+		if ( preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $value, $parts ) ) {
+			// The pattern alone lets 2026-02-30 through.
+			if ( ! checkdate( (int) $parts[2], (int) $parts[3], (int) $parts[1] ) ) {
+				return $this->invalid_datetime_error();
+			}
+
+			$day = \DateTimeImmutable::createFromFormat( '!Y-m-d', $value, wp_timezone() );
+
+			if ( 'end' === $bound ) {
+				$day = $day->modify( '+1 day' );
+			}
+
+			return $day->setTimezone( $utc )->format( 'Y-m-d H:i:s' );
 		}
 
 		// Accept Y-m-d H:i:s.
@@ -78,15 +99,22 @@ abstract class AbstractController {
 		// Accept ISO 8601 with T separator and optional timezone.
 		// Always normalize to UTC so comparisons against the UTC index table are correct.
 		try {
-			$dt = new \DateTimeImmutable( $value, new \DateTimeZone( 'UTC' ) );
-			return $dt->setTimezone( new \DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' );
+			$dt = new \DateTimeImmutable( $value, $utc );
+			return $dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' );
 		} catch ( \Exception ) {
-			return new WP_Error(
-				'blockendar_invalid_datetime',
-				__( 'Invalid datetime parameter. Expected Y-m-d or ISO 8601 format.', 'blockendar' ),
-				[ 'status' => 400 ]
-			);
+			return $this->invalid_datetime_error();
 		}
+	}
+
+	/**
+	 * The error for a start or end param that is not a date.
+	 */
+	private function invalid_datetime_error(): WP_Error {
+		return new WP_Error(
+			'blockendar_invalid_datetime',
+			__( 'Invalid datetime parameter. Expected Y-m-d or ISO 8601 format.', 'blockendar' ),
+			[ 'status' => 400 ]
+		);
 	}
 
 	/**

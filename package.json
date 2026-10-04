@@ -14,7 +14,8 @@
     "blockendar.php",
     "uninstall.php",
     "readme.txt",
-    "README.md"
+    "README.md",
+    "wpml-config.xml"
   ],
   "scripts": {
     "build": "wp-scripts build --blocks-manifest",

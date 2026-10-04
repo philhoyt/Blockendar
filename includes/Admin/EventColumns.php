@@ -22,6 +22,14 @@ use Blockendar\DB\Schema;
 class EventColumns {
 
 	/**
+	 * Earliest index row of each event looked up this request, by post ID.
+	 * Null for an event with no rows.
+	 *
+	 * @var array<int, object|null>
+	 */
+	private array $first_occurrences = [];
+
+	/**
 	 * Register all hooks.
 	 */
 	public function register(): void {
@@ -59,46 +67,151 @@ class EventColumns {
 	 * @param int    $post_id Post ID.
 	 */
 	public function render_column( string $column, int $post_id ): void {
-		global $wpdb;
-
 		if ( ! in_array( $column, [ 'blockendar_start_date', 'blockendar_end_date' ], true ) ) {
 			return;
 		}
 
-		$table = Schema::events_table();
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$row = $wpdb->get_row(
-			$wpdb->prepare(
-				'SELECT start_date, start_datetime, end_date, end_datetime, all_day, ongoing FROM %i WHERE post_id = %d ORDER BY start_datetime ASC LIMIT 1',
-				$table,
-				$post_id
-			)
-		);
+		$row = $this->first_occurrence( $post_id );
 
 		if ( ! $row ) {
 			echo '&mdash;';
 			return;
 		}
 
-		$all_day     = (bool) $row->all_day;
-		$date_format = get_option( 'date_format', 'F j, Y' );
-		$time_format = get_option( 'time_format', 'g:i a' );
-
-		if ( 'blockendar_start_date' === $column ) {
-			$display = esc_html( date_i18n( $date_format, strtotime( $row->start_date ) ) );
-			if ( ! $all_day && $row->start_datetime ) {
-				$display .= ' <span style="color:#757575">' . esc_html( date_i18n( $time_format, strtotime( $row->start_datetime ) ) ) . '</span>';
-			}
-			echo wp_kses( $display, [ 'span' => [ 'style' => [] ] ] );
-		} elseif ( ! empty( $row->ongoing ) ) {
+		if ( 'blockendar_end_date' === $column && ! empty( $row->ongoing ) ) {
 			// The index holds a sentinel end for ongoing events; never print it.
 			echo esc_html__( 'Ongoing', 'blockendar' );
-		} else {
-			$display = $row->end_date ? esc_html( date_i18n( $date_format, strtotime( $row->end_date ) ) ) : '&mdash;';
-			if ( ! $all_day && $row->end_datetime && $row->end_date ) {
-				$display .= ' <span style="color:#757575">' . esc_html( date_i18n( $time_format, strtotime( $row->end_datetime ) ) ) . '</span>';
-			}
-			echo wp_kses( $display, [ 'span' => [ 'style' => [] ] ] );
+			return;
+		}
+
+		$is_start    = 'blockendar_start_date' === $column;
+		$date_format = get_option( 'date_format', 'F j, Y' );
+
+		if ( $row->all_day ) {
+			// No clock time to convert: the stored dates are the event's own days.
+			echo esc_html( blockendar_format_wall_clock( $is_start ? $row->start_date : $row->end_date, $date_format ) );
+			return;
+		}
+
+		$local = $this->to_display_timezone( $is_start ? $row->start_datetime : $row->end_datetime, $post_id );
+
+		if ( '' === $local ) {
+			echo '&mdash;';
+			return;
+		}
+
+		$display = esc_html( blockendar_format_wall_clock( $local, $date_format ) )
+			. ' <span style="color:#757575">'
+			. esc_html( blockendar_format_wall_clock( $local, get_option( 'time_format', 'g:i a' ) ) )
+			. '</span>';
+
+		echo wp_kses( $display, [ 'span' => [ 'style' => [] ] ] );
+	}
+
+	/**
+	 * Move one of the index's UTC datetimes into the timezone the event is shown in.
+	 *
+	 * The date is taken from the result as well as the time: 11:30 pm in one
+	 * zone is the next day in another.
+	 *
+	 * @param string $utc_datetime Y-m-d H:i:s in UTC.
+	 * @param int    $post_id      Event post ID.
+	 * @return string Y-m-d H:i in the display timezone, or '' if the value is not a datetime.
+	 */
+	private function to_display_timezone( string $utc_datetime, int $post_id ): string {
+		$moment = date_create_immutable( $utc_datetime, new \DateTimeZone( 'UTC' ) );
+
+		if ( ! $moment ) {
+			return '';
+		}
+
+		try {
+			$timezone = new \DateTimeZone( blockendar_display_timezone( $post_id )['display'] );
+		} catch ( \Exception ) {
+			$timezone = wp_timezone();
+		}
+
+		return $moment->setTimezone( $timezone )->format( 'Y-m-d H:i' );
+	}
+
+	/**
+	 * The earliest index row for an event.
+	 *
+	 * The list table calls render_column() once per column per row. The first
+	 * call reads the first occurrence of every event on the page in one query;
+	 * the rest are answered from that.
+	 *
+	 * @param int $post_id Event post ID.
+	 */
+	private function first_occurrence( int $post_id ): ?object {
+		if ( ! array_key_exists( $post_id, $this->first_occurrences ) ) {
+			$this->load_first_occurrences( array_merge( [ $post_id ], $this->page_post_ids() ) );
+		}
+
+		return $this->first_occurrences[ $post_id ] ?? null;
+	}
+
+	/**
+	 * IDs of the events on the list-table page being rendered.
+	 *
+	 * @return int[]
+	 */
+	private function page_post_ids(): array {
+		global $wp_query;
+
+		if ( ! $wp_query instanceof \WP_Query || empty( $wp_query->posts ) ) {
+			return [];
+		}
+
+		return array_map(
+			static fn( $post ): int => is_object( $post ) ? (int) $post->ID : (int) $post,
+			$wp_query->posts
+		);
+	}
+
+	/**
+	 * Read the earliest index row of each event into the per-request store.
+	 *
+	 * An event with no rows is stored as null, so it is not looked up again.
+	 *
+	 * @param int[] $post_ids Event post IDs.
+	 */
+	private function load_first_occurrences( array $post_ids ): void {
+		global $wpdb;
+
+		$post_ids = array_values( array_unique( array_filter( array_map( 'intval', $post_ids ) ) ) );
+		$post_ids = array_values( array_diff( $post_ids, array_keys( $this->first_occurrences ) ) );
+
+		if ( empty( $post_ids ) ) {
+			return;
+		}
+
+		$this->first_occurrences += array_fill_keys( $post_ids, null );
+
+		$table        = Schema::events_table();
+		$placeholders = implode( ',', array_fill( 0, count( $post_ids ), '%d' ) );
+
+		// Joined to each event's earliest start so every row comes back whole; a
+		// bare GROUP BY would mix columns from different occurrences.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- $placeholders is a list of %d, one per ID.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT e.post_id, e.start_date, e.start_datetime, e.end_date, e.end_datetime, e.all_day, e.ongoing
+				FROM %i e
+				INNER JOIN (
+					SELECT post_id, MIN( start_datetime ) AS first_start
+					FROM %i
+					WHERE post_id IN ( {$placeholders} )
+					GROUP BY post_id
+				) f ON f.post_id = e.post_id AND f.first_start = e.start_datetime",
+				array_merge( [ $table, $table ], $post_ids )
+			)
+		);
+		// phpcs:enable
+
+		foreach ( (array) $rows as $row ) {
+			// Two rows can share a start; the first one read stands.
+			$this->first_occurrences[ (int) $row->post_id ] ??= $row;
 		}
 	}
 

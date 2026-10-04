@@ -184,12 +184,14 @@ class EventsController extends AbstractController {
 
 		$start = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'start' ) ?? '' ),
-			$now
+			$now,
+			'start'
 		);
 
 		$end = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'end' ) ?? '' ),
-			gmdate( 'Y-m-d H:i:s', strtotime( '+1 year' ) )
+			gmdate( 'Y-m-d H:i:s', strtotime( '+1 year' ) ),
+			'end'
 		);
 
 		if ( is_wp_error( $start ) ) {

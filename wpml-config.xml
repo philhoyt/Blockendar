@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	Tells WPML, and Polylang, which Blockendar data a translation carries.
+
+	A translation of an event is another post. Without its dates it is not
+	indexed and appears nowhere, so every registered field is named here. A
+	test fails when one is registered and not added.
+
+	copy       kept the same in every language
+	copy-once  copied when the translation is created, then its own
+	translate  text to be translated
+-->
+<wpml-config>
+	<custom-types>
+		<custom-type translate="1">blockendar_event</custom-type>
+	</custom-types>
+
+	<taxonomies>
+		<taxonomy translate="1">blockendar_event_type</taxonomy>
+		<taxonomy translate="1">blockendar_event_tag</taxonomy>
+		<taxonomy translate="1">blockendar_event_venue</taxonomy>
+	</taxonomies>
+
+	<custom-fields>
+		<!-- When and whether the event appears: the same in every language. -->
+		<custom-field action="copy">blockendar_start_date</custom-field>
+		<custom-field action="copy">blockendar_end_date</custom-field>
+		<custom-field action="copy">blockendar_start_time</custom-field>
+		<custom-field action="copy">blockendar_end_time</custom-field>
+		<custom-field action="copy">blockendar_all_day</custom-field>
+		<custom-field action="copy">blockendar_timezone</custom-field>
+		<custom-field action="copy">blockendar_ongoing</custom-field>
+		<custom-field action="copy">blockendar_recurrence_preset</custom-field>
+		<custom-field action="copy">blockendar_status</custom-field>
+		<custom-field action="copy">blockendar_featured</custom-field>
+		<custom-field action="copy">blockendar_hide_from_listings</custom-field>
+
+		<!-- A cost can be words ("Free", "By donation"). -->
+		<custom-field action="translate">blockendar_cost</custom-field>
+
+		<!-- A booking page often has a version per language. -->
+		<custom-field action="copy-once">blockendar_registration_url</custom-field>
+	</custom-fields>
+
+	<custom-term-fields>
+		<!-- Place names differ between languages. -->
+		<custom-term-field action="translate">blockendar_venue_address</custom-term-field>
+		<custom-term-field action="translate">blockendar_venue_city</custom-term-field>
+		<custom-term-field action="translate">blockendar_venue_state</custom-term-field>
+
+		<custom-term-field action="copy">blockendar_venue_country</custom-term-field>
+		<custom-term-field action="copy">blockendar_venue_lat</custom-term-field>
+		<custom-term-field action="copy">blockendar_venue_lng</custom-term-field>
+		<custom-term-field action="copy">blockendar_venue_virtual</custom-term-field>
+		<custom-term-field action="copy-once">blockendar_venue_stream_url</custom-term-field>
+
+		<custom-term-field action="copy">blockendar_type_color</custom-term-field>
+	</custom-term-fields>
+</wpml-config>

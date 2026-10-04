@@ -35,7 +35,14 @@ if ( $ongoing ) {
 }
 $tz_str  = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 $ics_url = rest_url( 'blockendar/v1/events/' . $post_id . '/ical' );
-$label   = ! empty( $attributes['label'] ) ? $attributes['label'] : __( 'Add to Calendar', 'blockendar' );
+
+// The Google and Outlook links describe the occurrence on screen; the download
+// has to be the same one. A single event's link stays as it was.
+if ( $occurrence && ! empty( $occurrence->recurrence_id ) ) {
+	$ics_url = add_query_arg( 'occurrence_date', $occurrence->start_date, $ics_url );
+}
+
+$label = ! empty( $attributes['label'] ) ? $attributes['label'] : __( 'Add to Calendar', 'blockendar' );
 
 if ( ! $start_date ) {
 	return;
