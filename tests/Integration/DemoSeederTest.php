@@ -436,6 +436,37 @@ class DemoSeederTest extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * Two requests can both read the pending-seed flag as set. Whichever deletes
+	 * it has claimed the seed; the other must stand down. Here the flag is
+	 * already gone from the database and this request is made to read it as
+	 * still set, which is what the slower of the two sees.
+	 */
+	public function test_a_pending_seed_claimed_by_another_request_is_not_run_again(): void {
+		delete_option( Plugin::SEED_FLAG );
+		add_filter( 'default_option_' . Plugin::SEED_FLAG, '__return_true' );
+
+		$this->limit_fixtures( 1 );
+		( new Plugin() )->maybe_seed();
+
+		remove_filter( 'default_option_' . Plugin::SEED_FLAG, '__return_true' );
+
+		$this->assertFalse( get_option( Plugin::STATE_OPTION ), 'The seed ran a second time.' );
+		$this->assertSame( 0, $this->count_rows( Schema::events_table() ) );
+	}
+
+	public function test_a_pending_seed_runs_once_for_the_request_that_claims_it(): void {
+		update_option( Plugin::SEED_FLAG, 1, false );
+
+		$this->limit_fixtures( 1 );
+		( new Plugin() )->maybe_seed();
+
+		$this->assertIsArray( get_option( Plugin::STATE_OPTION ) );
+		$this->assertFalse( get_option( Plugin::SEED_FLAG ) );
+
+		$this->seeder->reset();
+	}
+
 	public function test_dependency_guard_rejects_missing_or_old_blockendar(): void {
 		$this->assertNotSame( '', Dependency::evaluate( null ), 'A missing Blockendar must be refused.' );
 		$this->assertNotSame( '', Dependency::evaluate( '' ) );
