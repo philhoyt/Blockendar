@@ -99,30 +99,35 @@ class Generator {
 			return;
 		}
 
-		// Clear existing recurrence rows for this post.
-		$this->index->delete_by_post_id( $post_id );
-
 		$meta   = $this->get_event_meta( $post_id );
-		$dates  = $this->expand_dates( $rule, $meta );
 		$shared = $this->get_shared_row_data( $post_id, $rule->id, $meta );
+		$rows   = [];
+		$taken  = [];
 
-		foreach ( $dates as $date_pair ) {
-			$this->index->insert( $this->occurrence_row( $shared, $date_pair, $rule ), false );
+		foreach ( $this->expand_dates( $rule, $meta ) as $date_pair ) {
+			$rows[]                            = $this->occurrence_row( $shared, $date_pair, $rule );
+			$taken[ $date_pair['start_date'] ] = true;
 		}
 
-		// Insert manually added extra dates.
+		// Dates added by hand. One the rule produces anyway, or one entered
+		// twice, is a single occurrence and gets a single row.
 		foreach ( $rule->additions as $extra_date ) {
+			if ( isset( $taken[ $extra_date ] ) ) {
+				continue;
+			}
+
 			$date_pair = $this->build_date_pair( $extra_date, $extra_date, $meta );
 
 			if ( null === $date_pair ) {
 				continue;
 			}
 
-			$this->index->insert( $this->occurrence_row( $shared, $date_pair, $rule ), false );
+			$rows[]               = $this->occurrence_row( $shared, $date_pair, $rule );
+			$taken[ $extra_date ] = true;
 		}
 
-		// One invalidation for the whole event rather than one per occurrence.
-		$this->index->flush_cache();
+		// The old rows go and the new ones arrive as one step, or not at all.
+		$this->index->replace_for_post( $post_id, $rows );
 	}
 
 	/**
@@ -211,13 +216,16 @@ class Generator {
 		$meta   = $this->get_event_meta( $post_id );
 		$shared = $this->get_shared_row_data( $post_id, $rule->id, $meta );
 
-		foreach ( $this->expand_dates( $rule, $meta ) as $date_pair ) {
-			if ( isset( $indexed[ $date_pair['start_utc'] ] ) ) {
-				continue;
-			}
+		$rows = [];
 
-			$this->index->insert( $this->occurrence_row( $shared, $date_pair, $rule ), false );
+		foreach ( $this->expand_dates( $rule, $meta ) as $date_pair ) {
+			if ( ! isset( $indexed[ $date_pair['start_utc'] ] ) ) {
+				$rows[] = $this->occurrence_row( $shared, $date_pair, $rule );
+			}
 		}
+
+		// The roll invalidates the cache once, when every event is done.
+		$this->index->insert_many( $post_id, $rows, false );
 
 		/*
 		 * Manual additions are not re-inserted here. They are written in full by
@@ -311,8 +319,10 @@ class Generator {
 			return [];
 		}
 
-		// Duration of the event in days (for multi-day events).
-		$duration_days = (int) $event_start->diff( $event_end )->days;
+		// Duration of the event in days (for multi-day events). diff() gives
+		// the distance either way, so an end entered before the start would
+		// otherwise stretch every occurrence by the size of the mistake.
+		$duration_days = $event_end > $event_start ? (int) $event_start->diff( $event_end )->days : 0;
 
 		$occurrences = [];
 		$count       = 0;
@@ -585,6 +595,13 @@ class Generator {
 			$end_dt   = new \DateTimeImmutable( "{$end_local_date} {$end_time}:00", $tz );
 		} catch ( \Exception ) {
 			return null;
+		}
+
+		// An end time before the start time, on a one-day occurrence: indexed
+		// as over when it starts, as IndexBuilder does for a single event.
+		if ( $end_dt < $start_dt ) {
+			$end_dt   = $start_dt;
+			$end_date = $start_date;
 		}
 
 		return [

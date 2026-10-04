@@ -234,6 +234,32 @@ class Schema {
 	}
 
 	/**
+	 * Add a site's Blockendar tables to the ones dropped when it is deleted.
+	 *
+	 * On a network, WordPress drops a deleted site's own tables and asks
+	 * plugins for theirs through `wpmu_drop_tables`. uninstall.php never runs
+	 * for a site that is deleted, so without this the tables stay behind.
+	 *
+	 * @param string[] $tables  Tables to drop.
+	 * @param int      $site_id ID of the site being deleted.
+	 * @return string[]
+	 */
+	public static function tables_to_drop( $tables, $site_id ): array {
+		global $wpdb;
+
+		$prefix = $wpdb->get_blog_prefix( (int) $site_id );
+
+		return array_merge(
+			(array) $tables,
+			[
+				$prefix . 'blockendar_events',
+				$prefix . 'blockendar_event_type_terms',
+				$prefix . 'blockendar_recurrence',
+			]
+		);
+	}
+
+	/**
 	 * Return the full table name for blockendar_events.
 	 */
 	public static function events_table(): string {

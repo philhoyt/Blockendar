@@ -68,6 +68,9 @@ class Plugin {
 		// recurring events are correctly handled during any post-upgrade rebuild.
 		Schema::maybe_upgrade();
 
+		// A site deleted from a network takes its tables with it.
+		add_filter( 'wpmu_drop_tables', [ Schema::class, 'tables_to_drop' ], 10, 2 );
+
 		// Version change → flush rewrite rules once (updates never re-activate).
 		( new Upgrader() )->register();
 

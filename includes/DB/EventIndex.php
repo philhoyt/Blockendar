@@ -52,6 +52,17 @@ class EventIndex {
 	private const CACHE_GROUP = 'blockendar_events';
 
 	/**
+	 * Rows per INSERT statement when writing an event's occurrences.
+	 */
+	private const INSERT_CHUNK = 50;
+
+	/**
+	 * How many times to try replacing a post's rows when the database picks
+	 * the attempt as a deadlock victim.
+	 */
+	private const DEADLOCK_ATTEMPTS = 3;
+
+	/**
 	 * Build a cache key scoped to the current state of the index.
 	 *
 	 * @param string $method Logical read being cached.
@@ -635,44 +646,322 @@ class EventIndex {
 	 * @return int Number of rows deleted from the events table.
 	 */
 	public function delete_by_post_id( int $post_id ): int {
+		$deleted = $this->delete_rows( $post_id );
+
+		$this->flush_cache();
+
+		return (int) $deleted;
+	}
+
+	/**
+	 * Delete a post's rows and their junction rows, leaving the cache alone.
+	 *
+	 * @param int $post_id The event post ID.
+	 * @return int|false Rows deleted from the events table, or false on failure.
+	 */
+	private function delete_rows( int $post_id ): int|false {
 		global $wpdb;
 
 		$events_table     = Schema::events_table();
 		$type_terms_table = Schema::type_terms_table();
 
-		// Collect index IDs so we can cascade-delete from the junction table.
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$index_ids = $wpdb->get_col(
+		$junction = $wpdb->query(
 			$wpdb->prepare(
-				"SELECT id FROM {$events_table} WHERE post_id = %d",
+				"DELETE t FROM {$type_terms_table} t
+				INNER JOIN {$events_table} e ON e.id = t.event_index_id
+				WHERE e.post_id = %d",
 				$post_id
 			)
 		);
 		// phpcs:enable
 
-		if ( ! empty( $index_ids ) ) {
-			$placeholders = implode( ', ', array_fill( 0, count( $index_ids ), '%d' ) );
-			// $placeholders is a runtime-built list of %d tokens, one per index ID, so the
-			// count is not statically analysable. Every value is still bound via prepare().
-			// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-			$wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM {$type_terms_table} WHERE event_index_id IN ({$placeholders})",
-					$index_ids
-				)
-			);
-			// phpcs:enable
+		if ( false === $junction ) {
+			return false;
 		}
 
-		$result = $wpdb->delete(
-			$events_table,
-			[ 'post_id' => $post_id ],
-			[ '%d' ]
-		);
+		return $wpdb->delete( $events_table, [ 'post_id' => $post_id ], [ '%d' ] );
+	}
+
+	/**
+	 * Replace all of a post's rows with a new set, or leave them as they were.
+	 *
+	 * The delete and the inserts are one transaction. Apart, a failure between
+	 * them left the event with some of its occurrences or none, and a reader
+	 * arriving between them saw the same.
+	 *
+	 * @param int     $post_id The event post ID.
+	 * @param array[] $rows    Rows in the shape insert() takes. May be empty.
+	 * @return bool False when the rows could not be written; the old ones remain.
+	 */
+	public function replace_for_post( int $post_id, array $rows ): bool {
+		global $wpdb;
+
+		$events_table = Schema::events_table();
+		$attempts     = 0;
+
+		do {
+			++$attempts;
+
+			// A deadlock is expected now and then, and is answered by trying
+			// again; it is not logged unless the last attempt fails too.
+			$suppressed  = $wpdb->suppress_errors( true );
+			$transaction = $this->begin();
+
+			/*
+			 * Take the post's rows before touching them. Two builds of one
+			 * event at the same moment then run one after the other, where
+			 * otherwise each could hold what the other was waiting for.
+			 */
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query(
+				$wpdb->prepare( "SELECT id FROM {$events_table} WHERE post_id = %d FOR UPDATE", $post_id )
+			);
+			// phpcs:enable
+
+			$written = false !== $this->delete_rows( $post_id ) && $this->write_rows( $post_id, $rows, 0 );
+			$error   = $written ? '' : (string) $wpdb->last_error;
+
+			// On a deadlock the server has already undone the transaction. Only
+			// worth repeating when the transaction was ours to begin with.
+			$deadlocked = ! $written && 'transaction' === $transaction && $this->last_error_was_deadlock();
+
+			$this->end( $transaction, $written );
+			$wpdb->suppress_errors( $suppressed );
+		} while ( $deadlocked && $attempts < self::DEADLOCK_ATTEMPTS );
+
+		if ( ! $written && '' !== $error ) {
+			$wpdb->print_error( $error );
+		}
 
 		$this->flush_cache();
 
-		return (int) $result;
+		return $written;
+	}
+
+	/**
+	 * Whether the statement that just failed was chosen as a deadlock victim.
+	 */
+	private function last_error_was_deadlock(): bool {
+		global $wpdb;
+
+		// ER_LOCK_DEADLOCK. The number, because the message is translated.
+		return $wpdb->dbh instanceof \mysqli && 1213 === $wpdb->dbh->errno;
+	}
+
+	/**
+	 * Add rows to the ones a post already has, all of them or none.
+	 *
+	 * @param int     $post_id The event post ID.
+	 * @param array[] $rows    Rows in the shape insert() takes.
+	 * @param bool    $flush   Invalidate the read cache afterwards. See insert().
+	 * @return bool False when the rows could not be written.
+	 */
+	public function insert_many( int $post_id, array $rows, bool $flush = true ): bool {
+		global $wpdb;
+
+		if ( empty( $rows ) ) {
+			return true;
+		}
+
+		$events_table = Schema::events_table();
+		$transaction  = $this->begin();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$last_id = (int) $wpdb->get_var(
+			$wpdb->prepare( "SELECT COALESCE( MAX(id), 0 ) FROM {$events_table} WHERE post_id = %d", $post_id )
+		);
+		// phpcs:enable
+
+		$written = $this->write_rows( $post_id, $rows, $last_id );
+
+		$this->end( $transaction, $written );
+
+		if ( $flush ) {
+			$this->flush_cache();
+		}
+
+		return $written;
+	}
+
+	/**
+	 * Insert rows for one post, several to a statement, then their junction rows.
+	 *
+	 * One statement per row meant 3,650 of them for a daily event indexed ten
+	 * years ahead, and as many again for each event type.
+	 *
+	 * @param int     $post_id  The event post ID.
+	 * @param array[] $rows     Rows in the shape insert() takes.
+	 * @param int     $after_id The post's highest row ID before this call; the
+	 *                          rows written are the ones above it.
+	 */
+	private function write_rows( int $post_id, array $rows, int $after_id ): bool {
+		global $wpdb;
+
+		$events_table     = Schema::events_table();
+		$type_terms_table = Schema::type_terms_table();
+		$has_types        = false;
+
+		foreach ( array_chunk( $rows, self::INSERT_CHUNK ) as $chunk ) {
+			$groups = [];
+			$values = [];
+
+			foreach ( $chunk as $data ) {
+				$row            = $this->normalise_row( $data );
+				$row['post_id'] = $post_id;
+				$has_types      = $has_types || null !== $row['type_term_ids'];
+
+				// prepare() has no placeholder for NULL, so the three columns
+				// that may be empty are written as the keyword when they are.
+				$groups[] = sprintf(
+					'( %%d, %%s, %%s, %%s, %%s, %%d, %s, %%s, %s, %s, %%d, %%d, %%d )',
+					null === $row['recurrence_id'] ? 'NULL' : '%d',
+					null === $row['venue_term_id'] ? 'NULL' : '%d',
+					null === $row['type_term_ids'] ? 'NULL' : '%s'
+				);
+
+				foreach ( $row as $value ) {
+					if ( null !== $value ) {
+						$values[] = $value;
+					}
+				}
+			}
+
+			$columns = implode( ', ', array_keys( $this->normalise_row( $chunk[0] ) ) );
+			$groups  = implode( ', ', $groups );
+
+			// $groups is a runtime-built list of placeholder groups, one per row;
+			// every value is still bound through prepare().
+			// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+			$result = $wpdb->query(
+				$wpdb->prepare( "INSERT INTO {$events_table} ( {$columns} ) VALUES {$groups}", $values )
+			);
+			// phpcs:enable
+
+			if ( false === $result ) {
+				return false;
+			}
+		}
+
+		if ( ! $has_types ) {
+			return true;
+		}
+
+		/*
+		 * The junction rows need the IDs the rows were just given. They are
+		 * read back rather than worked out from the first one: MySQL does not
+		 * promise consecutive IDs for a multi-row insert in every lock mode.
+		 */
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$inserted = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, type_term_ids FROM {$events_table}
+				WHERE post_id = %d AND id > %d AND type_term_ids IS NOT NULL",
+				$post_id,
+				$after_id
+			)
+		);
+		// phpcs:enable
+
+		$pairs = [];
+
+		foreach ( $inserted as $row ) {
+			foreach ( (array) json_decode( (string) $row->type_term_ids, true ) as $type_term_id ) {
+				$pairs[] = (int) $row->id;
+				$pairs[] = (int) $type_term_id;
+			}
+		}
+
+		// Two values to a pair, so this is INSERT_CHUNK * 10 pairs to a statement.
+		foreach ( array_chunk( $pairs, self::INSERT_CHUNK * 20 ) as $chunk ) {
+			$groups = implode( ', ', array_fill( 0, count( $chunk ) / 2, '( %d, %d )' ) );
+
+			// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+			$result = $wpdb->query(
+				$wpdb->prepare( "INSERT INTO {$type_terms_table} ( event_index_id, type_term_id ) VALUES {$groups}", $chunk )
+			);
+			// phpcs:enable
+
+			if ( false === $result ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Open a transaction, or a savepoint inside one that is already open.
+	 *
+	 * With autocommit off, statements are already in a transaction that
+	 * belongs to someone else — the test suite runs every test in one — and
+	 * START TRANSACTION would commit it. A savepoint gives the same all-or-
+	 * nothing write without ending theirs.
+	 *
+	 * @return string What was opened: "transaction" or "savepoint".
+	 */
+	private function begin(): string {
+		global $wpdb;
+
+		if ( '0' === (string) $wpdb->get_var( 'SELECT @@autocommit' ) ) {
+			$wpdb->query( 'SAVEPOINT blockendar_index_write' );
+
+			return 'savepoint';
+		}
+
+		$wpdb->query( 'START TRANSACTION' );
+
+		return 'transaction';
+	}
+
+	/**
+	 * Keep or undo what was written since begin().
+	 *
+	 * @param string $opened  What begin() returned.
+	 * @param bool   $written Whether every write succeeded.
+	 */
+	private function end( string $opened, bool $written ): void {
+		global $wpdb;
+
+		if ( 'savepoint' === $opened && $written ) {
+			$wpdb->query( 'RELEASE SAVEPOINT blockendar_index_write' );
+		} elseif ( 'savepoint' === $opened ) {
+			$wpdb->query( 'ROLLBACK TO SAVEPOINT blockendar_index_write' );
+		} elseif ( $written ) {
+			$wpdb->query( 'COMMIT' );
+		} else {
+			$wpdb->query( 'ROLLBACK' );
+		}
+	}
+
+	/**
+	 * A row as the events table stores it, from the shape insert() takes.
+	 *
+	 * @param array $data Row data.
+	 * @return array Column => value, in column order.
+	 */
+	private function normalise_row( array $data ): array {
+		$type_term_ids = isset( $data['type_term_ids'] )
+			? array_values( array_map( 'intval', (array) $data['type_term_ids'] ) )
+			: [];
+
+		return [
+			'post_id'            => (int) $data['post_id'],
+			'start_datetime'     => $data['start_datetime'],
+			'end_datetime'       => $data['end_datetime'],
+			'start_date'         => $data['start_date'],
+			'end_date'           => $data['end_date'],
+			'all_day'            => isset( $data['all_day'] ) ? (int) $data['all_day'] : 0,
+			'recurrence_id'      => isset( $data['recurrence_id'] ) ? (int) $data['recurrence_id'] : null,
+			'status'             => $data['status'] ?? 'scheduled',
+			'venue_term_id'      => isset( $data['venue_term_id'] ) ? (int) $data['venue_term_id'] : null,
+			'type_term_ids'      => ! empty( $type_term_ids )
+				? wp_json_encode( $type_term_ids )
+				: null,
+			'featured'           => isset( $data['featured'] ) ? (int) $data['featured'] : 0,
+			'hide_from_listings' => isset( $data['hide_from_listings'] ) ? (int) $data['hide_from_listings'] : 0,
+			'ongoing'            => isset( $data['ongoing'] ) ? (int) $data['ongoing'] : 0,
+		];
 	}
 
 	/**
@@ -705,28 +994,7 @@ class EventIndex {
 	public function insert( array $data, bool $flush = true ): int|false {
 		global $wpdb;
 
-		$type_term_ids = isset( $data['type_term_ids'] )
-			? array_map( 'intval', (array) $data['type_term_ids'] )
-			: [];
-
-		$row = [
-			'post_id'            => (int) $data['post_id'],
-			'start_datetime'     => $data['start_datetime'],
-			'end_datetime'       => $data['end_datetime'],
-			'start_date'         => $data['start_date'],
-			'end_date'           => $data['end_date'],
-			'all_day'            => isset( $data['all_day'] ) ? (int) $data['all_day'] : 0,
-			'recurrence_id'      => isset( $data['recurrence_id'] ) ? (int) $data['recurrence_id'] : null,
-			'status'             => $data['status'] ?? 'scheduled',
-			'venue_term_id'      => isset( $data['venue_term_id'] ) ? (int) $data['venue_term_id'] : null,
-			'type_term_ids'      => ! empty( $type_term_ids )
-				? wp_json_encode( $type_term_ids )
-				: null,
-			'featured'           => isset( $data['featured'] ) ? (int) $data['featured'] : 0,
-			'hide_from_listings' => isset( $data['hide_from_listings'] ) ? (int) $data['hide_from_listings'] : 0,
-			'ongoing'            => isset( $data['ongoing'] ) ? (int) $data['ongoing'] : 0,
-		];
-
+		$row     = $this->normalise_row( $data );
 		$formats = [ '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%d', '%d', '%d' ];
 
 		$result = $wpdb->insert( Schema::events_table(), $row, $formats );
@@ -738,17 +1006,25 @@ class EventIndex {
 		$index_id = $wpdb->insert_id;
 
 		// Populate junction table for fast type-term filtering.
-		if ( ! empty( $type_term_ids ) ) {
-			$type_terms_table = Schema::type_terms_table();
-			foreach ( $type_term_ids as $type_term_id ) {
-				$wpdb->insert(
-					$type_terms_table,
-					[
-						'event_index_id' => $index_id,
-						'type_term_id'   => $type_term_id,
-					],
-					[ '%d', '%d' ]
-				);
+		$type_terms_table = Schema::type_terms_table();
+
+		foreach ( (array) json_decode( (string) $row['type_term_ids'], true ) as $type_term_id ) {
+			$filed = $wpdb->insert(
+				$type_terms_table,
+				[
+					'event_index_id' => $index_id,
+					'type_term_id'   => $type_term_id,
+				],
+				[ '%d', '%d' ]
+			);
+
+			// A row with no junction rows is in the index and invisible to
+			// every filter by type. Better not there, and reported.
+			if ( false === $filed ) {
+				$wpdb->delete( $type_terms_table, [ 'event_index_id' => $index_id ], [ '%d' ] );
+				$wpdb->delete( Schema::events_table(), [ 'id' => $index_id ], [ '%d' ] );
+
+				return false;
 			}
 		}
 

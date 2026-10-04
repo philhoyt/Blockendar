@@ -363,10 +363,9 @@ class IndexBuilder {
 	 * first.
 	 *
 	 * For non-recurring events this produces one row. For recurring events the
-	 * recurrence engine owns materialisation — Recurrence\Generator clears the
-	 * post's rows itself (it is also the cron entry point) and calls
-	 * index->insert() per instance, so rows are cleared exactly once on either
-	 * path.
+	 * recurrence engine owns materialisation — Recurrence\Generator replaces the
+	 * post's rows itself (it is also the cron entry point), so rows are cleared
+	 * exactly once on either path.
 	 *
 	 * @param int $post_id Post ID.
 	 */
@@ -393,22 +392,13 @@ class IndexBuilder {
 			return;
 		}
 
-		$this->index->delete_by_post_id( $post_id );
-
-		if ( empty( $meta['start_date'] ) ) {
-			return;
-		}
-
 		// Ongoing events have no end date; everything else needs one.
-		if ( ! $ongoing && empty( $meta['end_date'] ) ) {
-			return;
-		}
+		$dated = ! empty( $meta['start_date'] ) && ( $ongoing || ! empty( $meta['end_date'] ) );
+		$row   = $dated ? $this->build_row( $post_id, $meta ) : null;
 
-		$row = $this->build_row( $post_id, $meta );
-
-		if ( null !== $row ) {
-			$this->index->insert( $row );
-		}
+		// Cleared and written as one step: if the new row cannot be written
+		// the event keeps the one it had.
+		$this->index->replace_for_post( $post_id, null === $row ? [] : [ $row ] );
 	}
 
 	/**
@@ -717,8 +707,20 @@ class IndexBuilder {
 				return null;
 			}
 
+			$end_date = $meta['end_date'];
+
+			// Nothing stops an end being entered before the start, and every
+			// range query assumes a row ends no earlier than it begins. Such an
+			// event is indexed at its shortest: over when it starts or, for an
+			// all-day event, the one day.
+			if ( $end_dt < $start_dt ) {
+				$end_date = $meta['start_date'];
+				$end_dt   = $all_day
+					? new \DateTimeImmutable( blockendar_next_day( $end_date ) . ' 00:00:00', $tz )
+					: $start_dt;
+			}
+
 			$end_datetime = $end_dt->setTimezone( $utc )->format( 'Y-m-d H:i:s' );
-			$end_date     = $meta['end_date'];
 		}
 
 		return [
