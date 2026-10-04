@@ -235,18 +235,22 @@ class Exporter {
 	/**
 	 * Generate a single-event .ics file string.
 	 *
-	 * @param int $post_id Event post ID.
-	 * @return string|null iCal content, or null if post not found.
+	 * This does not decide who may read the event. The index lookups it uses
+	 * apply no status or password rules; the caller has to.
+	 *
+	 * @param int         $post_id         Event post ID.
+	 * @param string|null $occurrence_date Start date (Y-m-d) of the occurrence wanted. Null for
+	 *                                     the next one, or the last if the series is over.
+	 * @return string|null iCal content, or null if there is no such event or occurrence.
 	 */
-	public function generate_single( int $post_id ): ?string {
+	public function generate_single( int $post_id, ?string $occurrence_date = null ): ?string {
 		$post = get_post( $post_id );
 
 		if ( ! $post || 'blockendar_event' !== $post->post_type ) {
 			return null;
 		}
 
-		// Build a synthetic row from post meta.
-		$row = $this->build_row_from_meta( $post );
+		$row = $this->single_row( $post, $occurrence_date );
 
 		if ( null === $row ) {
 			return null;
@@ -486,6 +490,40 @@ class Exporter {
 		$value = str_replace( ',', '\,', $value );
 		$value = str_replace( "\n", '\n', $value );
 		return $value;
+	}
+
+	/**
+	 * The row a single-event export is built from.
+	 *
+	 * An occurrence of a recurring event comes from the index, so its dates and
+	 * its UID are the ones the feed gives that occurrence. A client holding
+	 * both then sees one event, not two. A single event is still built from
+	 * its meta, which also covers one that is not indexed.
+	 *
+	 * @param \WP_Post    $post            Event post.
+	 * @param string|null $occurrence_date Start date (Y-m-d) wanted, or null.
+	 */
+	private function single_row( \WP_Post $post, ?string $occurrence_date ): ?object {
+		if ( null !== $occurrence_date ) {
+			$row = EventIndex::get_occurrence_by_date( $post->ID, $occurrence_date );
+
+			if ( null === $row ) {
+				return null;
+			}
+		} else {
+			$row = EventIndex::next_occurrence( $post->ID ) ?? EventIndex::last_occurrence( $post->ID );
+		}
+
+		if ( null === $row || empty( $row->recurrence_id ) ) {
+			return $this->build_row_from_meta( $post );
+		}
+
+		// The index row carries no post fields; build_vevent() reads these three.
+		$row->post_title        = $post->post_title;
+		$row->post_date_gmt     = $post->post_date_gmt;
+		$row->post_modified_gmt = $post->post_modified_gmt;
+
+		return $row;
 	}
 
 	/**
