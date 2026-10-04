@@ -14,8 +14,11 @@ declare( strict_types=1 );
 
 namespace Blockendar\Tests\Integration;
 
+use Blockendar\DB\EventIndex;
 use Blockendar\DB\IndexBuilder;
 use Blockendar\ICS\Exporter;
+use Blockendar\Recurrence\Generator;
+use Blockendar\Recurrence\RuleRepository;
 use WP_REST_Request;
 use WP_UnitTestCase;
 
@@ -203,5 +206,227 @@ class SingleEventIcsTest extends WP_UnitTestCase {
 		$post_id = self::factory()->post->create( [ 'post_type' => 'post' ] );
 
 		$this->assertNull( ( new Exporter() )->generate_single( $post_id ) );
+	}
+
+	// -------------------------------------------------------------------------
+	// Recurring events
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Create a published weekly event with four occurrences.
+	 *
+	 * @param int   $first_in_days Days from today to the first occurrence; negative for the past.
+	 * @param array $meta          Meta overrides.
+	 * @return array{0: int, 1: string[]} Post ID and the four occurrence dates.
+	 */
+	private function make_weekly_event( int $first_in_days = 9, array $meta = [] ): array {
+		$first = gmdate( 'Y-m-d', time() + $first_in_days * DAY_IN_SECONDS );
+
+		$post_id = $this->make_event(
+			'Weekly Session',
+			array_merge(
+				[
+					'blockendar_start_date' => $first,
+					'blockendar_end_date'   => $first,
+				],
+				$meta
+			)
+		);
+
+		( new RuleRepository() )->upsert(
+			$post_id,
+			[
+				'frequency' => 'weekly',
+				'interval'  => 1,
+				'count'     => 4,
+			]
+		);
+		( new Generator() )->generate_for_post( $post_id );
+		( new EventIndex() )->flush_cache();
+
+		$dates = [];
+
+		for ( $week = 0; $week < 4; $week++ ) {
+			$dates[] = gmdate( 'Y-m-d', time() + ( $first_in_days + 7 * $week ) * DAY_IN_SECONDS );
+		}
+
+		return [ $post_id, $dates ];
+	}
+
+	/**
+	 * Every UID line in an iCalendar body.
+	 *
+	 * @param string $ics iCalendar content.
+	 * @return string[]
+	 */
+	private function uids( string $ics ): array {
+		return array_values( array_filter( explode( "\r\n", $ics ), static fn( $line ) => str_starts_with( $line, 'UID:' ) ) );
+	}
+
+	/**
+	 * The download was built from post meta, which holds the series' first date
+	 * and nothing to say the event recurs. So it exported the first occurrence
+	 * whichever one was asked for, under a UID with no date in it — a second,
+	 * unrelated event to a client that also holds the feed.
+	 */
+	public function test_a_recurring_events_download_is_the_occurrence_asked_for(): void {
+		[ $post_id, $dates ] = $this->make_weekly_event();
+
+		$download = (string) ( new Exporter() )->generate_single( $post_id, $dates[2] );
+		$host     = wp_parse_url( home_url(), PHP_URL_HOST );
+		$uid      = "UID:blockendar-{$post_id}-{$dates[2]}@{$host}";
+
+		$this->assertSame( [ $uid ], $this->uids( $download ) );
+		$this->assertContains( $uid, $this->uids( $this->feed() ), 'The feed names this occurrence the same way.' );
+		$this->assertSame( 'DTSTART:' . str_replace( '-', '', $dates[2] ) . 'T190000Z', $this->property( $download, 'DTSTART' ) );
+		$this->assertSame( 'DTEND:' . str_replace( '-', '', $dates[2] ) . 'T210000Z', $this->property( $download, 'DTEND' ) );
+		$this->assertSame( 'SUMMARY:Weekly Session', $this->property( $download, 'SUMMARY' ) );
+	}
+
+	public function test_with_no_date_a_recurring_events_download_is_its_next_occurrence(): void {
+		[ $post_id, $dates ] = $this->make_weekly_event();
+
+		$download = (string) ( new Exporter() )->generate_single( $post_id );
+		$host     = wp_parse_url( home_url(), PHP_URL_HOST );
+
+		$this->assertSame( [ "UID:blockendar-{$post_id}-{$dates[0]}@{$host}" ], $this->uids( $download ) );
+	}
+
+	public function test_a_series_that_is_over_downloads_its_last_occurrence(): void {
+		[ $post_id, $dates ] = $this->make_weekly_event( -60 );
+
+		$download = (string) ( new Exporter() )->generate_single( $post_id );
+		$host     = wp_parse_url( home_url(), PHP_URL_HOST );
+
+		$this->assertSame( [ "UID:blockendar-{$post_id}-{$dates[3]}@{$host}" ], $this->uids( $download ) );
+	}
+
+	public function test_an_all_day_occurrence_downloads_as_one_day(): void {
+		[ $post_id, $dates ] = $this->make_weekly_event(
+			9,
+			[
+				'blockendar_all_day'    => '1',
+				'blockendar_start_time' => '',
+				'blockendar_end_time'   => '',
+			]
+		);
+
+		$download = (string) ( new Exporter() )->generate_single( $post_id, $dates[1] );
+		$next_day = gmdate( 'Ymd', (int) date_create( $dates[1] . ' UTC' )->getTimestamp() + DAY_IN_SECONDS );
+
+		$this->assertSame( 'DTSTART;VALUE=DATE:' . str_replace( '-', '', $dates[1] ), $this->property( $download, 'DTSTART' ) );
+		$this->assertSame( 'DTEND;VALUE=DATE:' . $next_day, $this->property( $download, 'DTEND' ) );
+	}
+
+	public function test_a_date_the_series_does_not_fall_on_is_not_exportable(): void {
+		[ $post_id ] = $this->make_weekly_event();
+
+		$this->assertNull( ( new Exporter() )->generate_single( $post_id, '1999-01-01' ) );
+	}
+
+	/**
+	 * A single event's download is still built from its meta, and comes out the
+	 * same whether or not its own date is named.
+	 */
+	public function test_a_single_events_download_does_not_change(): void {
+		$post_id = $this->make_event( 'Autumn Concert' );
+		$date    = get_post_meta( $post_id, 'blockendar_start_date', true );
+		$host    = wp_parse_url( home_url(), PHP_URL_HOST );
+
+		$strip = static fn( string $ics ): string => (string) preg_replace( '/^DTSTAMP:.*$/m', '', $ics );
+
+		$plain = (string) ( new Exporter() )->generate_single( $post_id );
+		$dated = (string) ( new Exporter() )->generate_single( $post_id, $date );
+
+		$this->assertSame( [ "UID:blockendar-{$post_id}@{$host}" ], $this->uids( $plain ) );
+		$this->assertSame( $strip( $plain ), $strip( $dated ) );
+		$this->assertNull( ( new Exporter() )->generate_single( $post_id, '1999-01-01' ) );
+	}
+
+	// -------------------------------------------------------------------------
+	// The route and the block
+	// -------------------------------------------------------------------------
+
+	public function test_the_route_refuses_a_value_that_is_not_a_date(): void {
+		[ $post_id ] = $this->make_weekly_event();
+
+		foreach ( [ 'tomorrow', '2026-02-30', '20261110' ] as $value ) {
+			$request = new WP_REST_Request( 'GET', "/blockendar/v1/events/{$post_id}/ical" );
+			$request->set_query_params( [ 'occurrence_date' => $value ] );
+
+			$this->assertSame( 400, rest_do_request( $request )->get_status(), $value );
+		}
+	}
+
+	public function test_the_route_answers_404_for_a_date_the_series_does_not_fall_on(): void {
+		[ $post_id ] = $this->make_weekly_event();
+
+		$request = new WP_REST_Request( 'GET', "/blockendar/v1/events/{$post_id}/ical" );
+		$request->set_query_params( [ 'occurrence_date' => '1999-01-01' ] );
+
+		try {
+			rest_do_request( $request );
+			$this->fail( 'The route served a file for an occurrence that does not exist.' );
+		} catch ( \WPDieException $e ) {
+			$this->assertStringContainsString( 'not found', strtolower( $e->getMessage() ) );
+		}
+	}
+
+	/**
+	 * The block's iCalendar link, decoded.
+	 *
+	 * Without pretty permalinks the route travels in ?rest_route=, percent-encoded,
+	 * so the link is found by where it points once decoded rather than by its text.
+	 *
+	 * @param string $html Rendered block.
+	 */
+	private function icalendar_href( string $html ): string {
+		preg_match_all( '/href="([^"]+)"/', $html, $matches );
+
+		foreach ( $matches[1] as $href ) {
+			$href = urldecode( html_entity_decode( $href, ENT_QUOTES ) );
+
+			if ( str_contains( $href, '/blockendar/v1/events/' ) && str_contains( $href, '/ical' ) ) {
+				return $href;
+			}
+		}
+
+		$this->fail( 'The block rendered no iCalendar link.' );
+	}
+
+	/**
+	 * The block's Google and Outlook links describe the occurrence on screen.
+	 * Its iCalendar link has to name the same one.
+	 */
+	public function test_the_blocks_icalendar_link_names_the_occurrence_on_screen(): void {
+		[ $post_id, $dates ] = $this->make_weekly_event();
+
+		$GLOBALS['blockendar_current_occurrence'] = EventIndex::get_occurrence_by_date( $post_id, $dates[2] );
+
+		$html = ( new \WP_Block(
+			[
+				'blockName' => 'blockendar/add-to-calendar',
+				'attrs'     => [],
+			],
+			[ 'postId' => $post_id ]
+		) )->render();
+
+		unset( $GLOBALS['blockendar_current_occurrence'] );
+
+		$this->assertStringContainsString( 'occurrence_date=' . $dates[2], $this->icalendar_href( $html ) );
+	}
+
+	public function test_the_blocks_icalendar_link_is_unchanged_for_a_single_event(): void {
+		$post_id = $this->make_event( 'Autumn Concert' );
+
+		$html = ( new \WP_Block(
+			[
+				'blockName' => 'blockendar/add-to-calendar',
+				'attrs'     => [],
+			],
+			[ 'postId' => $post_id ]
+		) )->render();
+
+		$this->assertStringNotContainsString( 'occurrence_date', $this->icalendar_href( $html ) );
 	}
 }
