@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 2.0.2
+Stable tag: 2.1.0
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -106,6 +106,36 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 2.1.0 =
+* Added: a wpml-config.xml, so WPML and Polylang know which event fields a translation carries. Event listings and the calendar still show every language's copy of an event, and a repeat rule is not carried to a translation.
+* Added: occurrence_date on /blockendar/v1/events/{id}/ical, to export one occurrence of a recurring event.
+* Added: blockendar_recurrence on the event in the REST API's edit context. The editor uses it to save the repeat rule with the event.
+* Changed: a repeat rule is saved with the event, and the Save recurrence button is gone. Choosing a rule used to save it straight away, before the event was saved and even if it never was.
+* Changed: the calendar's first day of the week follows WordPress's Week Starts On until one is chosen in Blockendar's settings, and any day can be chosen. A site that never set it may see its calendar start on a different day.
+* Changed: a date with no time passed as start or end to /blockendar/v1/events or /blockendar/v1/calendar means that whole day in the site's timezone. The same date as both returned nothing before.
+* Changed: for recurring all-day events, end_date in /blockendar/v1/events is the event's last day, as it already was for single events. For all-day events, end in /blockendar/v1/calendar is the day after the last.
+* Changed: the Event Date & Time block shows the timezone as an abbreviation, such as CDT, not an identifier.
+* Changed: the Google Calendar and Outlook links in the Add to Calendar block include the venue and a short description.
+* Changed: wp blockendar import-tribe lists every value it changes or leaves out, event by event, including on --dry-run.
+* Fixed: the importer from The Events Calendar published events that were pending, scheduled or in the trash at the source, and dropped event passwords. It now keeps each event's status and password, and skips trashed events.
+* Fixed: the importer gave a timed event ending at 23:59 no length, made an all-day event one day too long when the source site used an end-of-day cutoff, dropped a UTC+5.5-style timezone, dropped a cost of 0, and relabelled a cost in another currency with this site's symbol.
+* Fixed: a recurring all-day event ran one day too long in calendar feeds, in the Event Date & Time block and in the events list in the admin.
+* Fixed: a single all-day event lasting more than one day was drawn one day short on the calendar.
+* Fixed: downloading the .ics for one occurrence of a recurring event gave the series' first date, as a separate event from the one in the calendar feed.
+* Fixed: saving a repeating event in the editor, or its rule through the REST API, removed the rule's skipped and added dates.
+* Fixed: deleting a repeating event left its repeat rule in the database.
+* Fixed: on a site whose timezone is a manual UTC offset, new events were given the timezone UTC and indexed at the wrong time.
+* Fixed: in the editor, the start date could not be set in the past, a time not on a five-minute step was rounded and saved rounded, and an event running past midnight could not be entered without changing the end date first.
+* Fixed: with the Classic Editor plugin active, events opened in the classic editor, which has no date fields. Events now always use the block editor.
+* Fixed: the calendar's month names, day names and buttons were in English whatever the site's language.
+* Fixed: when the calendar's events failed to load, it showed an empty grid with no message. It now says so and offers a retry.
+* Fixed: the Outlook links in the Add to Calendar block gave the event's time in the visitor's timezone, an all-day event lasting more than one day lost its last day in Google Calendar, and a title containing "&" or quotes arrived with HTML entities in it.
+* Fixed: the Start Date and End Date columns in the events list showed the time in UTC.
+* Fixed: the Event Countdown block's "Starts on" text gave the start time in UTC.
+* Fixed: the Event Cost block showed nothing for a cost of 0.
+* Fixed: on a site where another plugin or theme changes PHP's default timezone, all-day events could be indexed with no length, a recurring series could lose its last occurrence or gain one past its end date, and event dates and times could be shown shifted.
+* Fixed: the date-range filter showed the wrong day on a site whose timezone is UTC+13 or UTC+14.
 
 = 2.0.2 =
 * Security: a password-protected event's title, dates, cost and venue could be read by anyone through /blockendar/v1/events/{id} and /blockendar/v1/events/{id}/instances. Both now answer 404 unless the reader can edit the event.
@@ -344,6 +374,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 2.1.0 =
+Many fixes to recurring events, the editor, the calendar and the importer from The Events Calendar. The event index is rebuilt automatically after updating. Two things change: a repeat rule is now saved with the event, so the Save recurrence button is gone, and a calendar whose first day was never set now follows WordPress's Week Starts On.
 
 = 2.0.2 =
 Security release. Password-protected events could be read through the REST API, and turning off public REST access did not cover the WordPress event, venue, type and tag routes. Update recommended for every site. No database changes.
