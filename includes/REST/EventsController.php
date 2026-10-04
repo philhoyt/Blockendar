@@ -350,7 +350,10 @@ class EventsController extends AbstractController {
 
 	/**
 	 * POST /blockendar/v1/events/{id}/instances/{date}/cancel
-	 * Sets the status of a single instance to 'cancelled' in the index.
+	 *
+	 * Marks one occurrence of a recurring event as cancelled. The date is
+	 * recorded on the rule, which is what the index is rebuilt from; the row
+	 * is updated as well so the change shows at once.
 	 */
 	public function cancel_instance( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$post_id = (int) $request->get_param( 'id' );
@@ -359,6 +362,16 @@ class EventsController extends AbstractController {
 
 		if ( ! $post || 'blockendar_event' !== $post->post_type ) {
 			return new WP_Error( 'blockendar_not_found', __( 'Event not found.', 'blockendar' ), [ 'status' => 404 ] );
+		}
+
+		// A single event has no rule to hold the date, and its one row is
+		// replaced on the next save. Its own status is the way to cancel it.
+		if ( null === $this->rules->get( $post_id ) ) {
+			return new WP_Error( 'blockendar_not_recurring', __( 'Event has no recurrence rule. Set the event\'s status to cancel it.', 'blockendar' ), [ 'status' => 400 ] );
+		}
+
+		if ( ! $this->rules->add_cancellation( $post_id, $date ) ) {
+			return new WP_Error( 'blockendar_db_error', __( 'Failed to cancel instance.', 'blockendar' ), [ 'status' => 500 ] );
 		}
 
 		global $wpdb;
@@ -377,6 +390,9 @@ class EventsController extends AbstractController {
 		if ( false === $updated ) {
 			return new WP_Error( 'blockendar_db_error', __( 'Failed to cancel instance.', 'blockendar' ), [ 'status' => 500 ] );
 		}
+
+		// The update went round EventIndex, so the read cache has to be told.
+		$this->index->flush_cache();
 
 		return $this->respond(
 			[
@@ -416,6 +432,9 @@ class EventsController extends AbstractController {
 			)
 		);
 		// phpcs:enable
+
+		// The delete went round EventIndex, so the read cache has to be told.
+		$this->index->flush_cache();
 
 		return $this->respond(
 			[
@@ -541,16 +560,17 @@ class EventsController extends AbstractController {
 	 */
 	private function format_rule( \Blockendar\Recurrence\Rule $rule ): array {
 		return [
-			'id'         => $rule->id,
-			'frequency'  => $rule->frequency,
-			'interval'   => $rule->interval,
-			'byday'      => $rule->byday,
-			'bymonthday' => $rule->bymonthday,
-			'bysetpos'   => $rule->bysetpos,
-			'until_date' => $rule->until_date?->format( 'Y-m-d' ),
-			'count'      => $rule->count,
-			'exceptions' => $rule->exceptions,
-			'additions'  => $rule->additions,
+			'id'            => $rule->id,
+			'frequency'     => $rule->frequency,
+			'interval'      => $rule->interval,
+			'byday'         => $rule->byday,
+			'bymonthday'    => $rule->bymonthday,
+			'bysetpos'      => $rule->bysetpos,
+			'until_date'    => $rule->until_date?->format( 'Y-m-d' ),
+			'count'         => $rule->count,
+			'exceptions'    => $rule->exceptions,
+			'additions'     => $rule->additions,
+			'cancellations' => $rule->cancellations,
 		];
 	}
 

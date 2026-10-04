@@ -40,7 +40,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Schema {
 
-	const DB_VERSION        = '4';
+	const DB_VERSION        = '5';
 	const DB_VERSION_OPTION = 'blockendar_db_version';
 
 	/**
@@ -117,6 +117,7 @@ class Schema {
 			count smallint(6) DEFAULT NULL,
 			exceptions longtext DEFAULT NULL,
 			additions longtext DEFAULT NULL,
+			cancellations longtext DEFAULT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY idx_post_id (post_id)
 		) ENGINE=InnoDB $charset_collate;";
@@ -132,7 +133,7 @@ class Schema {
 		// succeeded, and ADD INDEX on a large table can fail for disk or lock
 		// reasons. Recording version 4 after a partial apply would mean never
 		// retrying, leaving the site permanently on a half-built schema.
-		if ( ! self::has_required_indexes() ) {
+		if ( ! self::has_required_indexes() || ! self::has_cancellations_column() ) {
 			return false;
 		}
 
@@ -165,6 +166,24 @@ class Schema {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Whether the rules table has the column DB_VERSION 5 added.
+	 *
+	 * Checked for the same reason as the indexes: recording the version over a
+	 * table the column never reached would mean every cancellation failing to
+	 * save, with nothing left to retry the upgrade.
+	 */
+	private static function has_cancellations_column(): bool {
+		global $wpdb;
+
+		$recurrence_table = self::recurrence_table();
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$found = $wpdb->get_var( "SHOW COLUMNS FROM {$recurrence_table} LIKE 'cancellations'" );
+
+		return null !== $found;
 	}
 
 	/**

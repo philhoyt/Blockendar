@@ -107,17 +107,7 @@ class Generator {
 		$shared = $this->get_shared_row_data( $post_id, $rule->id, $meta );
 
 		foreach ( $dates as $date_pair ) {
-			$row = array_merge(
-				$shared,
-				[
-					'start_datetime' => $date_pair['start_utc'],
-					'end_datetime'   => $date_pair['end_utc'],
-					'start_date'     => $date_pair['start_date'],
-					'end_date'       => $date_pair['end_date'],
-				]
-			);
-
-			$this->index->insert( $row, false );
+			$this->index->insert( $this->occurrence_row( $shared, $date_pair, $rule ), false );
 		}
 
 		// Insert manually added extra dates.
@@ -128,17 +118,7 @@ class Generator {
 				continue;
 			}
 
-			$row = array_merge(
-				$shared,
-				[
-					'start_datetime' => $date_pair['start_utc'],
-					'end_datetime'   => $date_pair['end_utc'],
-					'start_date'     => $date_pair['start_date'],
-					'end_date'       => $date_pair['end_date'],
-				]
-			);
-
-			$this->index->insert( $row, false );
+			$this->index->insert( $this->occurrence_row( $shared, $date_pair, $rule ), false );
 		}
 
 		// One invalidation for the whole event rather than one per occurrence.
@@ -213,10 +193,17 @@ class Generator {
 			return;
 		}
 
-		$last_indexed = $this->index->max_start_datetime( $post_id );
+		/*
+		 * What is new is what is not there yet, compared occurrence by
+		 * occurrence. Taking everything after the last indexed start instead
+		 * was thrown by a date added by hand: one three years out is the last
+		 * row the event has, nothing the rule produces comes after it, and the
+		 * series stopped growing.
+		 */
+		$indexed = array_flip( $this->index->start_datetimes( $post_id ) );
 
 		// Nothing indexed yet — there is no tail to extend, so build it once.
-		if ( null === $last_indexed ) {
+		if ( empty( $indexed ) ) {
 			$this->generate_for_post( $post_id );
 			return;
 		}
@@ -225,22 +212,11 @@ class Generator {
 		$shared = $this->get_shared_row_data( $post_id, $rule->id, $meta );
 
 		foreach ( $this->expand_dates( $rule, $meta ) as $date_pair ) {
-			if ( $date_pair['start_utc'] <= $last_indexed ) {
+			if ( isset( $indexed[ $date_pair['start_utc'] ] ) ) {
 				continue;
 			}
 
-			$this->index->insert(
-				array_merge(
-					$shared,
-					[
-						'start_datetime' => $date_pair['start_utc'],
-						'end_datetime'   => $date_pair['end_utc'],
-						'start_date'     => $date_pair['start_date'],
-						'end_date'       => $date_pair['end_date'],
-					]
-				),
-				false
-			);
+			$this->index->insert( $this->occurrence_row( $shared, $date_pair, $rule ), false );
 		}
 
 		/*
@@ -248,6 +224,33 @@ class Generator {
 		 * generate_for_post() whenever the rule is saved, regardless of the
 		 * horizon, so appending them again would duplicate rows.
 		 */
+	}
+
+	/**
+	 * The index row for one occurrence.
+	 *
+	 * @param array $shared    What every occurrence of the event has in common.
+	 * @param array $date_pair The occurrence's dates, from build_date_pair().
+	 * @param Rule  $rule      The event's rule.
+	 * @return array
+	 */
+	private function occurrence_row( array $shared, array $date_pair, Rule $rule ): array {
+		$row = array_merge(
+			$shared,
+			[
+				'start_datetime' => $date_pair['start_utc'],
+				'end_datetime'   => $date_pair['end_utc'],
+				'start_date'     => $date_pair['start_date'],
+				'end_date'       => $date_pair['end_date'],
+			]
+		);
+
+		// One occurrence called off; the rest keep the event's own status.
+		if ( $rule->is_cancelled( $date_pair['start_date'] ) ) {
+			$row['status'] = 'cancelled';
+		}
+
+		return $row;
 	}
 
 	// -------------------------------------------------------------------------

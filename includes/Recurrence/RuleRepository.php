@@ -52,31 +52,33 @@ class RuleRepository {
 		$table = Schema::recurrence_table();
 
 		$row = [
-			'post_id'      => $post_id,
-			'frequency'    => sanitize_text_field( $data['frequency'] ?? 'weekly' ),
-			'interval_val' => max( 1, (int) ( $data['interval_val'] ?? $data['interval'] ?? 1 ) ),
-			'byday'        => $this->sanitize_csv( $data['byday'] ?? null, Rule::WEEKDAYS ),
-			'bymonthday'   => $this->sanitize_int_csv( $data['bymonthday'] ?? null, -31, 31 ),
-			'bysetpos'     => $this->sanitize_int_csv( $data['bysetpos'] ?? null, -366, 366 ),
-			'until_date'   => $this->sanitize_date( $data['until_date'] ?? null ),
-			'count'        => isset( $data['count'] ) && '' !== $data['count']
+			'post_id'       => $post_id,
+			'frequency'     => sanitize_text_field( $data['frequency'] ?? 'weekly' ),
+			'interval_val'  => max( 1, (int) ( $data['interval_val'] ?? $data['interval'] ?? 1 ) ),
+			'byday'         => $this->sanitize_csv( $data['byday'] ?? null, Rule::WEEKDAYS ),
+			'bymonthday'    => $this->sanitize_int_csv( $data['bymonthday'] ?? null, -31, 31 ),
+			'bysetpos'      => $this->sanitize_int_csv( $data['bysetpos'] ?? null, -366, 366 ),
+			'until_date'    => $this->sanitize_date( $data['until_date'] ?? null ),
+			'count'         => isset( $data['count'] ) && '' !== $data['count']
 				? max( 1, (int) $data['count'] )
 				: null,
-			'exceptions'   => $this->sanitize_json_dates( $data['exceptions'] ?? null ),
-			'additions'    => $this->sanitize_json_dates( $data['additions'] ?? null ),
+			'exceptions'    => $this->sanitize_json_dates( $data['exceptions'] ?? null ),
+			'additions'     => $this->sanitize_json_dates( $data['additions'] ?? null ),
+			'cancellations' => $this->sanitize_json_dates( $data['cancellations'] ?? null ),
 		];
 
 		$formats = [
-			'post_id'      => '%d',
-			'frequency'    => '%s',
-			'interval_val' => '%d',
-			'byday'        => '%s',
-			'bymonthday'   => '%s',
-			'bysetpos'     => '%s',
-			'until_date'   => '%s',
-			'count'        => '%d',
-			'exceptions'   => '%s',
-			'additions'    => '%s',
+			'post_id'       => '%d',
+			'frequency'     => '%s',
+			'interval_val'  => '%d',
+			'byday'         => '%s',
+			'bymonthday'    => '%s',
+			'bysetpos'      => '%s',
+			'until_date'    => '%s',
+			'count'         => '%d',
+			'exceptions'    => '%s',
+			'additions'     => '%s',
+			'cancellations' => '%s',
 		];
 
 		$existing = $this->get( $post_id );
@@ -217,6 +219,33 @@ class RuleRepository {
 				]
 			)
 		);
+	}
+
+	/**
+	 * Record that the occurrence on a date is cancelled.
+	 *
+	 * Kept on the rule because the index rows are rebuilt from it on every
+	 * save; a cancellation written only to a row lasted until the next one.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $date    Date in Y-m-d format.
+	 * @return bool
+	 */
+	public function add_cancellation( int $post_id, string $date ): bool {
+		$rule = $this->get( $post_id );
+
+		if ( null === $rule ) {
+			return false;
+		}
+
+		$cancellations = $rule->cancellations;
+
+		if ( ! in_array( $date, $cancellations, true ) ) {
+			$cancellations[] = $date;
+		}
+
+		// upsert() leaves the columns it is not given, so this is the only one written.
+		return $this->upsert( $post_id, [ 'cancellations' => $cancellations ] );
 	}
 
 	// -------------------------------------------------------------------------

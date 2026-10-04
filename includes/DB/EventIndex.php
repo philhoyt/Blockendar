@@ -760,30 +760,29 @@ class EventIndex {
 	}
 
 	/**
-	 * The latest start_datetime currently indexed for one post.
+	 * Every occurrence start a post has in the index, as UTC datetimes.
 	 *
-	 * Used by the nightly horizon roll to work out where its last run stopped,
-	 * so it can append the occurrences that have since come into range instead
-	 * of deleting and rewriting every row the event has.
+	 * Read straight from the table, for the nightly roll to tell which
+	 * occurrences are already there.
 	 *
-	 * @param int $post_id Event post ID.
-	 * @return string|null UTC datetime, or null when the post has no rows.
+	 * @param int $post_id Post ID.
+	 * @return string[]
 	 */
-	public function max_start_datetime( int $post_id ): ?string {
+	public function start_datetimes( int $post_id ): array {
 		global $wpdb;
 
 		$events_table = Schema::events_table();
 
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$value = $wpdb->get_var(
+		$values = $wpdb->get_col(
 			$wpdb->prepare(
-				"SELECT MAX(start_datetime) FROM {$events_table} WHERE post_id = %d",
+				"SELECT start_datetime FROM {$events_table} WHERE post_id = %d",
 				$post_id
 			)
 		);
 		// phpcs:enable
 
-		return null === $value ? null : (string) $value;
+		return array_map( 'strval', $values );
 	}
 
 	/**

@@ -52,6 +52,9 @@ class Rule {
 	/** @var string[] Additional dates in Y-m-d format */
 	public readonly array $additions;
 
+	/** @var string[] Dates of occurrences that are cancelled, in Y-m-d format */
+	public readonly array $cancellations;
+
 	/**
 	 * @param array $data Raw data array (from DB row or user input).
 	 */
@@ -72,6 +75,8 @@ class Rule {
 
 		$this->exceptions = self::parse_json_dates( $data['exceptions'] ?? null );
 		$this->additions  = self::parse_json_dates( $data['additions'] ?? null );
+
+		$this->cancellations = self::parse_json_dates( $data['cancellations'] ?? null );
 	}
 
 	/**
@@ -86,6 +91,16 @@ class Rule {
 	 */
 	public function is_exception( string $date ): bool {
 		return in_array( $date, $this->exceptions, true );
+	}
+
+	/**
+	 * Whether the occurrence on a given date (Y-m-d) is cancelled.
+	 *
+	 * Unlike an exception, a cancelled occurrence stays on the calendar; it is
+	 * shown as cancelled.
+	 */
+	public function is_cancelled( string $date ): bool {
+		return in_array( $date, $this->cancellations, true );
 	}
 
 	/**
@@ -194,16 +209,17 @@ class Rule {
 	 */
 	public function to_db_array(): array {
 		return [
-			'post_id'      => $this->post_id,
-			'frequency'    => $this->frequency,
-			'interval_val' => $this->interval,
-			'byday'        => implode( ',', $this->byday ),
-			'bymonthday'   => implode( ',', $this->bymonthday ),
-			'bysetpos'     => implode( ',', $this->bysetpos ),
-			'until_date'   => $this->until_date?->format( 'Y-m-d' ),
-			'count'        => $this->count,
-			'exceptions'   => $this->exceptions,
-			'additions'    => $this->additions,
+			'post_id'       => $this->post_id,
+			'frequency'     => $this->frequency,
+			'interval_val'  => $this->interval,
+			'byday'         => implode( ',', $this->byday ),
+			'bymonthday'    => implode( ',', $this->bymonthday ),
+			'bysetpos'      => implode( ',', $this->bysetpos ),
+			'until_date'    => $this->until_date?->format( 'Y-m-d' ),
+			'count'         => $this->count,
+			'exceptions'    => $this->exceptions,
+			'additions'     => $this->additions,
+			'cancellations' => $this->cancellations,
 		];
 	}
 }
