@@ -139,16 +139,8 @@ class RecurrenceField {
 			return true;
 		}
 
-		// The editor has no controls for skipped and added dates, and
-		// RuleRepository::upsert() blanks whatever it is not given. Carry them
-		// over, or every save of a series would wipe them.
-		$existing = $this->rules->get( $post->ID );
-
-		if ( null !== $existing ) {
-			$value['exceptions'] = $existing->exceptions;
-			$value['additions']  = $existing->additions;
-		}
-
+		// The editor has no controls for skipped and added dates and does not
+		// send them; upsert() leaves alone what it is not given.
 		if ( ! $this->rules->upsert( $post->ID, $value ) ) {
 			return new WP_Error(
 				'blockendar_save_failed',

@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Blockendar\Admin\SettingsPage;
 use Blockendar\CPT\EventPostType;
+use Blockendar\Recurrence\RuleRepository;
 use Blockendar\Taxonomy\EventType;
 use Blockendar\Taxonomy\Venue;
 
@@ -48,6 +49,7 @@ class IndexBuilder {
 		// REST API writes meta AFTER save_post fires, so re-index once all meta is persisted.
 		add_action( 'rest_after_insert_' . EventPostType::POST_TYPE, [ $this, 'on_rest_insert' ], 10, 1 );
 		add_action( 'before_delete_post', [ $this, 'on_delete' ] );
+		add_action( 'before_delete_post', [ $this, 'on_permanent_delete' ] );
 		add_action( 'trashed_post', [ $this, 'on_delete' ] );
 		add_action( 'untrashed_post', [ $this, 'on_untrash' ] );
 		add_action( self::DEFERRED_HOOK, [ $this, 'build_for_post' ] );
@@ -130,6 +132,23 @@ class IndexBuilder {
 	 *
 	 * @param int $post_id Post ID.
 	 */
+	/**
+	 * Remove an event's repeat rule when the event is deleted for good.
+	 *
+	 * Not on trash: an event restored from the trash has to come back as the
+	 * series it was. The rule is a row in the plugin's own table and nothing
+	 * else removes it, so without this it outlives its event.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public function on_permanent_delete( int $post_id ): void {
+		if ( EventPostType::POST_TYPE !== get_post_type( $post_id ) ) {
+			return;
+		}
+
+		( new RuleRepository() )->delete( $post_id );
+	}
+
 	public function on_untrash( int $post_id ): void {
 		if ( EventPostType::POST_TYPE !== get_post_type( $post_id ) ) {
 			return;

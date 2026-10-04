@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Blockendar\Admin\SettingsPage;
 use Blockendar\DB\EventIndex;
+use Blockendar\Recurrence\RuleRepository;
 
 /**
  * Detects a version change and refreshes what activation would have.
@@ -60,6 +61,9 @@ class Upgrader {
 		}
 
 		flush_rewrite_rules( false );
+
+		// Rules whose event was deleted before deletion removed them.
+		( new RuleRepository() )->delete_orphans();
 
 		if ( ( new EventIndex() )->get_total_row_count() > 0 ) {
 			wp_schedule_single_event( time(), 'blockendar_index_rebuild_after_upgrade' );
