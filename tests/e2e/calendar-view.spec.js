@@ -302,3 +302,95 @@ test.describe( 'with a non-public REST API', () => {
 		).not.toHaveAttribute( 'data-rest-nonce' );
 	} );
 } );
+
+/*
+ * Once FullCalendar has mounted, the server-rendered list is gone. If the
+ * events request then failed, the visitor was left with an empty grid and
+ * nothing to say why, or what to do about it.
+ */
+test( 'a failed events request says so and offers a retry', async ( {
+	page,
+} ) => {
+	let fail = true;
+
+	await page.route( '**/blockendar/v1/calendar**', ( route ) =>
+		fail ? route.fulfill( { status: 500, body: '{}' } ) : route.continue()
+	);
+	await page.route( /rest_route=.*blockendar.*calendar/, ( route ) =>
+		fail ? route.fulfill( { status: 500, body: '{}' } ) : route.continue()
+	);
+
+	await page.goto( `/?p=${ pageId }` );
+	await expect( page.locator( '.fc' ) ).toBeVisible( { timeout: 15000 } );
+
+	const error = page.locator( '.blockendar-calendar-error' );
+	await expect( error ).toBeVisible( { timeout: 15000 } );
+	await expect( error ).toHaveAttribute( 'role', 'alert' );
+
+	fail = false;
+	await error.getByRole( 'button' ).click();
+
+	await expect(
+		page.locator( '.fc-event-title', { hasText: 'E2E Calendar Event' } )
+	).toBeVisible( { timeout: 15000 } );
+	await expect( error ).toHaveCount( 0 );
+} );
+
+/*
+ * The fallback list is removed only when the calendar is ready to replace it.
+ * A visitor whose FullCalendar chunks never arrive keeps the list.
+ */
+test( 'the fallback list stays when the calendar chunks fail to load', async ( {
+	page,
+} ) => {
+	// Everything in build/ except the block's own entry script.
+	await page.route( /\/build\/\d+\.js/, ( route ) => route.abort() );
+
+	await page.goto( `/?p=${ pageId }` );
+
+	await expect(
+		page.locator( '.blockendar-calendar-fallback' )
+	).toBeVisible();
+	await expect( page.locator( '.fc' ) ).toHaveCount( 0 );
+	await expect( page.locator( '.blockendar-calendar-error' ) ).toHaveCount(
+		0
+	);
+} );
+
+/*
+ * Every other block follows the site's language. The calendar was given no
+ * locale, so its month and day names and its buttons stayed in English.
+ */
+test.describe( 'on a German site', () => {
+	test.beforeAll( () => {
+		// WordPress refuses a site language it has no files for, so the pack
+		// has to be installed; setting the option alone is silently ignored.
+		// The calendar's own strings still come from FullCalendar.
+		wpCli( [ 'language', 'core', 'install', 'de_DE' ] );
+		wpCli( [ 'site', 'switch-language', 'de_DE' ] );
+	} );
+
+	test.afterAll( () => {
+		wpCli( [ 'site', 'switch-language', 'en_US' ] );
+		wpCli( [ 'language', 'core', 'uninstall', 'de_DE' ] );
+	} );
+
+	test( 'the calendar is in German', async ( { page } ) => {
+		await page.goto( `/?p=${ pageId }` );
+		await expect( page.locator( '.fc' ) ).toBeVisible( { timeout: 15000 } );
+
+		const month = new Intl.DateTimeFormat( 'de', { month: 'long' } ).format(
+			new Date()
+		);
+
+		await expect( page.locator( '.fc-toolbar-title' ) ).toContainText(
+			month
+		);
+		await expect( page.locator( '.fc-today-button' ) ).toHaveText(
+			'Heute'
+		);
+		await expect(
+			page.locator( '.fc-col-header-cell' ).first()
+		).toContainText( /^(Mo|So)/ );
+	} );
+} );
