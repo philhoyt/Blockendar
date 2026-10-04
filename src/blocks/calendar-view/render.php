@@ -152,8 +152,8 @@ if ( ! empty( $attributes['featuredOnly'] ) ) {
 }
 
 $fallback_events = ( new \Blockendar\DB\EventIndex() )->get_events_in_range(
-	gmdate( 'Y-m-d H:i:s' ),
-	gmdate( 'Y-m-d H:i:s', strtotime( '+1 year' ) ),
+	\Blockendar\Blocks\Cutoff::now(),
+	\Blockendar\Blocks\Cutoff::ahead( 'P1Y' ),
 	$fallback_filters
 );
 

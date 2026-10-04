@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Blockendar\Admin\SettingsPage;
 use Blockendar\DB\EventIndex;
+use Blockendar\DB\IndexBuilder;
 use Blockendar\Recurrence\RuleRepository;
 
 /**
@@ -29,6 +30,25 @@ use Blockendar\Recurrence\RuleRepository;
 class Upgrader {
 
 	const VERSION_OPTION = 'blockendar_version';
+
+	/**
+	 * The version the site ran before the one it runs now. Kept for support:
+	 * it says which upgrade a site last went through.
+	 */
+	const PREVIOUS_VERSION_OPTION = 'blockendar_previous_version';
+
+	/**
+	 * Releases that changed how index rows are built from an event.
+	 *
+	 * Rows written by an earlier version are wrong under these, so an upgrade
+	 * that crosses one rebuilds the index. Every other release leaves the rows
+	 * as they are. A release that changes the table itself is not listed:
+	 * Schema::maybe_upgrade() queues the rebuild for those.
+	 *
+	 * 2.1.0 — a recurring all-day event's end_date became its last day rather
+	 *         than the day after, and UTC-offset timezones started to index.
+	 */
+	const REBUILD_VERSIONS = [ '2.1.0' ];
 
 	/**
 	 * Register hooks.
@@ -46,17 +66,19 @@ class Upgrader {
 	}
 
 	/**
-	 * Flush rewrite rules and queue an index rebuild once per plugin version.
+	 * Flush rewrite rules once per plugin version, and queue an index rebuild
+	 * when the upgrade calls for one.
 	 *
 	 * Schema changes are handled separately by Schema::maybe_upgrade(), which
 	 * runs on plugins_loaded with its own version option. The rebuild here
 	 * covers releases that change how rows are built without changing the
 	 * schema; it is skipped on a fresh install, where there is nothing to
-	 * rebuild. wp_schedule_single_event() ignores a duplicate of an event the
-	 * schema upgrade already queued.
+	 * rebuild.
 	 */
 	public function maybe_upgrade(): void {
-		if ( get_option( self::VERSION_OPTION ) === BLOCKENDAR_VERSION ) {
+		$previous = get_option( self::VERSION_OPTION );
+
+		if ( BLOCKENDAR_VERSION === $previous ) {
 			return;
 		}
 
@@ -65,11 +87,35 @@ class Upgrader {
 		// Rules whose event was deleted before deletion removed them.
 		( new RuleRepository() )->delete_orphans();
 
-		if ( ( new EventIndex() )->get_total_row_count() > 0 ) {
-			wp_schedule_single_event( time(), 'blockendar_index_rebuild_after_upgrade' );
+		// No stored version on a site that has rows: it predates this class,
+		// so it predates everything in the list as well.
+		$from = is_string( $previous ) && '' !== $previous ? $previous : '0';
+
+		if ( self::crosses_rebuild_version( $from, BLOCKENDAR_VERSION ) && ( new EventIndex() )->get_total_row_count() > 0 ) {
+			( new IndexBuilder() )->queue_full_rebuild();
+		}
+
+		if ( '0' !== $from ) {
+			update_option( self::PREVIOUS_VERSION_OPTION, $from, false );
 		}
 
 		update_option( self::VERSION_OPTION, BLOCKENDAR_VERSION );
+	}
+
+	/**
+	 * Whether an upgrade passes a release that changed how rows are built.
+	 *
+	 * @param string $from Version upgraded from.
+	 * @param string $to   Version upgraded to.
+	 */
+	public static function crosses_rebuild_version( string $from, string $to ): bool {
+		foreach ( self::REBUILD_VERSIONS as $version ) {
+			if ( version_compare( $from, $version, '<' ) && version_compare( $to, $version, '>=' ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

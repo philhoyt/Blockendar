@@ -52,31 +52,33 @@ class RuleRepository {
 		$table = Schema::recurrence_table();
 
 		$row = [
-			'post_id'      => $post_id,
-			'frequency'    => sanitize_text_field( $data['frequency'] ?? 'weekly' ),
-			'interval_val' => max( 1, (int) ( $data['interval_val'] ?? $data['interval'] ?? 1 ) ),
-			'byday'        => $this->sanitize_csv( $data['byday'] ?? null, Rule::WEEKDAYS ),
-			'bymonthday'   => $this->sanitize_int_csv( $data['bymonthday'] ?? null, -31, 31 ),
-			'bysetpos'     => $this->sanitize_int_csv( $data['bysetpos'] ?? null, -366, 366 ),
-			'until_date'   => $this->sanitize_date( $data['until_date'] ?? null ),
-			'count'        => isset( $data['count'] ) && '' !== $data['count']
+			'post_id'       => $post_id,
+			'frequency'     => sanitize_text_field( $data['frequency'] ?? 'weekly' ),
+			'interval_val'  => max( 1, (int) ( $data['interval_val'] ?? $data['interval'] ?? 1 ) ),
+			'byday'         => $this->sanitize_csv( $data['byday'] ?? null, Rule::WEEKDAYS ),
+			'bymonthday'    => $this->sanitize_int_csv( $data['bymonthday'] ?? null, -31, 31 ),
+			'bysetpos'      => $this->sanitize_int_csv( $data['bysetpos'] ?? null, -366, 366 ),
+			'until_date'    => $this->sanitize_date( $data['until_date'] ?? null ),
+			'count'         => isset( $data['count'] ) && '' !== $data['count']
 				? max( 1, (int) $data['count'] )
 				: null,
-			'exceptions'   => $this->sanitize_json_dates( $data['exceptions'] ?? null ),
-			'additions'    => $this->sanitize_json_dates( $data['additions'] ?? null ),
+			'exceptions'    => $this->sanitize_json_dates( $data['exceptions'] ?? null ),
+			'additions'     => $this->sanitize_json_dates( $data['additions'] ?? null ),
+			'cancellations' => $this->sanitize_json_dates( $data['cancellations'] ?? null ),
 		];
 
 		$formats = [
-			'post_id'      => '%d',
-			'frequency'    => '%s',
-			'interval_val' => '%d',
-			'byday'        => '%s',
-			'bymonthday'   => '%s',
-			'bysetpos'     => '%s',
-			'until_date'   => '%s',
-			'count'        => '%d',
-			'exceptions'   => '%s',
-			'additions'    => '%s',
+			'post_id'       => '%d',
+			'frequency'     => '%s',
+			'interval_val'  => '%d',
+			'byday'         => '%s',
+			'bymonthday'    => '%s',
+			'bysetpos'      => '%s',
+			'until_date'    => '%s',
+			'count'         => '%d',
+			'exceptions'    => '%s',
+			'additions'     => '%s',
+			'cancellations' => '%s',
 		];
 
 		$existing = $this->get( $post_id );
@@ -217,6 +219,90 @@ class RuleRepository {
 				]
 			)
 		);
+	}
+
+	/**
+	 * Record that the occurrence on a date is cancelled.
+	 *
+	 * Kept on the rule because the index rows are rebuilt from it on every
+	 * save; a cancellation written only to a row lasted until the next one.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $date    Date in Y-m-d format.
+	 * @return bool
+	 */
+	public function add_cancellation( int $post_id, string $date ): bool {
+		$rule = $this->get( $post_id );
+
+		if ( null === $rule ) {
+			return false;
+		}
+
+		$cancellations = $rule->cancellations;
+
+		if ( ! in_array( $date, $cancellations, true ) ) {
+			$cancellations[] = $date;
+		}
+
+		// upsert() leaves the columns it is not given, so this is the only one written.
+		return $this->upsert( $post_id, [ 'cancellations' => $cancellations ] );
+	}
+
+	/**
+	 * Copy cancellations that exist only as index rows onto their rules.
+	 *
+	 * Before cancellations were kept on the rule, cancelling an occurrence set
+	 * the status of its index row and nothing else. The upgrade that adds the
+	 * column rebuilds the index from the rules, which would put every such
+	 * occurrence back as scheduled. Run once, before that rebuild.
+	 *
+	 * A series whose own status is cancelled has every row cancelled and no
+	 * single occurrence called off; it is left alone.
+	 *
+	 * @return int Occurrences whose cancellation was copied.
+	 */
+	public function adopt_index_cancellations(): int {
+		global $wpdb;
+
+		$events_table = Schema::events_table();
+		$rules_table  = Schema::recurrence_table();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$rows = $wpdb->get_results(
+			"SELECT e.post_id, e.start_date FROM {$events_table} e
+			INNER JOIN {$rules_table} r ON r.post_id = e.post_id
+			WHERE e.status = 'cancelled'
+			ORDER BY e.post_id, e.start_date"
+		);
+		// phpcs:enable
+
+		$by_post = [];
+
+		foreach ( (array) $rows as $row ) {
+			$by_post[ (int) $row->post_id ][] = (string) $row->start_date;
+		}
+
+		$adopted = 0;
+
+		foreach ( $by_post as $post_id => $dates ) {
+			if ( 'cancelled' === get_post_meta( $post_id, 'blockendar_status', true ) ) {
+				continue;
+			}
+
+			$rule = $this->get( $post_id );
+
+			if ( null === $rule ) {
+				continue;
+			}
+
+			$new = array_values( array_diff( array_unique( $dates ), $rule->cancellations ) );
+
+			if ( ! empty( $new ) && $this->upsert( $post_id, [ 'cancellations' => array_merge( $rule->cancellations, $new ) ] ) ) {
+				$adopted += count( $new );
+			}
+		}
+
+		return $adopted;
 	}
 
 	// -------------------------------------------------------------------------

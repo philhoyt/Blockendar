@@ -38,6 +38,60 @@ class Cutoff {
 	public const FORMAT = 'Y-m-d H:i:s';
 
 	/**
+	 * A moment to use in place of the clock. For tests.
+	 *
+	 * @var \DateTimeImmutable|null
+	 */
+	private static ?\DateTimeImmutable $frozen = null;
+
+	/**
+	 * Stop the clock at a moment, or start it again with null. For tests.
+	 *
+	 * @param \DateTimeImmutable|null $now The moment to report as now.
+	 */
+	public static function freeze( ?\DateTimeImmutable $now ): void {
+		self::$frozen = $now;
+	}
+
+	/**
+	 * The current moment as a range bound, in UTC, to the minute.
+	 *
+	 * A bound goes into the cache key of the query it is used in. To the
+	 * second, the same listing asked a different question every second, and
+	 * no request ever found another's answer. Rounded down, never up: an event
+	 * with no end time is indexed as ending when it starts, and a bound past
+	 * the present would drop it before it began.
+	 *
+	 * @param \DateTimeImmutable|null $now The current moment; defaults to now. For tests.
+	 */
+	public static function now( ?\DateTimeImmutable $now = null ): string {
+		return self::minute( self::utc( $now ) )->format( self::FORMAT );
+	}
+
+	/**
+	 * The far end of a listing's range, in UTC: the start of the day that is
+	 * some way ahead.
+	 *
+	 * Nothing depends on where exactly a listing stops a year or three out, so
+	 * it is given the coarsest value that will do and changes once a day.
+	 *
+	 * @param string                  $interval How far, as an ISO 8601 duration: "P1Y" is a year.
+	 * @param \DateTimeImmutable|null $now      The current moment; defaults to now. For tests.
+	 */
+	public static function ahead( string $interval, ?\DateTimeImmutable $now = null ): string {
+		return self::utc( $now )->add( new \DateInterval( $interval ) )->setTime( 0, 0, 0 )->format( self::FORMAT );
+	}
+
+	/**
+	 * A moment with its seconds dropped.
+	 *
+	 * @param \DateTimeImmutable $moment The moment.
+	 */
+	private static function minute( \DateTimeImmutable $moment ): \DateTimeImmutable {
+		return $moment->setTime( (int) $moment->format( 'G' ), (int) $moment->format( 'i' ), 0 );
+	}
+
+	/**
 	 * The rules a listing may choose from.
 	 *
 	 * @return string[]
@@ -49,7 +103,7 @@ class Cutoff {
 	/**
 	 * Cutoff for a rule, as a UTC datetime string.
 	 *
-	 * - end:   now. The event leaves the moment it ends.
+	 * - end:   now, to the minute. The event leaves within a minute of ending.
 	 * - day:   the start of the current day in the site timezone, so anything
 	 *          that ended earlier today is still listed until midnight.
 	 * - hours: now minus $hours, so the event stays that long after it ends.
@@ -70,11 +124,11 @@ class Cutoff {
 
 		switch ( $rule ) {
 			case self::RULE_END:
-				return $now->format( self::FORMAT );
+				return self::minute( $now )->format( self::FORMAT );
 
 			case self::RULE_HOURS:
 				$hours = max( self::MIN_HOURS, min( self::MAX_HOURS, $hours ) );
-				return $now->sub( new \DateInterval( "PT{$hours}H" ) )->format( self::FORMAT );
+				return self::minute( $now )->sub( new \DateInterval( "PT{$hours}H" ) )->format( self::FORMAT );
 
 			case self::RULE_DAY:
 			default:
@@ -122,6 +176,8 @@ class Cutoff {
 	 */
 	private static function utc( ?\DateTimeImmutable $now ): \DateTimeImmutable {
 		$utc = new \DateTimeZone( 'UTC' );
+
+		$now ??= self::$frozen;
 
 		return null === $now ? new \DateTimeImmutable( 'now', $utc ) : $now->setTimezone( $utc );
 	}

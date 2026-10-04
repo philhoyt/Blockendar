@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\Blocks\Cutoff;
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\IndexBuilder;
 use Blockendar\Recurrence\RuleRepository;
@@ -180,7 +181,7 @@ class EventsController extends AbstractController {
 	 * GET /blockendar/v1/events
 	 */
 	public function get_events( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$now = gmdate( 'Y-m-d H:i:s' );
+		$now = Cutoff::now();
 
 		$start = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'start' ) ?? '' ),
@@ -190,7 +191,7 @@ class EventsController extends AbstractController {
 
 		$end = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'end' ) ?? '' ),
-			gmdate( 'Y-m-d H:i:s', strtotime( '+1 year' ) ),
+			Cutoff::ahead( 'P1Y' ),
 			'end'
 		);
 
@@ -350,7 +351,10 @@ class EventsController extends AbstractController {
 
 	/**
 	 * POST /blockendar/v1/events/{id}/instances/{date}/cancel
-	 * Sets the status of a single instance to 'cancelled' in the index.
+	 *
+	 * Marks one occurrence of a recurring event as cancelled. The date is
+	 * recorded on the rule, which is what the index is rebuilt from; the row
+	 * is updated as well so the change shows at once.
 	 */
 	public function cancel_instance( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$post_id = (int) $request->get_param( 'id' );
@@ -359,6 +363,16 @@ class EventsController extends AbstractController {
 
 		if ( ! $post || 'blockendar_event' !== $post->post_type ) {
 			return new WP_Error( 'blockendar_not_found', __( 'Event not found.', 'blockendar' ), [ 'status' => 404 ] );
+		}
+
+		// A single event has no rule to hold the date, and its one row is
+		// replaced on the next save. Its own status is the way to cancel it.
+		if ( null === $this->rules->get( $post_id ) ) {
+			return new WP_Error( 'blockendar_not_recurring', __( 'Event has no recurrence rule. Set the event\'s status to cancel it.', 'blockendar' ), [ 'status' => 400 ] );
+		}
+
+		if ( ! $this->rules->add_cancellation( $post_id, $date ) ) {
+			return new WP_Error( 'blockendar_db_error', __( 'Failed to cancel instance.', 'blockendar' ), [ 'status' => 500 ] );
 		}
 
 		global $wpdb;
@@ -377,6 +391,9 @@ class EventsController extends AbstractController {
 		if ( false === $updated ) {
 			return new WP_Error( 'blockendar_db_error', __( 'Failed to cancel instance.', 'blockendar' ), [ 'status' => 500 ] );
 		}
+
+		// The update went round EventIndex, so the read cache has to be told.
+		$this->index->flush_cache();
 
 		return $this->respond(
 			[
@@ -417,6 +434,9 @@ class EventsController extends AbstractController {
 		);
 		// phpcs:enable
 
+		// The delete went round EventIndex, so the read cache has to be told.
+		$this->index->flush_cache();
+
 		return $this->respond(
 			[
 				'exception_added' => true,
@@ -428,16 +448,30 @@ class EventsController extends AbstractController {
 
 	/**
 	 * POST /blockendar/v1/index/rebuild
+	 *
+	 * Runs one pass of the rebuild, not the whole of it: a large site does not
+	 * fit in a request. `in_progress` says there is more to do; the caller
+	 * posts again to carry on. A background pass is queued as well, so a
+	 * rebuild whose caller goes away still finishes. `waiting` says a pass was
+	 * already running and this request left it to it.
 	 */
 	public function rebuild_index( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$result = $this->builder->rebuild_all();
+		// Queued before the work, so the rebuild is carried on even if this
+		// request is killed or the caller never comes back.
+		$this->builder->queue_rebuild( MINUTE_IN_SECONDS );
+
+		$result = $this->builder->rebuild_step();
 
 		return $this->respond(
 			[
-				'success'    => true,
-				'rebuilt'    => $result['rebuilt'],
-				'skipped'    => $result['skipped'],
-				'rebuilt_at' => get_option( 'blockendar_last_index_rebuild' ),
+				'success'     => true,
+				'in_progress' => ! $result['done'],
+				// Another pass was running, so this one did nothing. A caller
+				// in a loop should hold off before asking again.
+				'waiting'     => $result['locked'],
+				'rebuilt'     => $result['rebuilt'],
+				'skipped'     => $result['skipped'],
+				'rebuilt_at'  => $result['done'] ? get_option( 'blockendar_last_index_rebuild' ) : null,
 			]
 		);
 	}
@@ -531,16 +565,17 @@ class EventsController extends AbstractController {
 	 */
 	private function format_rule( \Blockendar\Recurrence\Rule $rule ): array {
 		return [
-			'id'         => $rule->id,
-			'frequency'  => $rule->frequency,
-			'interval'   => $rule->interval,
-			'byday'      => $rule->byday,
-			'bymonthday' => $rule->bymonthday,
-			'bysetpos'   => $rule->bysetpos,
-			'until_date' => $rule->until_date?->format( 'Y-m-d' ),
-			'count'      => $rule->count,
-			'exceptions' => $rule->exceptions,
-			'additions'  => $rule->additions,
+			'id'            => $rule->id,
+			'frequency'     => $rule->frequency,
+			'interval'      => $rule->interval,
+			'byday'         => $rule->byday,
+			'bymonthday'    => $rule->bymonthday,
+			'bysetpos'      => $rule->bysetpos,
+			'until_date'    => $rule->until_date?->format( 'Y-m-d' ),
+			'count'         => $rule->count,
+			'exceptions'    => $rule->exceptions,
+			'additions'     => $rule->additions,
+			'cancellations' => $rule->cancellations,
 		];
 	}
 

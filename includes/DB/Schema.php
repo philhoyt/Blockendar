@@ -40,7 +40,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Schema {
 
-	const DB_VERSION        = '4';
+	const DB_VERSION        = '5';
 	const DB_VERSION_OPTION = 'blockendar_db_version';
 
 	/**
@@ -117,6 +117,7 @@ class Schema {
 			count smallint(6) DEFAULT NULL,
 			exceptions longtext DEFAULT NULL,
 			additions longtext DEFAULT NULL,
+			cancellations longtext DEFAULT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY idx_post_id (post_id)
 		) ENGINE=InnoDB $charset_collate;";
@@ -132,7 +133,7 @@ class Schema {
 		// succeeded, and ADD INDEX on a large table can fail for disk or lock
 		// reasons. Recording version 4 after a partial apply would mean never
 		// retrying, leaving the site permanently on a half-built schema.
-		if ( ! self::has_required_indexes() ) {
+		if ( ! self::has_required_indexes() || ! self::has_cancellations_column() ) {
 			return false;
 		}
 
@@ -168,6 +169,24 @@ class Schema {
 	}
 
 	/**
+	 * Whether the rules table has the column DB_VERSION 5 added.
+	 *
+	 * Checked for the same reason as the indexes: recording the version over a
+	 * table the column never reached would mean every cancellation failing to
+	 * save, with nothing left to retry the upgrade.
+	 */
+	private static function has_cancellations_column(): bool {
+		global $wpdb;
+
+		$recurrence_table = self::recurrence_table();
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$found = $wpdb->get_var( "SHOW COLUMNS FROM {$recurrence_table} LIKE 'cancellations'" );
+
+		return null !== $found;
+	}
+
+	/**
 	 * Run on every plugin load. Triggers a schema upgrade when the stored
 	 * version is behind the current constant.
 	 *
@@ -190,7 +209,14 @@ class Schema {
 			// upgrade, and there is no point reindexing into a table that is
 			// not yet shaped correctly.
 			if ( $is_upgrade && $applied ) {
-				wp_schedule_single_event( time(), 'blockendar_index_rebuild_after_upgrade' );
+				// Version 5 moved per-occurrence cancellations from the index
+				// rows to the rules. The rebuild below works from the rules, so
+				// the ones that exist only as rows are copied across first.
+				if ( version_compare( (string) $stored, '5', '<' ) ) {
+					( new \Blockendar\Recurrence\RuleRepository() )->adopt_index_cancellations();
+				}
+
+				( new IndexBuilder() )->queue_full_rebuild();
 			}
 		}
 	}
@@ -212,6 +238,32 @@ class Schema {
 		// phpcs:enable
 
 		delete_option( self::DB_VERSION_OPTION );
+	}
+
+	/**
+	 * Add a site's Blockendar tables to the ones dropped when it is deleted.
+	 *
+	 * On a network, WordPress drops a deleted site's own tables and asks
+	 * plugins for theirs through `wpmu_drop_tables`. uninstall.php never runs
+	 * for a site that is deleted, so without this the tables stay behind.
+	 *
+	 * @param string[] $tables  Tables to drop.
+	 * @param int      $site_id ID of the site being deleted.
+	 * @return string[]
+	 */
+	public static function tables_to_drop( $tables, $site_id ): array {
+		global $wpdb;
+
+		$prefix = $wpdb->get_blog_prefix( (int) $site_id );
+
+		return array_merge(
+			(array) $tables,
+			[
+				$prefix . 'blockendar_events',
+				$prefix . 'blockendar_event_type_terms',
+				$prefix . 'blockendar_recurrence',
+			]
+		);
 	}
 
 	/**

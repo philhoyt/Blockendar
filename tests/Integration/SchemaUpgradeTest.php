@@ -104,6 +104,97 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 		$this->assertSame( 0, (int) $ongoing, 'Existing rows default to not ongoing.' );
 	}
 
+	/**
+	 * Version 5 adds a column to the rules table. The rules already in it are
+	 * the only record of how each series repeats, so they have to come through.
+	 */
+	public function test_upgrading_from_version_4_adds_the_cancellations_column_and_keeps_the_rules(): void {
+		global $wpdb;
+
+		$table = Schema::recurrence_table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "ALTER TABLE {$table} DROP COLUMN cancellations" );
+		update_option( Schema::DB_VERSION_OPTION, '4' );
+
+		$post_id = self::factory()->post->create( [ 'post_type' => 'blockendar_event' ] );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			$table,
+			[
+				'post_id'      => $post_id,
+				'frequency'    => 'weekly',
+				'interval_val' => 2,
+				'byday'        => 'TU',
+				'exceptions'   => '["2027-03-16"]',
+			]
+		);
+
+		// An occurrence cancelled the old way: the row says so and nothing else does.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			Schema::events_table(),
+			[
+				'post_id'        => $post_id,
+				'start_datetime' => '2027-03-23 19:00:00',
+				'end_datetime'   => '2027-03-23 21:00:00',
+				'start_date'     => '2027-03-23',
+				'end_date'       => '2027-03-23',
+				'status'         => 'cancelled',
+			]
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$this->assertNull( $wpdb->get_var( $wpdb->prepare( 'SHOW COLUMNS FROM %i LIKE %s', $table, 'cancellations' ) ), 'Precondition: the column must be gone.' );
+
+		Schema::maybe_upgrade();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$this->assertNotNull( $wpdb->get_var( $wpdb->prepare( 'SHOW COLUMNS FROM %i LIKE %s', $table, 'cancellations' ) ) );
+		$this->assertSame( '5', get_option( Schema::DB_VERSION_OPTION ) );
+
+		$rule = ( new \Blockendar\Recurrence\RuleRepository() )->get( $post_id );
+
+		$this->assertSame( 'weekly', $rule->frequency );
+		$this->assertSame( 2, $rule->interval );
+		$this->assertSame( [ 'TU' ], $rule->byday );
+		$this->assertSame( [ '2027-03-16' ], $rule->exceptions );
+		$this->assertSame( [ '2027-03-23' ], $rule->cancellations, 'A cancellation that was only an index row is on the rule before the rebuild runs.' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( $table, [ 'post_id' => $post_id ] );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( Schema::events_table(), [ 'post_id' => $post_id ] );
+	}
+
+	/**
+	 * The version is what stops the upgrade being tried again, so it is only
+	 * recorded once the column is really there.
+	 */
+	public function test_the_version_is_not_persisted_when_the_cancellations_column_is_missing(): void {
+		global $wpdb;
+
+		$table = Schema::recurrence_table();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query( "ALTER TABLE {$table} DROP COLUMN cancellations" );
+		update_option( Schema::DB_VERSION_OPTION, '4' );
+
+		$blocker = static function ( $query ) {
+			return preg_match( '/ADD COLUMN `?cancellations/i', (string) $query ) ? 'SELECT 1' : $query;
+		};
+
+		add_filter( 'query', $blocker );
+		$applied = Schema::create_tables();
+		remove_filter( 'query', $blocker );
+
+		$this->assertFalse( $applied );
+		$this->assertSame( '4', get_option( Schema::DB_VERSION_OPTION ) );
+
+		$this->assertTrue( Schema::create_tables(), 'The retry, unblocked, completes.' );
+		$this->assertSame( '5', get_option( Schema::DB_VERSION_OPTION ) );
+	}
+
 	public function test_a_fresh_install_does_not_schedule_a_rebuild(): void {
 		delete_option( Schema::DB_VERSION_OPTION );
 
@@ -208,7 +299,7 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 		$names = $this->index_names( $table );
 		$this->assertContains( 'idx_visible_start', $names );
 		$this->assertContains( 'idx_visible_past', $names );
-		$this->assertSame( '4', get_option( Schema::DB_VERSION_OPTION ) );
+		$this->assertSame( Schema::DB_VERSION, get_option( Schema::DB_VERSION_OPTION ) );
 
 		// The row is untouched — this migration adds indexes only, so no reindex
 		// is needed to make the data correct.
@@ -307,7 +398,7 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 
 		// And the retry, unblocked, completes.
 		$this->assertTrue( Schema::create_tables() );
-		$this->assertSame( '4', get_option( Schema::DB_VERSION_OPTION ) );
+		$this->assertSame( Schema::DB_VERSION, get_option( Schema::DB_VERSION_OPTION ) );
 		$names = $this->index_names( $table );
 		$this->assertContains( 'idx_visible_past', $names );
 	}

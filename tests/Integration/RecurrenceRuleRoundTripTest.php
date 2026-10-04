@@ -187,18 +187,26 @@ class RecurrenceRuleRoundTripTest extends WP_UnitTestCase {
 	public function test_to_db_array_round_trips_through_the_rule_constructor(): void {
 		$original = new Rule(
 			[
-				'post_id'      => 42,
-				'frequency'    => 'monthly',
-				'interval_val' => 4,
-				'byday'        => 'MO,TH',
-				'bysetpos'     => '1,-1',
-				'bymonthday'   => '3,17',
-				'until_date'   => '2027-01-31',
-				'count'        => 9,
+				'post_id'       => 42,
+				'frequency'     => 'monthly',
+				'interval_val'  => 4,
+				'byday'         => 'MO,TH',
+				'bysetpos'      => '1,-1',
+				'bymonthday'    => '3,17',
+				'until_date'    => '2027-01-31',
+				'count'         => 9,
+
+				'exceptions'    => [ '2026-07-06' ],
+				'additions'     => [ '2026-07-09' ],
+				'cancellations' => [ '2026-08-03' ],
 			]
 		);
 
 		$rebuilt = new Rule( $original->to_db_array() );
+
+		$this->assertSame( [ '2026-07-06' ], $rebuilt->exceptions );
+		$this->assertSame( [ '2026-07-09' ], $rebuilt->additions );
+		$this->assertSame( [ '2026-08-03' ], $rebuilt->cancellations );
 
 		$this->assertSame( $original->frequency, $rebuilt->frequency );
 		$this->assertSame( $original->interval, $rebuilt->interval, 'interval_val key mismatch' );
