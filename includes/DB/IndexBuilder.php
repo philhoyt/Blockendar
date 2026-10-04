@@ -59,6 +59,35 @@ class IndexBuilder {
 	/** Posts fetched per query during a full rebuild. */
 	const REBUILD_BATCH = 100;
 
+	/**
+	 * The post meta an index row is built from.
+	 *
+	 * A change to any of these changes the row. The event's other meta — its
+	 * cost, its registration link — does not, and is not watched.
+	 */
+	const INDEX_META_KEYS = [
+		'blockendar_start_date',
+		'blockendar_end_date',
+		'blockendar_start_time',
+		'blockendar_end_time',
+		'blockendar_all_day',
+		'blockendar_timezone',
+		'blockendar_status',
+		'blockendar_featured',
+		'blockendar_hide_from_listings',
+		'blockendar_ongoing',
+	];
+
+	/**
+	 * Events changed in this request whose rows have not been rebuilt yet.
+	 *
+	 * Shared by every instance: the hooks that fill it belong to the one the
+	 * plugin registers, and a build by any other has to be able to clear it.
+	 *
+	 * @var array<int, true> Keyed by post ID.
+	 */
+	private static array $dirty = [];
+
 	private EventIndex $index;
 
 	public function __construct() {
@@ -78,6 +107,64 @@ class IndexBuilder {
 		add_action( 'untrashed_post', [ $this, 'on_untrash' ] );
 		add_action( self::DEFERRED_HOOK, [ $this, 'build_for_post' ] );
 		add_action( self::REBUILD_HOOK, [ $this, 'run_scheduled_rebuild' ], 10, 0 );
+
+		// A row is built from the event's meta and terms, and both can be
+		// written without the event being saved: by an importer, a sync, a
+		// WP-CLI command, or a term being deleted. Those writes are noted here
+		// and the event rebuilt once, when the request ends.
+		add_action( 'added_post_meta', [ $this, 'on_meta_change' ], 10, 3 );
+		add_action( 'updated_post_meta', [ $this, 'on_meta_change' ], 10, 3 );
+		add_action( 'deleted_post_meta', [ $this, 'on_meta_change' ], 10, 3 );
+		add_action( 'set_object_terms', [ $this, 'on_terms_change' ], 10, 4 );
+		add_action( 'deleted_term_relationships', [ $this, 'on_terms_removed' ], 10, 3 );
+		add_action( 'shutdown', [ $this, 'flush_dirty' ] );
+	}
+
+	/**
+	 * Mark an event dirty when meta its row is built from changes.
+	 *
+	 * @param int|int[] $meta_id   Meta row ID, or IDs on deletion. Unused.
+	 * @param int       $object_id Post ID.
+	 * @param string    $meta_key  Meta key.
+	 */
+	public function on_meta_change( $meta_id, $object_id, $meta_key ): void {
+		if ( ! in_array( $meta_key, self::INDEX_META_KEYS, true ) ) {
+			return;
+		}
+
+		if ( EventPostType::POST_TYPE === get_post_type( (int) $object_id ) ) {
+			$this->mark_dirty( (int) $object_id );
+		}
+	}
+
+	/**
+	 * Mark an event dirty when its venue or event types are set.
+	 *
+	 * @param int    $object_id Post ID.
+	 * @param array  $terms     Terms given. Unused.
+	 * @param array  $tt_ids    Term taxonomy IDs now set. Unused.
+	 * @param string $taxonomy  Taxonomy.
+	 */
+	public function on_terms_change( $object_id, $terms, $tt_ids, $taxonomy ): void {
+		$this->on_terms_removed( $object_id, $tt_ids, $taxonomy );
+	}
+
+	/**
+	 * Mark an event dirty when a venue or event type is taken off it, which is
+	 * also what deleting the term does to every event that had it.
+	 *
+	 * @param int    $object_id Post ID.
+	 * @param array  $tt_ids    Term taxonomy IDs removed. Unused.
+	 * @param string $taxonomy  Taxonomy.
+	 */
+	public function on_terms_removed( $object_id, $tt_ids, $taxonomy ): void {
+		if ( ! in_array( $taxonomy, [ Venue::TAXONOMY, EventType::TAXONOMY ], true ) ) {
+			return;
+		}
+
+		if ( EventPostType::POST_TYPE === get_post_type( (int) $object_id ) ) {
+			$this->mark_dirty( (int) $object_id );
+		}
 	}
 
 	/**
@@ -97,10 +184,60 @@ class IndexBuilder {
 			return;
 		}
 
+		// The queued build covers whatever marked this event dirty.
+		unset( self::$dirty[ $post_id ] );
+
 		// Collapse repeated saves of the same event into one pending job.
 		if ( ! wp_next_scheduled( self::DEFERRED_HOOK, [ $post_id ] ) ) {
 			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, self::DEFERRED_HOOK, [ $post_id ] );
 		}
+	}
+
+	/**
+	 * Note that an event's rows are out of date, to be rebuilt by flush_dirty().
+	 *
+	 * @param int $post_id Event post ID.
+	 */
+	public function mark_dirty( int $post_id ): void {
+		self::$dirty[ $post_id ] = true;
+	}
+
+	/**
+	 * Rebuild every event marked dirty, each one once.
+	 *
+	 * Runs when the request ends. Code that needs the index current sooner —
+	 * a CLI command that reads it back, a test — calls this itself.
+	 */
+	public function flush_dirty(): void {
+		// build_for_post() takes each one off the list, so a second flush, or
+		// the one at shutdown after an early one, finds nothing to do.
+		foreach ( array_keys( self::$dirty ) as $post_id ) {
+			unset( self::$dirty[ $post_id ] );
+
+			// Only published events have rows. One that is not published lost
+			// them when it stopped being, and one that is gone has none.
+			if ( EventPostType::POST_TYPE !== get_post_type( $post_id ) || 'publish' !== get_post_status( $post_id ) ) {
+				continue;
+			}
+
+			$this->schedule_or_build( $post_id );
+		}
+	}
+
+	/**
+	 * IDs of the events waiting for flush_dirty().
+	 *
+	 * @return int[]
+	 */
+	public static function dirty(): array {
+		return array_keys( self::$dirty );
+	}
+
+	/**
+	 * Drop the list without rebuilding anything.
+	 */
+	public static function forget_dirty(): void {
+		self::$dirty = [];
 	}
 
 	/**
@@ -121,7 +258,35 @@ class IndexBuilder {
 			return;
 		}
 
+		/*
+		 * The REST API saves the post and then its meta, terms and fields, so
+		 * a build here reads what the event was, and rest_after_insert builds
+		 * it again from what it is. One build is enough. The mark is the
+		 * fallback: if rest_after_insert is never reached, the event is still
+		 * rebuilt when the request ends.
+		 */
+		if ( $this->is_rest_save() ) {
+			$this->mark_dirty( $post_id );
+			return;
+		}
+
 		$this->schedule_or_build( $post_id );
+	}
+
+	/**
+	 * Whether the save in hand is being made through the REST API.
+	 *
+	 * The server's own state is asked as well as the request's, so a request
+	 * dispatched internally from an ordinary page load counts.
+	 */
+	private function is_rest_save(): bool {
+		global $wp_rest_server;
+
+		if ( $wp_rest_server instanceof \WP_REST_Server && $wp_rest_server->is_dispatching() ) {
+			return true;
+		}
+
+		return wp_is_serving_rest_request();
 	}
 
 	/**
@@ -206,6 +371,9 @@ class IndexBuilder {
 	 * @param int $post_id Post ID.
 	 */
 	public function build_for_post( int $post_id ): void {
+		// Whatever marked the event dirty is covered by this build.
+		unset( self::$dirty[ $post_id ] );
+
 		// Every public read path joins the index against wp_posts on
 		// post_status = 'publish', so an unpublished post must never hold rows
 		// here. Guarding at this level rather than per-caller means a new call
@@ -577,6 +745,8 @@ class IndexBuilder {
 	 * @return array
 	 */
 	public function get_event_meta( int $post_id ): array {
+		// The keys read here are INDEX_META_KEYS; a key added to one belongs in
+		// the other, or changes to it will not reach the index.
 		return [
 			'start_date'         => get_post_meta( $post_id, 'blockendar_start_date', true ),
 			'end_date'           => get_post_meta( $post_id, 'blockendar_end_date', true ),
