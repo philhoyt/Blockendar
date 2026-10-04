@@ -33,52 +33,60 @@ if ( $ongoing ) {
 	$end_date = $start_date;
 	$end_time = $all_day ? '' : '23:59';
 }
-$tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
-$title      = get_the_title( $post_id );
-$detail_url = get_permalink( $post_id );
-$ics_url    = rest_url( 'blockendar/v1/events/' . $post_id . '/ical' );
-$label      = ! empty( $attributes['label'] ) ? $attributes['label'] : __( 'Add to Calendar', 'blockendar' );
+$tz_str  = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
+$ics_url = rest_url( 'blockendar/v1/events/' . $post_id . '/ical' );
+$label   = ! empty( $attributes['label'] ) ? $attributes['label'] : __( 'Add to Calendar', 'blockendar' );
 
 if ( ! $start_date ) {
 	return;
 }
 
-$fmt_ts = function ( string $date, string $time ) use ( $tz_str, $all_day ): string {
-	if ( $all_day ) {
-		return str_replace( '-', '', $date );
-	}
-	try {
-		$dt = new DateTimeImmutable( "$date $time:00", new DateTimeZone( $tz_str ) );
-		return $dt->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'Ymd\THis\Z' );
-	} catch ( Exception ) {
-		return str_replace( '-', '', $date );
-	}
-};
+try {
+	$tz = new DateTimeZone( $tz_str );
+} catch ( Exception ) {
+	$tz = wp_timezone();
+}
 
-$start_ts  = $fmt_ts( $start_date, $start_time ?: '00:00' );
-$end_ts    = $fmt_ts( $end_date ?: $start_date, $end_time ?: $start_time ?: '23:59' );
-$enc_title = rawurlencode( $title );
-$enc_url   = rawurlencode( $detail_url ?? '' );
-$start_dt  = $start_date . ( $start_time ? "T$start_time" : '' );
-$end_dt    = ( $end_date ?: $start_date ) . ( $end_time ? "T$end_time" : '' );
+/*
+ * The occurrence as two moments in the event's own timezone. For an all-day
+ * event both are midnight, on the first day and on the last: end_date is the
+ * last day, and CalendarLinks adds the day each service wants on top.
+ */
+$last_date = $end_date ?: $start_date;
 
-$google_url = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
-	. '&text=' . $enc_title
-	. '&dates=' . $start_ts . '/' . $end_ts
-	. '&details=' . $enc_url;
+if ( $all_day ) {
+	$start = DateTimeImmutable::createFromFormat( '!Y-m-d', $start_date, $tz );
+	$end   = DateTimeImmutable::createFromFormat( '!Y-m-d', $last_date, $tz );
+} else {
+	$start = DateTimeImmutable::createFromFormat( '!Y-m-d H:i', $start_date . ' ' . ( $start_time ?: '00:00' ), $tz );
+	$end   = DateTimeImmutable::createFromFormat( '!Y-m-d H:i', $last_date . ' ' . ( $end_time ?: $start_time ?: '23:59' ), $tz );
+}
 
-$outlook_params = '?subject=' . $enc_title
-	. '&startdt=' . rawurlencode( $start_dt )
-	. '&enddt=' . rawurlencode( $end_dt )
-	. '&body=' . $enc_url;
+$google_url       = '';
+$outlook_365_url  = '';
+$outlook_live_url = '';
 
-$outlook_365_url  = 'https://outlook.office.com/calendar/0/deeplink/compose' . $outlook_params;
-$outlook_live_url = 'https://outlook.live.com/calendar/0/deeplink/compose' . $outlook_params;
+// A date that will not parse leaves only the iCalendar link, which the REST
+// route builds for itself.
+if ( $start && $end ) {
+	$calendar_event = [
+		'title'    => \Blockendar\Blocks\CalendarLinks::title( $post_id ),
+		'start'    => $start,
+		'end'      => $end,
+		'all_day'  => $all_day,
+		'details'  => \Blockendar\Blocks\CalendarLinks::details( $post_id ),
+		'location' => \Blockendar\Blocks\CalendarLinks::location( $post_id ),
+	];
 
-$show_google       = (bool) ( $attributes['showGoogle'] ?? true );
+	$google_url       = \Blockendar\Blocks\CalendarLinks::google( $calendar_event );
+	$outlook_365_url  = \Blockendar\Blocks\CalendarLinks::outlook( $calendar_event, 'outlook.office.com' );
+	$outlook_live_url = \Blockendar\Blocks\CalendarLinks::outlook( $calendar_event, 'outlook.live.com' );
+}
+
+$show_google       = '' !== $google_url && ( $attributes['showGoogle'] ?? true );
 $show_ical         = (bool) ( $attributes['showIcal'] ?? true );
-$show_outlook_365  = (bool) ( $attributes['showOutlook365'] ?? true );
-$show_outlook_live = (bool) ( $attributes['showOutlookLive'] ?? true );
+$show_outlook_365  = '' !== $outlook_365_url && ( $attributes['showOutlook365'] ?? true );
+$show_outlook_live = '' !== $outlook_live_url && ( $attributes['showOutlookLive'] ?? true );
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-add-to-calendar' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<details class="blockendar-add-to-calendar__dropdown">
