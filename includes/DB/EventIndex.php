@@ -52,6 +52,24 @@ class EventIndex {
 	private const CACHE_GROUP = 'blockendar_events';
 
 	/**
+	 * The filters that decide which rows a range query matches.
+	 *
+	 * The rest of what get_events_in_range() accepts — orderby, order,
+	 * per_page, max_per_page, page — arranges those rows into a page and
+	 * cannot change how many there are.
+	 */
+	public const RESULT_FILTERS = [
+		'venue_term_id',
+		'type_term_id',
+		'exclude_type_term_id',
+		'status',
+		'featured',
+		'hide_hidden',
+		'ongoing',
+		'ended_before',
+	];
+
+	/**
 	 * Rows per INSERT statement when writing an event's occurrences.
 	 */
 	private const INSERT_CHUNK = 50;
@@ -71,7 +89,147 @@ class EventIndex {
 	private function cache_key( string $method, array $args ): string {
 		$last_changed = wp_cache_get_last_changed( self::CACHE_GROUP );
 
-		return $method . ':' . md5( (string) wp_json_encode( $args ) ) . ':' . $last_changed;
+		return $method . ':' . md5( (string) wp_json_encode( self::sort_keys( $args ) ) ) . ':' . $last_changed;
+	}
+
+	/**
+	 * Sort an array's string keys, at every depth, so the order it was built in
+	 * does not show in its hash. Lists are left in the order they are in.
+	 *
+	 * @param array $value Array to sort.
+	 * @return array
+	 */
+	private static function sort_keys( array $value ): array {
+		foreach ( $value as $key => $item ) {
+			if ( is_array( $item ) ) {
+				$value[ $key ] = self::sort_keys( $item );
+			}
+		}
+
+		if ( ! array_is_list( $value ) ) {
+			ksort( $value );
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Reduce a caller's filters to the ones that decide which rows match, in
+	 * the one form the WHERE clause is built from.
+	 *
+	 * Both range queries build their SQL and their cache key from what this
+	 * returns, and from nothing else in the caller's array. Two filter sets
+	 * that ask the same question — a default left out or spelled out, term IDs
+	 * reordered, repeated or padded with 0, "not featured" as false or as
+	 * null — come out identical, and so share a cache entry. And a filter
+	 * cannot reach the query without reaching the key, because the query never
+	 * sees the caller's array.
+	 *
+	 * @param array $filters Filters as get_events_in_range() documents them.
+	 * @return array Keyed by RESULT_FILTERS.
+	 */
+	private function canonical_filters( array $filters ): array {
+		$term_ids = static function ( $value ): array {
+			$ids = array_unique( array_filter( array_map( 'absint', (array) $value ) ) );
+			sort( $ids );
+
+			return $ids;
+		};
+
+		return [
+			'venue_term_id'        => $term_ids( $filters['venue_term_id'] ?? null ),
+			'type_term_id'         => $term_ids( $filters['type_term_id'] ?? null ),
+			'exclude_type_term_id' => $term_ids( $filters['exclude_type_term_id'] ?? null ),
+			'status'               => isset( $filters['status'] ) ? sanitize_text_field( (string) $filters['status'] ) : null,
+			// Only true filters; false and null both mean "any".
+			'featured'             => true === ( $filters['featured'] ?? null ),
+			// On unless switched off; an explicit null switches it off, as it always has.
+			'hide_hidden'          => array_key_exists( 'hide_hidden', $filters ) ? (bool) $filters['hide_hidden'] : true,
+			// Unlike `featured`, false is meaningful here.
+			'ongoing'              => isset( $filters['ongoing'] ) ? (bool) $filters['ongoing'] : null,
+			'ended_before'         => isset( $filters['ended_before'] ) ? (string) $filters['ended_before'] : null,
+		];
+	}
+
+	/**
+	 * The WHERE clause both range queries share, and its values.
+	 *
+	 * One copy, so the page of rows and the total beside it cannot come to
+	 * disagree about what matches.
+	 *
+	 * @param string $start   UTC datetime string (Y-m-d H:i:s).
+	 * @param string $end     UTC datetime string (Y-m-d H:i:s).
+	 * @param array  $filters Filters from canonical_filters().
+	 * @return array{ 0: string, 1: array } SQL beginning "WHERE", and the values for its placeholders.
+	 */
+	private function range_where( string $start, string $end, array $filters ): array {
+		$where  = [];
+		$params = [];
+
+		if ( null !== $filters['ended_before'] ) {
+			// Past mode — the event has finished, and finished inside the window.
+			// A narrower $end tightens the cutoff; $start bounds how far back to look.
+			$where[]  = 'e.end_datetime <= %s';
+			$params[] = min( $end, $filters['ended_before'] );
+			$where[]  = 'e.end_datetime > %s';
+			$params[] = $start;
+			$where[]  = 'e.ongoing = 0';
+		} else {
+			// Date range — events that overlap the requested window.
+			$where[]  = 'e.start_datetime < %s';
+			$params[] = $end;
+			$where[]  = 'e.end_datetime > %s';
+			$params[] = $start;
+		}
+
+		// Only published, unprotected posts. post_password is checked because
+		// a password-protected event is still post_status = 'publish', and
+		// these rows feed the public REST, calendar and ICS responses — which
+		// expose title, dates and the venue's street address.
+		$where[] = "p.post_status = 'publish'";
+		$where[] = "p.post_password = ''";
+
+		if ( null !== $filters['status'] ) {
+			$where[]  = 'e.status = %s';
+			$params[] = $filters['status'];
+		}
+
+		if ( ! empty( $filters['venue_term_id'] ) ) {
+			$placeholders = implode( ', ', array_fill( 0, count( $filters['venue_term_id'] ), '%d' ) );
+			$where[]      = "e.venue_term_id IN ($placeholders)";
+			$params       = array_merge( $params, $filters['venue_term_id'] );
+		}
+
+		// Event type filter — junction table subquery (replaces JSON_CONTAINS).
+		if ( ! empty( $filters['type_term_id'] ) ) {
+			$type_terms_table = Schema::type_terms_table();
+			$placeholders     = implode( ', ', array_fill( 0, count( $filters['type_term_id'] ), '%d' ) );
+			$where[]          = "e.id IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
+			$params           = array_merge( $params, $filters['type_term_id'] );
+		}
+
+		// Event type exclusion — same junction subquery, negated.
+		if ( ! empty( $filters['exclude_type_term_id'] ) ) {
+			$type_terms_table = Schema::type_terms_table();
+			$placeholders     = implode( ', ', array_fill( 0, count( $filters['exclude_type_term_id'] ), '%d' ) );
+			$where[]          = "e.id NOT IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
+			$params           = array_merge( $params, $filters['exclude_type_term_id'] );
+		}
+
+		// The three flags below are denormalised columns.
+		if ( $filters['featured'] ) {
+			$where[] = 'e.featured = 1';
+		}
+
+		if ( $filters['hide_hidden'] ) {
+			$where[] = 'e.hide_from_listings = 0';
+		}
+
+		if ( null !== $filters['ongoing'] ) {
+			$where[] = $filters['ongoing'] ? 'e.ongoing = 1' : 'e.ongoing = 0';
+		}
+
+		return [ 'WHERE ' . implode( ' AND ', $where ), $params ];
 	}
 
 	/**
@@ -114,46 +272,39 @@ class EventIndex {
 	public function get_events_in_range( string $start, string $end, array $filters = [] ): array {
 		global $wpdb;
 
-		$cache_key = $this->cache_key( 'range', [ $start, $end, $filters ] );
+		$events_table = Schema::events_table();
+		$posts_table  = $wpdb->posts;
+
+		$matching = $this->canonical_filters( $filters );
+
+		// ORDER BY — whitelist columns to prevent injection.
+		$allowed_orderby = [ 'start_datetime', 'end_datetime', 'post_title' ];
+		$orderby         = in_array( $filters['orderby'] ?? null, $allowed_orderby, true )
+			? $filters['orderby']
+			: 'start_datetime';
+
+		$order = 'DESC' === strtoupper( (string) ( $filters['order'] ?? 'ASC' ) ) ? 'DESC' : 'ASC';
+
+		// Pagination.
+		$ceiling  = max( 1, (int) ( $filters['max_per_page'] ?? self::DEFAULT_MAX_PER_PAGE ) );
+		$per_page = max( 1, min( $ceiling, (int) ( $filters['per_page'] ?? 100 ) ) );
+		$page     = max( 1, (int) ( $filters['page'] ?? 1 ) );
+		$offset   = ( $page - 1 ) * $per_page;
+
+		// Keyed on what the query is built from, not on what the caller wrote:
+		// the filters as reduced above and the page as clamped here.
+		$cache_key = $this->cache_key( 'range', [ $start, $end, $matching, $orderby, $order, $per_page, $offset ] );
 		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
 
 		if ( false !== $cached ) {
 			return $cached;
 		}
 
-		$events_table = Schema::events_table();
-		$posts_table  = $wpdb->posts;
+		[ $where_sql, $params ] = $this->range_where( $start, $end, $matching );
 
-		$defaults = [
-			'venue_term_id'        => null,
-			'type_term_id'         => null,
-			'exclude_type_term_id' => null,
-			'status'               => null,
-			'featured'             => null,
-			'hide_hidden'          => true,
-			'ongoing'              => null,
-			'ended_before'         => null,
-			'per_page'             => 100,
-			'max_per_page'         => self::DEFAULT_MAX_PER_PAGE,
-			'page'                 => 1,
-			'orderby'              => 'start_datetime',
-			'order'                => 'ASC',
-		];
-
-		$filters    = wp_parse_args( $filters, $defaults );
-		$where      = [];
-		$params     = [];
 		$index_hint = '';
 
-		if ( null !== $filters['ended_before'] ) {
-			// Past mode — the event has finished, and finished inside the window.
-			// A narrower $end tightens the cutoff; $start bounds how far back to look.
-			$where[]  = 'e.end_datetime <= %s';
-			$params[] = min( $end, (string) $filters['ended_before'] );
-			$where[]  = 'e.end_datetime > %s';
-			$params[] = $start;
-			$where[]  = 'e.ongoing = 0';
-
+		if ( null !== $matching['ended_before'] ) {
 			// Steer the optimizer off idx_start_datetime on this branch.
 			//
 			// Past listings default to ORDER BY start_datetime DESC, so MariaDB
@@ -174,98 +325,12 @@ class EventIndex {
 			// bad plan. Forcing was measurably worse on a benign distribution
 			// where few rows are ongoing and early termination really is right.
 			$index_hint = 'IGNORE INDEX (idx_start_datetime)';
-		} else {
-			// Date range — events that overlap the requested window.
-			$where[]  = 'e.start_datetime < %s';
-			$params[] = $end;
-			$where[]  = 'e.end_datetime > %s';
-			$params[] = $start;
 		}
 
-		// Only published, unprotected posts. post_password is checked because
-		// a password-protected event is still post_status = 'publish', and
-		// these rows feed the public REST, calendar and ICS responses — which
-		// expose title, dates and the venue's street address.
-		$where[] = "p.post_status = 'publish'";
-		$where[] = "p.post_password = ''";
+		$order_sql = 'post_title' === $orderby ? "p.post_title $order" : "e.$orderby $order";
 
-		// Status filter.
-		if ( null !== $filters['status'] ) {
-			$where[]  = 'e.status = %s';
-			$params[] = sanitize_text_field( $filters['status'] );
-		}
-
-		// Venue filter.
-		if ( null !== $filters['venue_term_id'] ) {
-			$venue_ids = array_map( 'absint', (array) $filters['venue_term_id'] );
-			$venue_ids = array_filter( $venue_ids );
-
-			if ( ! empty( $venue_ids ) ) {
-				$placeholders = implode( ', ', array_fill( 0, count( $venue_ids ), '%d' ) );
-				$where[]      = "e.venue_term_id IN ($placeholders)";
-				$params       = array_merge( $params, $venue_ids );
-			}
-		}
-
-		// Event type filter — junction table subquery (replaces JSON_CONTAINS).
-		if ( null !== $filters['type_term_id'] ) {
-			$type_ids = array_map( 'absint', (array) $filters['type_term_id'] );
-			$type_ids = array_filter( $type_ids );
-
-			if ( ! empty( $type_ids ) ) {
-				$type_terms_table = Schema::type_terms_table();
-				$placeholders     = implode( ', ', array_fill( 0, count( $type_ids ), '%d' ) );
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$where[] = "e.id IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
-				$params  = array_merge( $params, $type_ids );
-			}
-		}
-
-		// Event type exclusion — same junction subquery, negated.
-		if ( null !== $filters['exclude_type_term_id'] ) {
-			$exclude_ids = array_filter( array_map( 'absint', (array) $filters['exclude_type_term_id'] ) );
-
-			if ( ! empty( $exclude_ids ) ) {
-				$type_terms_table = Schema::type_terms_table();
-				$placeholders     = implode( ', ', array_fill( 0, count( $exclude_ids ), '%d' ) );
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$where[] = "e.id NOT IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
-				$params  = array_merge( $params, $exclude_ids );
-			}
-		}
-
-		// Featured filter — denormalised column.
-		if ( true === $filters['featured'] ) {
-			$where[] = 'e.featured = 1';
-		}
-
-		// Hide hidden events — denormalised column.
-		if ( $filters['hide_hidden'] ) {
-			$where[] = 'e.hide_from_listings = 0';
-		}
-
-		// Ongoing filter — unlike `featured`, false is meaningful here.
-		if ( null !== $filters['ongoing'] ) {
-			$where[] = $filters['ongoing'] ? 'e.ongoing = 1' : 'e.ongoing = 0';
-		}
-
-		// ORDER BY — whitelist columns to prevent injection.
-		$allowed_orderby = [ 'start_datetime', 'end_datetime', 'post_title' ];
-		$orderby         = in_array( $filters['orderby'], $allowed_orderby, true )
-			? $filters['orderby']
-			: 'start_datetime';
-
-		$order   = 'DESC' === strtoupper( $filters['order'] ) ? 'DESC' : 'ASC';
-		$orderby = 'post_title' === $orderby ? "p.post_title $order" : "e.$orderby $order";
-
-		// Pagination.
-		$ceiling  = max( 1, (int) $filters['max_per_page'] );
-		$per_page = max( 1, min( $ceiling, (int) $filters['per_page'] ) );
-		$page     = max( 1, (int) $filters['page'] );
-		$offset   = ( $page - 1 ) * $per_page;
-
-		$where_sql = 'WHERE ' . implode( ' AND ', $where );
-
+		// $where_sql is assembled from literal fragments in range_where(); every user
+		// value is a %s/%d placeholder in $params, so the count is only knowable at runtime.
 		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 		$query = $wpdb->prepare(
 			"SELECT e.id, e.post_id, e.start_datetime, e.end_datetime, e.start_date,
@@ -276,7 +341,7 @@ class EventIndex {
 			FROM   {$events_table} e {$index_hint}
 			JOIN   {$posts_table} p ON p.ID = e.post_id
 			{$where_sql}
-			ORDER  BY {$orderby}
+			ORDER  BY {$order_sql}
 			LIMIT  %d OFFSET %d",
 			array_merge( $params, [ $per_page, $offset ] )
 		);
@@ -297,11 +362,11 @@ class EventIndex {
 	public function count_events_in_range( string $start, string $end, array $filters = [] ): int {
 		global $wpdb;
 
-		// Reuse the same WHERE logic by fetching IDs only.
-		$filters['per_page'] = 1;
-		$filters['page']     = 1;
-
-		$cache_key = $this->cache_key( 'range_count', [ $start, $end, $filters ] );
+		// Sort order, page size and page number are left out of the key as
+		// they are left out of the query: none of them can change a total, and
+		// with them in it every page of a listing counted the listing again.
+		$matching  = $this->canonical_filters( $filters );
+		$cache_key = $this->cache_key( 'range_count', [ $start, $end, $matching ] );
 		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
 
 		if ( false !== $cached ) {
@@ -311,99 +376,20 @@ class EventIndex {
 		$events_table = Schema::events_table();
 		$posts_table  = $wpdb->posts;
 
-		$defaults = [
-			'venue_term_id'        => null,
-			'type_term_id'         => null,
-			'exclude_type_term_id' => null,
-			'status'               => null,
-			'featured'             => null,
-			'hide_hidden'          => true,
-			'ongoing'              => null,
-			'ended_before'         => null,
-		];
+		/*
+		 * No IGNORE INDEX in past mode, unlike get_events_in_range().
+		 *
+		 * That hint pays off because the page query has an ORDER BY and a
+		 * LIMIT, which is what tempts the optimizer onto idx_start_datetime.
+		 * A COUNT(*) has neither: it has to visit every matching row either
+		 * way, and already declines to use idx_start_datetime. Measured on
+		 * the same 200k rows, the hint changed nothing (25.9ms vs 26.1ms),
+		 * so it is left off rather than carried over for symmetry.
+		 */
+		[ $where_sql, $params ] = $this->range_where( $start, $end, $matching );
 
-		$filters = wp_parse_args( $filters, $defaults );
-		$where   = [];
-		$params  = [];
-
-		if ( null !== $filters['ended_before'] ) {
-			$where[]  = 'e.end_datetime <= %s';
-			$params[] = min( $end, (string) $filters['ended_before'] );
-			$where[]  = 'e.end_datetime > %s';
-			$params[] = $start;
-			$where[]  = 'e.ongoing = 0';
-
-			// Deliberately no IGNORE INDEX here, unlike get_events_in_range().
-			//
-			// That hint pays off because the page query has an ORDER BY and a
-			// LIMIT, which is what tempts the optimizer onto idx_start_datetime.
-			// A COUNT(*) has neither: it has to visit every matching row either
-			// way, and already declines to use idx_start_datetime. Measured on
-			// the same 200k rows, the hint changed nothing (25.9ms vs 26.1ms),
-			// so it is left off rather than carried over for symmetry.
-		} else {
-			$where[]  = 'e.start_datetime < %s';
-			$params[] = $end;
-			$where[]  = 'e.end_datetime > %s';
-			$params[] = $start;
-		}
-		// Must mirror get_events_in_range() exactly, or the count and the page
-		// of results disagree.
-		$where[] = "p.post_status = 'publish'";
-		$where[] = "p.post_password = ''";
-
-		if ( null !== $filters['status'] ) {
-			$where[]  = 'e.status = %s';
-			$params[] = sanitize_text_field( $filters['status'] );
-		}
-
-		if ( null !== $filters['venue_term_id'] ) {
-			$venue_ids = array_filter( array_map( 'absint', (array) $filters['venue_term_id'] ) );
-			if ( ! empty( $venue_ids ) ) {
-				$placeholders = implode( ', ', array_fill( 0, count( $venue_ids ), '%d' ) );
-				$where[]      = "e.venue_term_id IN ($placeholders)";
-				$params       = array_merge( $params, $venue_ids );
-			}
-		}
-
-		if ( null !== $filters['type_term_id'] ) {
-			$type_ids = array_filter( array_map( 'absint', (array) $filters['type_term_id'] ) );
-			if ( ! empty( $type_ids ) ) {
-				$type_terms_table = Schema::type_terms_table();
-				$placeholders     = implode( ', ', array_fill( 0, count( $type_ids ), '%d' ) );
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$where[] = "e.id IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
-				$params  = array_merge( $params, $type_ids );
-			}
-		}
-
-		if ( null !== $filters['exclude_type_term_id'] ) {
-			$exclude_ids = array_filter( array_map( 'absint', (array) $filters['exclude_type_term_id'] ) );
-			if ( ! empty( $exclude_ids ) ) {
-				$type_terms_table = Schema::type_terms_table();
-				$placeholders     = implode( ', ', array_fill( 0, count( $exclude_ids ), '%d' ) );
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$where[] = "e.id NOT IN (SELECT event_index_id FROM {$type_terms_table} WHERE type_term_id IN ({$placeholders}))";
-				$params  = array_merge( $params, $exclude_ids );
-			}
-		}
-
-		if ( true === $filters['featured'] ) {
-			$where[] = 'e.featured = 1';
-		}
-
-		if ( $filters['hide_hidden'] ) {
-			$where[] = 'e.hide_from_listings = 0';
-		}
-
-		if ( null !== $filters['ongoing'] ) {
-			$where[] = $filters['ongoing'] ? 'e.ongoing = 1' : 'e.ongoing = 0';
-		}
-
-		$where_sql = 'WHERE ' . implode( ' AND ', $where );
-
-		// $where_sql is assembled from literal fragments above; every user value is a
-		// %s/%d placeholder in $params, so the placeholder count is only knowable at runtime.
+		// $where_sql is assembled from literal fragments in range_where(); every user
+		// value is a %s/%d placeholder in $params, so the count is only knowable at runtime.
 		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		$count = $wpdb->get_var(
 			$wpdb->prepare(
