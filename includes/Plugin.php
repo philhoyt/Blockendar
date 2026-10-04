@@ -26,6 +26,7 @@ use Blockendar\Recurrence\Cron;
 use Blockendar\REST\EventsController;
 use Blockendar\REST\CalendarController;
 use Blockendar\REST\IcsEndpoint;
+use Blockendar\REST\CoreRouteGuard;
 use Blockendar\Blocks\BlockRegistrar;
 use Blockendar\Blocks\TemplateRegistrar;
 use Blockendar\Admin\EventColumns;
@@ -91,6 +92,10 @@ class Plugin {
 		( new EventsController() )->register();
 		( new CalendarController() )->register();
 		( new IcsEndpoint() )->register();
+
+		// The same read rules on the wp/v2 routes core registers for the post
+		// type and its taxonomies.
+		( new CoreRouteGuard() )->register();
 
 		// Block registration + editor sidebar enqueue.
 		( new BlockRegistrar() )->register();
