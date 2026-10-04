@@ -66,19 +66,77 @@ class RuleRepository {
 			'additions'    => $this->sanitize_json_dates( $data['additions'] ?? null ),
 		];
 
-		$formats = [ '%d', '%s', '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s' ];
+		$formats = [
+			'post_id'      => '%d',
+			'frequency'    => '%s',
+			'interval_val' => '%d',
+			'byday'        => '%s',
+			'bymonthday'   => '%s',
+			'bysetpos'     => '%s',
+			'until_date'   => '%s',
+			'count'        => '%d',
+			'exceptions'   => '%s',
+			'additions'    => '%s',
+		];
 
-		// Use INSERT … ON DUPLICATE KEY UPDATE (post_id has a UNIQUE KEY).
 		$existing = $this->get( $post_id );
 
-		if ( $existing ) {
-			unset( $row['post_id'] );
-			$result = $wpdb->update( $table, $row, [ 'post_id' => $post_id ], array_slice( $formats, 1 ), [ '%d' ] );
-		} else {
-			$result = $wpdb->insert( $table, $row, $formats );
+		if ( ! $existing ) {
+			return false !== $wpdb->insert( $table, $row, array_values( $formats ) );
 		}
 
+		/*
+		 * An update changes what it was given and leaves the rest. Writing every
+		 * column meant a caller that sent only the schedule blanked the skipped
+		 * and added dates, which is what the recurrence route and the editor
+		 * both do. A column is cleared by naming it with an empty value.
+		 */
+		unset( $row['post_id'], $formats['post_id'] );
+
+		$given = array_keys( $data );
+
+		if ( in_array( 'interval', $given, true ) ) {
+			$given[] = 'interval_val';
+		}
+
+		$row = array_intersect_key( $row, array_flip( $given ) );
+
+		if ( empty( $row ) ) {
+			return true;
+		}
+
+		$result = $wpdb->update(
+			$table,
+			$row,
+			[ 'post_id' => $post_id ],
+			array_values( array_intersect_key( $formats, $row ) ),
+			[ '%d' ]
+		);
+
 		return false !== $result;
+	}
+
+	/**
+	 * Delete every rule whose event no longer exists.
+	 *
+	 * Versions before 2.1.0 left a rule behind when its event was deleted.
+	 *
+	 * @return int Rows removed.
+	 */
+	public function delete_orphans(): int {
+		global $wpdb;
+
+		$table = Schema::recurrence_table();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$removed = $wpdb->query(
+			"DELETE r FROM {$table} r
+			LEFT JOIN {$wpdb->posts} p ON p.ID = r.post_id
+			WHERE p.ID IS NULL"
+		);
+		// phpcs:enable
+
+		return (int) $removed;
 	}
 
 	/**
