@@ -168,7 +168,7 @@ $fallback_date_fmt = \Blockendar\Admin\SettingsPage::get( 'date_format' );
 						<?php echo esc_html( (string) $fallback_event->post_title ); ?>
 					</a>
 					<time datetime="<?php echo esc_attr( (string) $fallback_event->start_date ); ?>">
-						<?php echo esc_html( date_i18n( $fallback_date_fmt, strtotime( (string) $fallback_event->start_date ) ) ); ?>
+						<?php echo esc_html( blockendar_format_wall_clock( (string) $fallback_event->start_date, $fallback_date_fmt ) ); ?>
 					</time>
 				</li>
 			<?php endforeach; ?>

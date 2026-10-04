@@ -96,7 +96,7 @@ $trigger_format = static function (): string {
  */
 $display_format = (string) apply_filters( 'blockendar_filter_date_trigger_format', $trigger_format(), $query_id );
 
-$fmt_display = static fn( string $ymd ): string => wp_date( $display_format, strtotime( $ymd . ' 12:00:00' ) );
+$fmt_display = static fn( string $ymd ): string => blockendar_format_wall_clock( $ymd, $display_format );
 
 if ( '' !== $active_start && '' !== $active_end ) {
 	$trigger_text = sprintf(
