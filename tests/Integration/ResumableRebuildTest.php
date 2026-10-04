@@ -178,17 +178,170 @@ class ResumableRebuildTest extends WP_UnitTestCase {
 		$this->make_event( '2027-03-09' );
 		$this->make_event( '2027-03-10' );
 
-		$this->builder->run_scheduled_rebuild( 0.0 );
+		$this->builder->run_scheduled_rebuild( '', 0.0 );
 
 		$this->assertTrue( $this->builder->is_rebuilding() );
-		$this->assertNotFalse( wp_next_scheduled( IndexBuilder::REBUILD_HOOK ) );
+		$this->assertNotFalse( wp_next_scheduled( IndexBuilder::REBUILD_HOOK, [ 'continue' ] ) );
 
 		_set_cron_array( [] );
 
-		$this->builder->run_scheduled_rebuild();
+		$this->builder->run_scheduled_rebuild( 'continue' );
 
 		$this->assertFalse( $this->builder->is_rebuilding() );
-		$this->assertFalse( wp_next_scheduled( IndexBuilder::REBUILD_HOOK ) );
+		$this->assertNotFalse( get_option( 'blockendar_last_index_rebuild' ) );
+	}
+
+	/**
+	 * WP-Cron takes an event off the schedule before it runs it. A pass that
+	 * queued the next one only when it had finished left nothing behind if it
+	 * was killed: the rebuild stopped for good, and the settings page went on
+	 * saying it was running.
+	 */
+	public function test_a_pass_that_dies_is_picked_up_by_the_next_one(): void {
+		$first = $this->make_event( '2027-03-09' );
+		$this->make_event( '2027-03-10' );
+
+		( new RuleRepository() )->upsert(
+			$first,
+			[
+				'frequency' => 'daily',
+				'count'     => 2,
+			]
+		);
+
+		$dies = static function () {
+			throw new \RuntimeException( 'Out of memory, as far as the test is concerned.' );
+		};
+
+		add_action( 'blockendar_generate_recurrence_index', $dies, 1 );
+
+		try {
+			$this->builder->run_scheduled_rebuild();
+			$this->fail( 'The pass was meant to die.' );
+		} catch ( \RuntimeException ) {
+			remove_action( 'blockendar_generate_recurrence_index', $dies, 1 );
+		}
+
+		$this->assertTrue( $this->builder->is_rebuilding(), 'The rebuild is on record as unfinished.' );
+		$this->assertNotFalse( wp_next_scheduled( IndexBuilder::REBUILD_HOOK, [ 'continue' ] ), 'And another pass is already queued.' );
+
+		$this->builder->run_scheduled_rebuild( 'continue' );
+
+		$this->assertFalse( $this->builder->is_rebuilding() );
+		$this->assertSame( 2, $this->rows( $first ) );
+	}
+
+	/**
+	 * An event that kills every pass must not be retried once a minute for
+	 * ever. The index it leaves is the one the site had, which is complete.
+	 */
+	public function test_a_rebuild_that_keeps_dying_at_the_same_place_is_given_up(): void {
+		$first = $this->make_event( '2027-03-09' );
+
+		( new RuleRepository() )->upsert(
+			$first,
+			[
+				'frequency' => 'daily',
+				'count'     => 2,
+			]
+		);
+		$this->builder->build_for_post( $first );
+
+		add_action(
+			'blockendar_generate_recurrence_index',
+			static function () {
+				throw new \RuntimeException( 'Every time.' );
+			},
+			1
+		);
+
+		$pass = 0;
+
+		do {
+			try {
+				$this->builder->run_scheduled_rebuild( 0 === $pass ? '' : 'continue' );
+			} catch ( \RuntimeException ) {
+				// The pass died; the next one is what the schedule would run.
+				unset( $caught );
+			}
+
+			++$pass;
+			$unfinished = $this->builder->is_rebuilding();
+		} while ( $unfinished && $pass < 10 );
+
+		$this->assertFalse( $this->builder->is_rebuilding() );
+		$this->assertLessThan( 10, $pass, 'It stopped trying of its own accord.' );
+		$this->assertFalse( get_option( 'blockendar_last_index_rebuild' ), 'A rebuild that was given up is not recorded as done.' );
+		$this->assertSame( 2, $this->rows( $first ), 'The rows it had are still there.' );
+	}
+
+	public function test_a_pass_left_queued_after_the_rebuild_finished_does_nothing(): void {
+		$this->make_event( '2027-03-09' );
+
+		$this->builder->rebuild_all();
+		delete_option( 'blockendar_last_index_rebuild' );
+
+		$this->builder->run_scheduled_rebuild( 'continue' );
+
+		$this->assertFalse( get_option( 'blockendar_last_index_rebuild' ), 'It did not start the rebuild over.' );
+		$this->assertFalse( $this->builder->is_rebuilding() );
+	}
+
+	/**
+	 * Finishing a rebuild used to clear the schedule, so that a queued pass
+	 * would not start it again. That also cleared a rebuild an upgrade had
+	 * asked for in the meantime.
+	 */
+	public function test_a_rebuild_requested_while_another_finishes_is_still_queued(): void {
+		$this->make_event( '2027-03-09' );
+
+		$this->builder->rebuild_step( 0.0 );
+		wp_schedule_single_event( time(), IndexBuilder::REBUILD_HOOK );
+
+		$this->assertTrue( $this->builder->rebuild_step()['done'] );
+		$this->assertNotFalse( wp_next_scheduled( IndexBuilder::REBUILD_HOOK ) );
+	}
+
+	/**
+	 * Some database setups refuse named locks. That is not the same as the
+	 * lock being held, and waiting for it would wait for ever.
+	 */
+	public function test_a_database_without_named_locks_still_rebuilds(): void {
+		$this->make_event( '2027-03-09' );
+
+		$no_locks = static function ( $query ) {
+			return str_contains( (string) $query, 'GET_LOCK' ) ? 'SELECT NULL' : $query;
+		};
+
+		add_filter( 'query', $no_locks );
+		$result = $this->builder->rebuild_step();
+		remove_filter( 'query', $no_locks );
+
+		$this->assertTrue( $result['done'] );
+		$this->assertSame( 1, $result['rebuilt'] );
+	}
+
+	/**
+	 * Deactivating the plugin clears its scheduled events and leaves the
+	 * record of where a rebuild had got to. Looking at the settings page is
+	 * enough to set it going again.
+	 */
+	public function test_an_unfinished_rebuild_with_nothing_queued_is_set_going_by_the_stats_route(): void {
+		$this->make_event( '2027-03-09' );
+		$this->make_event( '2027-03-10' );
+
+		$this->builder->rebuild_step( 0.0 );
+		_set_cron_array( [] );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		do_action( 'rest_api_init' );
+
+		$stats = rest_get_server()->dispatch( new \WP_REST_Request( 'GET', '/blockendar/v1/settings/stats' ) )->get_data();
+
+		$this->assertTrue( $stats['rebuild_in_progress'] );
+		$this->assertNotFalse( wp_next_scheduled( IndexBuilder::REBUILD_HOOK, [ 'continue' ] ) );
+
+		wp_set_current_user( 0 );
 	}
 
 	/**
@@ -208,9 +361,19 @@ class ResumableRebuildTest extends WP_UnitTestCase {
 
 		$blocked = $this->builder->rebuild_step();
 
+		// The route says so, which is what tells the settings page to wait
+		// before it asks again.
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		do_action( 'rest_api_init' );
+		$route = rest_get_server()->dispatch( new \WP_REST_Request( 'POST', '/blockendar/v1/index/rebuild' ) )->get_data();
+		wp_set_current_user( 0 );
+
 		$other->close();
 
+		$this->assertTrue( $route['waiting'] );
+		$this->assertTrue( $route['in_progress'] );
 		$this->assertFalse( $blocked['done'] );
+		$this->assertTrue( $blocked['locked'] );
 		$this->assertSame( 0, $blocked['rebuilt'] );
 		$this->assertFalse( $this->builder->is_rebuilding(), 'A pass that could not start leaves no cursor.' );
 

@@ -130,6 +130,20 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 			]
 		);
 
+		// An occurrence cancelled the old way: the row says so and nothing else does.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->insert(
+			Schema::events_table(),
+			[
+				'post_id'        => $post_id,
+				'start_datetime' => '2027-03-23 19:00:00',
+				'end_datetime'   => '2027-03-23 21:00:00',
+				'start_date'     => '2027-03-23',
+				'end_date'       => '2027-03-23',
+				'status'         => 'cancelled',
+			]
+		);
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$this->assertNull( $wpdb->get_var( $wpdb->prepare( 'SHOW COLUMNS FROM %i LIKE %s', $table, 'cancellations' ) ), 'Precondition: the column must be gone.' );
 
@@ -145,10 +159,12 @@ class SchemaUpgradeTest extends WP_UnitTestCase {
 		$this->assertSame( 2, $rule->interval );
 		$this->assertSame( [ 'TU' ], $rule->byday );
 		$this->assertSame( [ '2027-03-16' ], $rule->exceptions );
-		$this->assertSame( [], $rule->cancellations );
+		$this->assertSame( [ '2027-03-23' ], $rule->cancellations, 'A cancellation that was only an index row is on the rule before the rebuild runs.' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->delete( $table, [ 'post_id' => $post_id ] );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->delete( Schema::events_table(), [ 'post_id' => $post_id ] );
 	}
 
 	/**

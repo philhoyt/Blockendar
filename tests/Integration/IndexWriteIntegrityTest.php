@@ -419,6 +419,33 @@ class IndexWriteIntegrityTest extends WP_UnitTestCase {
 		$this->assertSame( 0, $this->junction_rows( $post_id ) );
 	}
 
+	/**
+	 * The rows are locked before they are replaced. If the lock is refused,
+	 * the database has already thrown the transaction away, and carrying on
+	 * would delete and insert with nothing to undo them.
+	 */
+	public function test_an_event_keeps_its_rows_when_they_cannot_be_locked(): void {
+		global $wpdb;
+
+		$post_id = $this->make_event();
+		$before  = $this->rows( $post_id );
+
+		update_post_meta( $post_id, 'blockendar_start_date', '2027-04-01' );
+		update_post_meta( $post_id, 'blockendar_end_date', '2027-04-01' );
+
+		$refused = static function ( $query ) {
+			return str_contains( (string) $query, 'FOR UPDATE' ) ? '' : $query;
+		};
+
+		$this->query_filters[] = $refused;
+		add_filter( 'query', $refused );
+		$wpdb->suppress_errors( true );
+
+		$this->builder->build_for_post( $post_id );
+
+		$this->assertEquals( $before, $this->rows( $post_id ) );
+	}
+
 	public function test_inserting_one_row_reports_failure_when_its_event_types_cannot_be_filed(): void {
 		global $wpdb;
 

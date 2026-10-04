@@ -281,6 +281,30 @@ class IndexDirtySyncTest extends WP_UnitTestCase {
 		$this->assertSame( '2027-03-09', $this->rows( $post_id )[0]->start_date, 'The row waits for the queued build.' );
 	}
 
+	/**
+	 * Deleting a venue that thousands of events use marks them all. Building
+	 * them one after another as the request ends would run until it was
+	 * killed, and lose the rest. Past a limit the work goes to the background
+	 * rebuild, which does it in passes.
+	 */
+	public function test_too_many_dirty_events_are_left_to_a_background_rebuild(): void {
+		$post_id = $this->make_event();
+
+		update_post_meta( $post_id, 'blockendar_start_date', '2027-04-01' );
+		update_post_meta( $post_id, 'blockendar_end_date', '2027-04-01' );
+
+		for ( $id = 900000; $id < 900000 + IndexBuilder::DIRTY_FLUSH_LIMIT; $id++ ) {
+			$this->builder->mark_dirty( $id );
+		}
+
+		$inserts = $this->count_writes( 'INSERT INTO', fn() => $this->builder->flush_dirty() );
+
+		$this->assertSame( 0, $inserts );
+		$this->assertSame( [], IndexBuilder::dirty() );
+		$this->assertNotFalse( wp_next_scheduled( IndexBuilder::REBUILD_HOOK ) );
+		$this->assertSame( '2027-03-09', $this->rows( $post_id )[0]->start_date, 'The row waits for the rebuild.' );
+	}
+
 	public function test_the_flush_runs_when_the_request_ends(): void {
 		global $wp_filter;
 

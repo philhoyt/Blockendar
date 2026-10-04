@@ -334,4 +334,75 @@ class RecurrenceInstanceTest extends WP_UnitTestCase {
 
 		$this->assertSame( count( $after ), count( $this->statuses( $post_id ) ) );
 	}
+
+	/**
+	 * The roll decides what is new by date. An event with no timezone of its
+	 * own takes the site's, so after the site's timezone changes every start
+	 * it works out is at a new instant; told apart by instant, the whole
+	 * series looked new and was written a second time.
+	 */
+	public function test_a_change_of_site_timezone_does_not_make_the_roll_write_the_series_again(): void {
+		update_option( SettingsPage::OPTION_NAME, [ 'horizon_days' => 30 ] );
+		update_option( 'timezone_string', 'UTC' );
+
+		$post_id = $this->make_event( $this->day( 1 ), [ 'frequency' => 'daily' ] );
+
+		delete_post_meta( $post_id, 'blockendar_timezone' );
+		( new IndexBuilder() )->build_for_post( $post_id );
+
+		$before = count( $this->statuses( $post_id ) );
+
+		update_option( 'timezone_string', 'America/Chicago' );
+		( new Generator() )->roll_horizon();
+
+		$this->assertSame( $before, count( $this->statuses( $post_id ) ), 'One row per day, as before.' );
+
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$total = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE post_id = %d', Schema::events_table(), $post_id ) );
+
+		delete_option( 'timezone_string' );
+
+		$this->assertSame( $before, $total );
+	}
+
+	// -------------------------------------------------------------------------
+	// Cancellations made before they were kept on the rule
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Until now a cancellation existed only as the status of an index row. The
+	 * upgrade that adds the column also rebuilds the index, from rules that
+	 * know nothing of those cancellations. They are copied to the rules first.
+	 */
+	public function test_cancellations_that_exist_only_in_the_index_are_moved_to_the_rule(): void {
+		global $wpdb;
+
+		$series    = $this->make_weekly_event();
+		$cancelled = $this->make_weekly_event();
+		$single    = $this->make_event( '2027-03-09', null );
+
+		// As the old route left things: the row says cancelled, the rule nothing.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->query( $wpdb->prepare( "UPDATE %i SET status = 'cancelled' WHERE post_id = %d AND start_date = %s", Schema::events_table(), $series, '2027-03-16' ) );
+
+		// A series cancelled as a whole has every row cancelled, and no single
+		// occurrence of it was.
+		update_post_meta( $cancelled, 'blockendar_status', 'cancelled' );
+		( new IndexBuilder() )->build_for_post( $cancelled );
+
+		update_post_meta( $single, 'blockendar_status', 'cancelled' );
+		( new IndexBuilder() )->build_for_post( $single );
+
+		$this->assertSame( 1, $this->rules->adopt_index_cancellations() );
+
+		$this->assertSame( [ '2027-03-16' ], $this->rules->get( $series )->cancellations );
+		$this->assertSame( [], $this->rules->get( $cancelled )->cancellations );
+
+		( new IndexBuilder() )->rebuild_all();
+
+		$this->assertSame( 'cancelled', $this->statuses( $series )['2027-03-16'] );
+		$this->assertSame( 'scheduled', $this->statuses( $series )['2027-03-23'] );
+	}
 }

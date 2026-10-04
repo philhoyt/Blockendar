@@ -63,6 +63,19 @@ describe( 'runRebuild', () => {
 		expect( wait ).toHaveBeenCalledWith( STALLED_DELAY );
 	} );
 
+	it( 'waits when the route says another pass is running, even as the totals move', async () => {
+		const post = routeAnswering( [
+			{ in_progress: true, waiting: true, rebuilt: 400, skipped: 0 },
+			{ in_progress: true, waiting: true, rebuilt: 800, skipped: 0 },
+			{ in_progress: false, rebuilt: 950, skipped: 0 },
+		] );
+		const wait = jest.fn().mockResolvedValue();
+
+		await runRebuild( post, { wait } );
+
+		expect( wait ).toHaveBeenCalledTimes( 2 );
+	} );
+
 	it( 'lets a failed request reach the caller', async () => {
 		const post = jest.fn().mockRejectedValue( new Error( 'Forbidden' ) );
 
