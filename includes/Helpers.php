@@ -200,6 +200,23 @@ function blockendar_prime_event_caches( array $rows, bool $with_terms = true, bo
 }
 
 /**
+ * Return the calendar day after a date.
+ *
+ * For turning an inclusive last day into the exclusive end that iCalendar,
+ * FullCalendar and the index's end_datetime all want. Parsed in an explicit
+ * zone rather than through strtotime(), which reads a bare date in PHP's
+ * default timezone and so depends on nothing else having changed it.
+ *
+ * @param string $date Y-m-d.
+ * @return string Y-m-d, or the input unchanged if it is not a date.
+ */
+function blockendar_next_day( string $date ): string {
+	$day = \DateTimeImmutable::createFromFormat( '!Y-m-d', $date, new \DateTimeZone( 'UTC' ) );
+
+	return $day ? $day->modify( '+1 day' )->format( 'Y-m-d' ) : $date;
+}
+
+/**
  * Convert a "UTC+5.5"-style manual offset into a form DateTimeZone accepts.
  *
  * WordPress and The Events Calendar both write a manual UTC offset as

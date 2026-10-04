@@ -321,7 +321,12 @@ class CalendarController extends AbstractController {
 		// Ongoing events carry a sentinel end in the index; give FullCalendar no
 		// end at all so the chip renders on the start day only.
 		if ( ! $ongoing ) {
-			$event['end'] = $this->to_iso8601( $row->end_datetime, (bool) $row->all_day, $row->end_date );
+			// FullCalendar's all-day end is exclusive; the index's end_date is
+			// the last day. Handing it over as it stands draws a multi-day
+			// event one day short.
+			$event['end'] = $row->all_day
+				? blockendar_next_day( $row->end_date )
+				: $this->to_iso8601( $row->end_datetime, false, $row->end_date );
 		}
 
 		return $event;
