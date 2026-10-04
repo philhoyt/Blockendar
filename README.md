@@ -148,6 +148,24 @@ Four filters are available:
 iCalendar has no pagination, so events past the ceiling are simply absent. A feed
 that hits it says so in `X-WR-CALDESC` and raises a notice on the settings screen.
 
+## Working with other plugins
+
+**Classic Editor.** Events always open in the block editor, whatever Classic
+Editor is set to. An event's dates, recurrence and details are block-editor
+panels, so there is no classic screen that could set them. Other post types
+follow the Classic Editor setting as usual.
+
+**WPML and Polylang.** The plugin ships a `wpml-config.xml` that marks events
+and their three taxonomies as translatable and says what a translation carries:
+dates, times, status and the other scheduling fields are kept the same in every
+language; the cost and a venue's address are translatable text; the registration
+link is copied once and can then differ.
+
+Two things it does not do. Event listings and the calendar read the plugin's own
+index, which has no notion of language, so they show every language's copy of an
+event. And a recurrence rule belongs to one post, so a translation of a recurring
+event has to be given the same rule by hand.
+
 ## Privacy
 
 Blockendar stores no personal data about site visitors — no names, email
