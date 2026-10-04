@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Blockendar\Blocks\Cutoff;
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\IndexBuilder;
 use Blockendar\Recurrence\RuleRepository;
@@ -180,7 +181,7 @@ class EventsController extends AbstractController {
 	 * GET /blockendar/v1/events
 	 */
 	public function get_events( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$now = gmdate( 'Y-m-d H:i:s' );
+		$now = Cutoff::now();
 
 		$start = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'start' ) ?? '' ),
@@ -190,7 +191,7 @@ class EventsController extends AbstractController {
 
 		$end = $this->parse_datetime_param(
 			(string) ( $request->get_param( 'end' ) ?? '' ),
-			gmdate( 'Y-m-d H:i:s', strtotime( '+1 year' ) ),
+			Cutoff::ahead( 'P1Y' ),
 			'end'
 		);
 

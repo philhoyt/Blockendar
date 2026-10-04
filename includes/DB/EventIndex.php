@@ -52,6 +52,11 @@ class EventIndex {
 	private const CACHE_GROUP = 'blockendar_events';
 
 	/**
+	 * How long a cached read may be kept, in seconds. See cache_set().
+	 */
+	private const CACHE_TTL = DAY_IN_SECONDS;
+
+	/**
 	 * The filters that decide which rows a range query matches.
 	 *
 	 * The rest of what get_events_in_range() accepts — orderby, order,
@@ -233,6 +238,22 @@ class EventIndex {
 	}
 
 	/**
+	 * Store a read in the cache, for a day at most.
+	 *
+	 * Every key carries the index's last-changed stamp, so a write to the
+	 * index orphans all the entries before it; nothing asks for them again.
+	 * The in-memory cache drops them with the request. A persistent one kept
+	 * them until it ran out of room, which is why they are given a lifetime.
+	 * Every cache write in this class goes through here.
+	 *
+	 * @param string $key   Key from cache_key().
+	 * @param mixed  $value Value to store.
+	 */
+	private function cache_set( string $key, mixed $value ): void {
+		wp_cache_set( $key, $value, self::CACHE_GROUP, self::CACHE_TTL );
+	}
+
+	/**
 	 * Invalidate every cached read for this index.
 	 *
 	 * Cheap enough to call per row during a bulk rebuild: it writes a single
@@ -349,7 +370,7 @@ class EventIndex {
 		$results = $wpdb->get_results( $query );
 		// phpcs:enable
 
-		wp_cache_set( $cache_key, $results, self::CACHE_GROUP );
+		$this->cache_set( $cache_key, $results );
 
 		return $results;
 	}
@@ -401,7 +422,7 @@ class EventIndex {
 		);
 		// phpcs:enable
 
-		wp_cache_set( $cache_key, (int) $count, self::CACHE_GROUP );
+		$this->cache_set( $cache_key, (int) $count );
 
 		return (int) $count;
 	}
@@ -433,7 +454,7 @@ class EventIndex {
 		);
 		// phpcs:enable
 
-		wp_cache_set( $cache_key, $results, self::CACHE_GROUP );
+		$this->cache_set( $cache_key, $results );
 
 		return $results;
 	}
@@ -620,7 +641,7 @@ class EventIndex {
 
 		$ids = array_values( array_unique( array_filter( array_map( 'absint', (array) $ids ) ) ) );
 
-		wp_cache_set( $cache_key, $ids, self::CACHE_GROUP );
+		$this->cache_set( $cache_key, $ids );
 
 		return $ids;
 	}
@@ -1091,7 +1112,7 @@ class EventIndex {
 		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$events_table}" );
 		// phpcs:enable
 
-		wp_cache_set( $cache_key, $count, self::CACHE_GROUP );
+		$this->cache_set( $cache_key, $count );
 
 		return $count;
 	}

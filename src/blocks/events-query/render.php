@@ -152,7 +152,7 @@ if ( $show_past ) {
 	$end   = $cutoff;
 } else {
 	$start = $cutoff;
-	$end   = gmdate( 'Y-m-d H:i:s', strtotime( '+3 years' ) );
+	$end   = Cutoff::ahead( 'P3Y' );
 }
 
 // Past means finished before the cutoff. The index matches by overlap, which
