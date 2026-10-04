@@ -268,7 +268,9 @@ class EventMeta {
 	 * Sanitize an IANA timezone identifier.
 	 */
 	public function sanitize_timezone( mixed $value ): string {
-		$value = sanitize_text_field( (string) $value );
+		// "UTC+5.5" is how WordPress and other plugins write a manual offset;
+		// DateTimeZone only takes it as "+05:30".
+		$value = blockendar_normalize_timezone( sanitize_text_field( (string) $value ) );
 
 		if ( '' === $value ) {
 			return '';

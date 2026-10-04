@@ -104,12 +104,13 @@ class BlockRegistrar {
 		// Pass REST namespace and nonce to the editor panels.
 		// wp_add_inline_script() rather than wp_localize_script(): localisation casts
 		// every scalar to a string, and it is the wrong tool for a REST nonce.
+		$timezones   = self::editor_timezones();
 		$editor_data = [
 			'restUrl'      => esc_url_raw( rest_url( 'blockendar/v1' ) ),
 			'nonce'        => wp_create_nonce( 'wp_rest' ),
 			'postType'     => EventPostType::POST_TYPE,
-			'timezones'    => $this->get_timezone_list(),
-			'siteTimezone' => $this->get_site_iana_timezone(),
+			'timezones'    => $timezones['options'],
+			'siteTimezone' => $timezones['site'],
 			'is12Hour'     => $this->is_12_hour_format(),
 			'dateFormat'   => $this->get_date_format(),
 			'timeFormat'   => $this->get_time_format(),
@@ -130,17 +131,34 @@ class BlockRegistrar {
 	}
 
 	/**
-	 * Return the site's IANA timezone identifier.
+	 * The timezone a new event is seeded with, and the list the picker offers.
 	 *
-	 * wp_timezone_string() can return a UTC-offset string like '+05:30' when
-	 * the site is configured with a manual UTC offset rather than a named timezone.
-	 * Those offset strings are not in DateTimeZone::listIdentifiers(), so the
-	 * editor select would fall back to the first alphabetical entry (Africa/Abidjan).
-	 * We fall back to 'UTC' in that case so the value is always selectable.
+	 * A site set to a manual offset ("UTC+5:30") has no timezone_string, and
+	 * wp_timezone_string() answers "+05:30". That offset is the site's timezone
+	 * and is what a new event has to be seeded with: handing the editor "UTC"
+	 * in its place indexed every new event at the wrong instant. An offset is
+	 * not one of PHP's identifiers, so it is added to the list for the picker
+	 * to be able to show it.
+	 *
+	 * @return array{site: string, options: string[]}
 	 */
-	private function get_site_iana_timezone(): string {
-		$tz = get_option( 'timezone_string', '' );
-		return ( is_string( $tz ) && '' !== $tz ) ? $tz : 'UTC';
+	public static function editor_timezones(): array {
+		$site    = wp_timezone_string();
+		$options = \DateTimeZone::listIdentifiers();
+
+		// What wp_timezone_string() gives a site that has never set a timezone.
+		if ( '+00:00' === $site ) {
+			$site = 'UTC';
+		}
+
+		if ( ! in_array( $site, $options, true ) ) {
+			array_unshift( $options, $site );
+		}
+
+		return [
+			'site'    => $site,
+			'options' => $options,
+		];
 	}
 
 	/**
@@ -175,14 +193,5 @@ class BlockRegistrar {
 
 		// PHP 'g' = 12-hour no leading zero, 'h' = 12-hour with leading zero.
 		return str_contains( $time_format, 'g' ) || str_contains( $time_format, 'h' );
-	}
-
-	/**
-	 * Return a flat list of IANA timezone identifiers for the timezone selector.
-	 *
-	 * @return string[]
-	 */
-	private function get_timezone_list(): array {
-		return \DateTimeZone::listIdentifiers();
 	}
 }

@@ -655,7 +655,12 @@ export function DateTimePanel() {
 	const endTime = meta.blockendar_end_time || '10:00';
 	const timezone = meta.blockendar_timezone || siteTimezone;
 
-	const tzOptions = timezones.map( ( tz ) => ( { label: tz, value: tz } ) );
+	// A site on a manual offset is listed as "+05:30"; label it the way the
+	// WordPress settings screen does.
+	const tzOptions = timezones.map( ( tz ) => ( {
+		label: /^[+-]/.test( tz ) ? `UTC${ tz }` : tz,
+		value: tz,
+	} ) );
 
 	// Returns hhmm advanced by `mins` minutes (wraps at midnight).
 	const addMinutes = ( hhmm, mins ) => {
