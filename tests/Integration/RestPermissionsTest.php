@@ -13,6 +13,9 @@ declare( strict_types=1 );
 
 namespace Blockendar\Tests\Integration;
 
+use Blockendar\DB\EventIndex;
+use Blockendar\DB\Schema;
+use Blockendar\Meta\EventMeta;
 use Blockendar\REST\EventsController;
 use WP_REST_Request;
 use WP_UnitTestCase;
@@ -25,6 +28,11 @@ class RestPermissionsTest extends WP_UnitTestCase {
 		parent::set_up();
 		$this->controller = new EventsController();
 		delete_option( 'blockendar_settings' );
+
+		// WP_UnitTestCase unregisters every meta key in tear_down(), so after the
+		// first test in the run the core route has no event meta to serve — and a
+		// test that asserts meta is withheld would pass without proving anything.
+		( new EventMeta() )->register_meta();
 	}
 
 	public function tear_down(): void {
@@ -297,5 +305,231 @@ class RestPermissionsTest extends WP_UnitTestCase {
 		$response = rest_get_server()->dispatch( $request );
 
 		$this->assertContains( $response->get_status(), [ 401, 403 ] );
+	}
+
+	// -------------------------------------------------------------------------
+	// Password-protected events
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Create a published, password-protected event with meta and one index row.
+	 *
+	 * The password is set at creation, not via a later wp_update_post(): that
+	 * would fire save_post, and IndexBuilder::on_save() would rebuild the row
+	 * this fixture inserts.
+	 *
+	 * @return int Post ID.
+	 */
+	private function seed_protected_event(): int {
+		Schema::create_tables();
+
+		$post_id = self::factory()->post->create(
+			[
+				'post_type'     => 'blockendar_event',
+				'post_status'   => 'publish',
+				'post_title'    => 'Members Only Gala',
+				'post_password' => 'hunter2',
+			]
+		);
+
+		update_post_meta( $post_id, 'blockendar_start_date', '2026-09-02' );
+		update_post_meta( $post_id, 'blockendar_end_date', '2026-09-02' );
+		update_post_meta( $post_id, 'blockendar_start_time', '19:00' );
+
+		( new EventIndex() )->insert(
+			[
+				'post_id'        => $post_id,
+				'start_datetime' => '2026-09-02 19:00:00',
+				'end_datetime'   => '2026-09-02 21:00:00',
+				'start_date'     => '2026-09-02',
+				'end_date'       => '2026-09-02',
+				'all_day'        => 0,
+				'status'         => 'scheduled',
+			]
+		);
+
+		return $post_id;
+	}
+
+	/**
+	 * Dispatch a GET request through the REST server.
+	 *
+	 * @param string $route Route to request.
+	 */
+	private function dispatch_get( string $route ): \WP_REST_Response {
+		do_action( 'rest_api_init' );
+
+		return rest_get_server()->dispatch( new WP_REST_Request( 'GET', $route ) );
+	}
+
+	/**
+	 * A password-protected event is still 'publish'. The collection route
+	 * excludes it in SQL; the single-event route has to make the same call
+	 * itself or it hands out the title, dates and venue the password withholds.
+	 */
+	public function test_single_event_route_hides_a_password_protected_event(): void {
+		$post_id = $this->seed_protected_event();
+		wp_set_current_user( 0 );
+
+		$response = $this->dispatch_get( "/blockendar/v1/events/{$post_id}" );
+		$body     = (string) wp_json_encode( $response->get_data() );
+
+		$this->assertSame( 404, $response->get_status() );
+		$this->assertStringNotContainsString( 'Members Only Gala', $body );
+		$this->assertStringNotContainsString( '2026-09-02', $body );
+	}
+
+	public function test_instances_route_hides_a_password_protected_event(): void {
+		$post_id = $this->seed_protected_event();
+		wp_set_current_user( 0 );
+
+		$this->assertNotEmpty(
+			( new EventIndex() )->get_by_post_id( $post_id ),
+			'Precondition: the protected event has an index row to leak.'
+		);
+
+		$response = $this->dispatch_get( "/blockendar/v1/events/{$post_id}/instances" );
+		$body     = (string) wp_json_encode( $response->get_data() );
+
+		$this->assertSame( 404, $response->get_status() );
+		$this->assertStringNotContainsString( '2026-09-02', $body );
+	}
+
+	public function test_an_editor_can_still_read_a_password_protected_event(): void {
+		$post_id = $this->seed_protected_event();
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$this->assertSame( 200, $this->dispatch_get( "/blockendar/v1/events/{$post_id}" )->get_status() );
+		$this->assertSame( 200, $this->dispatch_get( "/blockendar/v1/events/{$post_id}/instances" )->get_status() );
+	}
+
+	/**
+	 * Core serves registered post meta for a protected post: it withholds the
+	 * content and excerpt, not the meta. With the API public, that would still
+	 * publish the dates the plugin's own routes now refuse to give.
+	 */
+	public function test_core_route_withholds_event_meta_for_a_password_protected_event(): void {
+		$post_id = $this->seed_protected_event();
+		$venue   = self::factory()->term->create_and_get( [ 'taxonomy' => 'blockendar_event_venue' ] );
+		wp_set_object_terms( $post_id, [ $venue->term_id ], 'blockendar_event_venue' );
+		wp_set_current_user( 0 );
+
+		$single = $this->dispatch_get( "/wp/v2/blockendar-events/{$post_id}" );
+		$list   = $this->dispatch_get( '/wp/v2/blockendar-events' );
+
+		$this->assertSame( 200, $single->get_status(), 'Core still serves the protected post itself.' );
+		$this->assertStringNotContainsString( '2026-09-02', (string) wp_json_encode( $single->get_data() ) );
+		$this->assertStringNotContainsString( '2026-09-02', (string) wp_json_encode( $list->get_data() ) );
+
+		// The venue assignment leads straight to the venue's address.
+		$this->assertArrayNotHasKey( 'event-venues', $single->get_data() );
+	}
+
+	public function test_core_route_keeps_event_meta_for_an_editor(): void {
+		$post_id = $this->seed_protected_event();
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$data = $this->dispatch_get( "/wp/v2/blockendar-events/{$post_id}" )->get_data();
+
+		$this->assertSame( '2026-09-02', $data['meta']['blockendar_start_date'] );
+		$this->assertArrayHasKey( 'event-venues', $data );
+	}
+
+	public function test_core_route_keeps_event_meta_for_an_unprotected_event(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_type'   => 'blockendar_event',
+				'post_status' => 'publish',
+			]
+		);
+		update_post_meta( $post_id, 'blockendar_start_date', '2026-09-03' );
+		wp_set_current_user( 0 );
+
+		$data = $this->dispatch_get( "/wp/v2/blockendar-events/{$post_id}" )->get_data();
+
+		$this->assertSame( '2026-09-03', $data['meta']['blockendar_start_date'] );
+	}
+
+	// -------------------------------------------------------------------------
+	// rest_public and the core routes
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The four core routes that serve event data: the post type and its three
+	 * taxonomies.
+	 *
+	 * @return array<string, array{string}>
+	 */
+	public function core_routes(): array {
+		return [
+			'events' => [ '/wp/v2/blockendar-events' ],
+			'venues' => [ '/wp/v2/event-venues' ],
+			'types'  => [ '/wp/v2/event-types' ],
+			'tags'   => [ '/wp/v2/event-tags' ],
+		];
+	}
+
+	/**
+	 * @dataProvider core_routes
+	 *
+	 * @param string $route Core route under test.
+	 */
+	public function test_core_route_refuses_anonymous_requests_when_not_public( string $route ): void {
+		update_option( 'blockendar_settings', [ 'rest_public' => false ] );
+		wp_set_current_user( 0 );
+
+		$this->assertSame( 401, $this->dispatch_get( $route )->get_status() );
+	}
+
+	/**
+	 * @dataProvider core_routes
+	 *
+	 * @param string $route Core route under test.
+	 */
+	public function test_core_route_allows_a_subscriber_when_not_public( string $route ): void {
+		update_option( 'blockendar_settings', [ 'rest_public' => false ] );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+
+		$this->assertSame( 200, $this->dispatch_get( $route )->get_status() );
+	}
+
+	/**
+	 * @dataProvider core_routes
+	 *
+	 * @param string $route Core route under test.
+	 */
+	public function test_core_route_stays_open_when_public( string $route ): void {
+		update_option( 'blockendar_settings', [ 'rest_public' => true ] );
+		wp_set_current_user( 0 );
+
+		$this->assertSame( 200, $this->dispatch_get( $route )->get_status() );
+	}
+
+	public function test_single_core_item_is_refused_for_anonymous_requests_when_not_public(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_type'   => 'blockendar_event',
+				'post_status' => 'publish',
+			]
+		);
+		$term    = self::factory()->term->create_and_get( [ 'taxonomy' => 'blockendar_event_venue' ] );
+
+		update_option( 'blockendar_settings', [ 'rest_public' => false ] );
+		wp_set_current_user( 0 );
+
+		$this->assertSame( 401, $this->dispatch_get( "/wp/v2/blockendar-events/{$post_id}" )->get_status() );
+		$this->assertSame( 401, $this->dispatch_get( "/wp/v2/event-venues/{$term->term_id}" )->get_status() );
+	}
+
+	/**
+	 * The gate matches whole route segments, so it must leave alone a core
+	 * route that merely shares a prefix with one of ours.
+	 */
+	public function test_unrelated_core_routes_stay_open_when_not_public(): void {
+		update_option( 'blockendar_settings', [ 'rest_public' => false ] );
+		wp_set_current_user( 0 );
+
+		$this->assertSame( 200, $this->dispatch_get( '/wp/v2/posts' )->get_status() );
+		$this->assertSame( 200, $this->dispatch_get( '/wp/v2/categories' )->get_status() );
 	}
 }
