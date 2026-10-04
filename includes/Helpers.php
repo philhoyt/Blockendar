@@ -198,3 +198,62 @@ function blockendar_prime_event_caches( array $rows, bool $with_terms = true, bo
 
 	_prime_post_caches( $post_ids, $with_terms, $with_meta );
 }
+
+/**
+ * Convert a "UTC+5.5"-style manual offset into a form DateTimeZone accepts.
+ *
+ * WordPress and The Events Calendar both write a manual UTC offset as
+ * "UTC+5.5". PHP rejects that, but takes "+05:30". Anything that is not in that
+ * form is returned unchanged, so a named zone passes straight through.
+ *
+ * @param string $timezone Timezone as stored by the source.
+ * @return string A named zone, "UTC", or an offset as "+HH:MM" / "-HH:MM".
+ */
+function blockendar_normalize_timezone( string $timezone ): string {
+	if ( ! preg_match( '/^UTC([+-])(\d{1,2})(?:\.(\d{1,2}))?$/', $timezone, $parts ) ) {
+		return $timezone;
+	}
+
+	$hours   = (int) $parts[2];
+	$minutes = isset( $parts[3] ) ? (int) round( (float) ( '0.' . $parts[3] ) * 60 ) : 0;
+
+	if ( 0 === $hours && 0 === $minutes ) {
+		return 'UTC';
+	}
+
+	return sprintf( '%s%02d:%02d', $parts[1], $hours, $minutes );
+}
+
+/**
+ * Map an ISO 4217 currency code to its display symbol.
+ *
+ * Mirrors CURRENCY_SYMBOLS in src/blocks/event-cost/edit.jsx. An unknown code
+ * is returned as it is.
+ *
+ * @param string $code ISO 4217 code, e.g. "USD".
+ */
+function blockendar_currency_symbol( string $code ): string {
+	static $map = [
+		'USD' => '$',
+		'EUR' => '€',
+		'GBP' => '£',
+		'CAD' => 'CA$',
+		'AUD' => 'A$',
+		'JPY' => '¥',
+		'CHF' => 'CHF',
+		'CNY' => '¥',
+		'INR' => '₹',
+		'MXN' => 'MX$',
+		'BRL' => 'R$',
+		'KRW' => '₩',
+		'SEK' => 'kr',
+		'NOK' => 'kr',
+		'DKK' => 'kr',
+		'NZD' => 'NZ$',
+		'SGD' => 'S$',
+		'HKD' => 'HK$',
+		'ZAR' => 'R',
+	];
+
+	return $map[ $code ] ?? $code;
+}

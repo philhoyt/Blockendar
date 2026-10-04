@@ -11,34 +11,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
 
-/** Map ISO 4217 code → display symbol (mirrors edit.jsx CURRENCY_SYMBOLS). */
-if ( ! function_exists( 'blockendar_currency_symbol' ) ) :
-	function blockendar_currency_symbol( string $code ): string {
-		static $map = [
-			'USD' => '$',
-			'EUR' => '€',
-			'GBP' => '£',
-			'CAD' => 'CA$',
-			'AUD' => 'A$',
-			'JPY' => '¥',
-			'CHF' => 'CHF',
-			'CNY' => '¥',
-			'INR' => '₹',
-			'MXN' => 'MX$',
-			'BRL' => 'R$',
-			'KRW' => '₩',
-			'SEK' => 'kr',
-			'NOK' => 'kr',
-			'DKK' => 'kr',
-			'NZD' => 'NZ$',
-			'SGD' => 'S$',
-			'HKD' => 'HK$',
-			'ZAR' => 'R',
-		];
-		return $map[ $code ] ?? $code;
-	}
-endif;
-
 /**
  * If $raw is a plain number, wrap it with the correct currency symbol.
  * Non-numeric strings ("Free", "$10–$25") are returned unchanged.
@@ -72,7 +44,8 @@ $button_label = ! empty( $attributes['buttonLabel'] )
 $show_cost    = $attributes['showCost'] ?? true;
 $show_button  = $attributes['showButton'] ?? true;
 
-if ( ! $cost && ! $reg_url ) {
+// Not a truthiness test: a cost of "0" is a free event, and is shown.
+if ( '' === $cost && ! $reg_url ) {
 	return;
 }
 
