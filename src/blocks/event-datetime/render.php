@@ -78,8 +78,8 @@ $time_format         = ( ! empty( $attributes['timeFormat'] ) ) ? $attributes['t
 $time_sep            = isset( $attributes['timeSeparator'] ) ? $attributes['timeSeparator'] : '@';
 $range_sep           = isset( $attributes['rangeSeparator'] ) ? $attributes['rangeSeparator'] : '–';
 
-$fmt_date = fn( string $date ) => date_i18n( $date_format, strtotime( $date ) );
-$fmt_time = fn( string $time, string $date ) => date_i18n( $time_format, strtotime( "$date $time" ) );
+$fmt_date = fn( string $date ) => blockendar_format_wall_clock( $date, $date_format );
+$fmt_time = fn( string $time, string $date ) => blockendar_format_wall_clock( "$date $time", $time_format );
 
 $same_day = $start_date === $end_date;
 

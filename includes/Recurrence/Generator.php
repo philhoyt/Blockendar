@@ -296,8 +296,13 @@ class Generator {
 		$horizon_days = $this->horizon_days();
 		$horizon      = $this->now()->modify( "+{$horizon_days} days" )->setTime( 23, 59, 59 );
 
-		$event_start = \DateTimeImmutable::createFromFormat( 'Y-m-d', $meta['start_date'] );
-		$event_end   = \DateTimeImmutable::createFromFormat( 'Y-m-d', $meta['end_date'] );
+		// The cursor walks calendar dates, so it is pinned to midnight UTC. Left
+		// to PHP's defaults it took the current time of day in the default
+		// timezone, and was then compared with a horizon and an end date that
+		// are fixed in UTC.
+		$utc         = new \DateTimeZone( 'UTC' );
+		$event_start = \DateTimeImmutable::createFromFormat( '!Y-m-d', (string) $meta['start_date'], $utc );
+		$event_end   = \DateTimeImmutable::createFromFormat( '!Y-m-d', (string) $meta['end_date'], $utc );
 
 		if ( ! $event_start || ! $event_end ) {
 			return [];
@@ -458,7 +463,8 @@ class Generator {
 				if ( $target_day > $day_of_month ) {
 					try {
 						return new \DateTimeImmutable(
-							$cursor->format( 'Y-m-' ) . sprintf( '%02d', $target_day )
+							$cursor->format( 'Y-m-' ) . sprintf( '%02d', $target_day ),
+							$cursor->getTimezone()
 						);
 					} catch ( \Exception ) {
 						continue;
@@ -472,7 +478,8 @@ class Generator {
 
 			try {
 				return new \DateTimeImmutable(
-					$next_month->format( 'Y-m-' ) . sprintf( '%02d', $first_day )
+					$next_month->format( 'Y-m-' ) . sprintf( '%02d', $first_day ),
+					$cursor->getTimezone()
 				);
 			} catch ( \Exception ) {
 				return null;
@@ -520,7 +527,7 @@ class Generator {
 			];
 			$ordinal  = $ordinals[ $setpos ] ?? 'first';
 			try {
-				return new \DateTimeImmutable( "{$ordinal} {$weekday_str} of " . $next_month->format( 'F Y' ) );
+				return new \DateTimeImmutable( "{$ordinal} {$weekday_str} of " . $next_month->format( 'F Y' ), $cursor->getTimezone() );
 			} catch ( \Exception ) {
 				return null;
 			}
@@ -529,7 +536,7 @@ class Generator {
 		// Negative setpos — e.g. last Tuesday.
 		if ( $setpos === -1 ) {
 			try {
-				return new \DateTimeImmutable( "last {$weekday_str} of " . $next_month->format( 'F Y' ) );
+				return new \DateTimeImmutable( "last {$weekday_str} of " . $next_month->format( 'F Y' ), $cursor->getTimezone() );
 			} catch ( \Exception ) {
 				return null;
 			}

@@ -217,6 +217,37 @@ function blockendar_next_day( string $date ): string {
 }
 
 /**
+ * Format a wall-clock date or datetime exactly as it reads.
+ *
+ * For values that are already in the timezone they should be shown in: an
+ * event's own date, or one blockendar_convert_datetime() has moved to the
+ * display zone. The value is read and formatted in the site timezone, so it
+ * comes out as written, with month and day names translated.
+ *
+ * This is what date_i18n( $format, strtotime( $value ) ) was being used for.
+ * That reads the value in PHP's default timezone and prints it in the site's,
+ * which agree only while the default is UTC.
+ *
+ * @param string $value  Y-m-d, optionally followed by a time.
+ * @param string $format PHP date format.
+ * @return string Formatted value, or '' if it is not a date.
+ */
+function blockendar_format_wall_clock( string $value, string $format ): string {
+	if ( '' === $value ) {
+		return '';
+	}
+
+	$timezone = wp_timezone();
+	$moment   = date_create_immutable( $value, $timezone );
+
+	if ( ! $moment ) {
+		return '';
+	}
+
+	return (string) wp_date( $format, $moment->getTimestamp(), $timezone );
+}
+
+/**
  * Convert a "UTC+5.5"-style manual offset into a form DateTimeZone accepts.
  *
  * WordPress and The Events Calendar both write a manual UTC offset as
