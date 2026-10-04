@@ -49,11 +49,18 @@ class HideAfterCutoffTest extends WP_UnitTestCase {
 		$this->tz        = wp_timezone();
 		$this->local_now = ( new \DateTimeImmutable( 'now', new \DateTimeZone( 'UTC' ) ) )->setTimezone( $this->tz );
 
+		// The cutoff is worked out to the minute, so the tests stand on one:
+		// "two hours ago" is then two hours before the cutoff's own "now", to
+		// the second, whenever in the minute the test happens to run.
+		$this->local_now = $this->local_now->setTime( 12, (int) $this->local_now->format( 'i' ), 0 );
+		\Blockendar\Blocks\Cutoff::freeze( $this->local_now );
+
 		$this->assertSame( 12, (int) $this->local_now->format( 'G' ), 'the pinned zone must put local time at noon' );
 	}
 
 	public function tear_down(): void {
 		$_GET = [];
+		\Blockendar\Blocks\Cutoff::freeze( null );
 		delete_option( 'timezone_string' );
 		parent::tear_down();
 	}
