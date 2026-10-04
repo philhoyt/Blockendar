@@ -71,6 +71,17 @@ $data_attrs = [
 	'data-timezone'      => $site_timezone,
 ];
 
+/*
+ * With the REST API set to non-public the calendar route needs a logged-in
+ * reader, and cookie authentication only counts when the request carries a
+ * wp_rest nonce: without one, WordPress answers a logged-in visitor as if
+ * anonymous. Emitted for logged-in visitors only, so a page cached for
+ * anonymous traffic never holds one.
+ */
+if ( is_user_logged_in() && ! \Blockendar\ICS\FeedUrl::is_publicly_readable() ) {
+	$data_attrs['data-rest-nonce'] = wp_create_nonce( 'wp_rest' );
+}
+
 $data_attr_str = '';
 foreach ( $data_attrs as $key => $value ) {
 	$data_attr_str .= ' ' . $key . '="' . esc_attr( $value ) . '"';
