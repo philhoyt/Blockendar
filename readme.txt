@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 2.0.1
+Stable tag: 2.0.2
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -102,6 +102,12 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 2.0.2 =
+* Security: a password-protected event's title, dates, cost and venue could be read by anyone through /blockendar/v1/events/{id} and /blockendar/v1/events/{id}/instances. Both now answer 404 unless the reader can edit the event.
+* Security: the WordPress REST routes for events no longer return a password-protected event's dates, cost, registration URL, or its venue, type and tag assignments, unless the reader can edit it.
+* Security: turning off Public REST endpoints now also requires a login on the WordPress routes for events, venues, event types and event tags (/wp/v2/blockendar-events, /wp/v2/event-venues, /wp/v2/event-types, /wp/v2/event-tags). Before, only the /blockendar/v1 routes were covered.
+* Fixed: with Public REST endpoints off, the calendar block showed no events to logged-in visitors.
 
 = 2.0.1 =
 * Changed: blocks register from a single metadata file written at build time instead of reading and decoding sixteen block.json files on every request. Reduces the time WordPress spends in init; the gain depends on how fast the host's file system is. No database changes.
@@ -334,6 +340,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 2.0.2 =
+Security release. Password-protected events could be read through the REST API, and turning off public REST access did not cover the WordPress event, venue, type and tag routes. Update recommended for every site. No database changes.
 
 = 2.0.1 =
 Performance only: blocks register from one metadata file written at build time instead of sixteen block.json reads per request. No database changes and nothing to configure.

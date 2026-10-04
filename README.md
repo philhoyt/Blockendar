@@ -156,6 +156,12 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 2.0.2
+- Security: a password-protected event's title, dates, cost and venue could be read by anyone through `/blockendar/v1/events/{id}` and `/blockendar/v1/events/{id}/instances`. Both now answer 404 unless the reader can edit the event.
+- Security: the WordPress REST routes for events no longer return a password-protected event's dates, cost, registration URL, or its venue, type and tag assignments, unless the reader can edit it.
+- Security: turning off **Public REST endpoints** now also requires a login on the WordPress routes for events, venues, event types and event tags (`/wp/v2/blockendar-events`, `/wp/v2/event-venues`, `/wp/v2/event-types`, `/wp/v2/event-tags`). Before, only the `/blockendar/v1` routes were covered.
+- Fixed: with **Public REST endpoints** off, the calendar block showed no events to logged-in visitors.
+
 ### 2.0.1
 - Changed: blocks register from a single metadata file written at build time instead of reading and decoding sixteen `block.json` files on every request. Reduces the time WordPress spends in `init`; the gain depends on how fast the host's file system is. No database changes.
 
