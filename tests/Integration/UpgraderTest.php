@@ -43,6 +43,7 @@ class UpgraderTest extends WP_UnitTestCase {
 
 	public function tear_down(): void {
 		delete_option( SettingsPage::OPTION_NAME );
+		delete_option( Upgrader::PREVIOUS_VERSION_OPTION );
 		wp_clear_scheduled_hook( 'blockendar_index_rebuild_after_upgrade' );
 		parent::tear_down();
 	}
@@ -88,6 +89,65 @@ class UpgraderTest extends WP_UnitTestCase {
 		( new Upgrader() )->maybe_upgrade();
 
 		$this->assertFalse( wp_next_scheduled( 'blockendar_index_rebuild_after_upgrade' ) );
+	}
+
+	/**
+	 * Every release used to rebuild the index, which emptied it first. Most
+	 * releases do not change what a row holds.
+	 */
+	public function test_an_upgrade_that_crosses_no_listed_release_queues_no_rebuild(): void {
+		$versions = Upgrader::REBUILD_VERSIONS;
+
+		// Just past the newest listed release, so nothing lies between it and
+		// whatever the plugin is now.
+		update_option( Upgrader::VERSION_OPTION, end( $versions ) . '.1' );
+		$this->seed_row();
+
+		( new Upgrader() )->maybe_upgrade();
+
+		$this->assertFalse( wp_next_scheduled( 'blockendar_index_rebuild_after_upgrade' ) );
+		$this->assertSame( BLOCKENDAR_VERSION, get_option( Upgrader::VERSION_OPTION ), 'The upgrade still ran.' );
+	}
+
+	/**
+	 * @return array<string, array{string, string, bool}>
+	 */
+	public function upgrades(): array {
+		return [
+			'onto a listed release'      => [ '2.0.2', '2.1.0', true ],
+			'over a listed release'      => [ '1.8.2', '2.3.0', true ],
+			'a patch after it'           => [ '2.1.0', '2.1.1', false ],
+			'two releases before it'     => [ '1.8.2', '2.0.2', false ],
+			'from before versions began' => [ '0', '2.1.0', true ],
+		];
+	}
+
+	/**
+	 * @dataProvider upgrades
+	 *
+	 * @param string $from     Version upgraded from.
+	 * @param string $to       Version upgraded to.
+	 * @param bool   $expected Whether the index has to be rebuilt.
+	 */
+	public function test_only_an_upgrade_across_a_listed_release_rebuilds( string $from, string $to, bool $expected ): void {
+		$this->assertSame( $expected, Upgrader::crosses_rebuild_version( $from, $to ) );
+	}
+
+	public function test_a_site_with_rows_and_no_stored_version_queues_a_rebuild(): void {
+		delete_option( Upgrader::VERSION_OPTION );
+		$this->seed_row();
+
+		( new Upgrader() )->maybe_upgrade();
+
+		$this->assertNotFalse( wp_next_scheduled( 'blockendar_index_rebuild_after_upgrade' ) );
+	}
+
+	public function test_an_upgrade_records_the_version_it_came_from(): void {
+		update_option( Upgrader::VERSION_OPTION, '1.3.0' );
+
+		( new Upgrader() )->maybe_upgrade();
+
+		$this->assertSame( '1.3.0', get_option( Upgrader::PREVIOUS_VERSION_OPTION ) );
 	}
 
 	public function test_a_current_version_does_not_flush(): void {
