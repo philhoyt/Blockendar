@@ -70,16 +70,37 @@ try {
 $blockendar_settings = (array) get_option( 'blockendar_settings', [] );
 $countdown_date_fmt  = $blockendar_settings['date_format'] ?? get_option( 'date_format', 'F j, Y' );
 $countdown_time_fmt  = $blockendar_settings['time_format'] ?? get_option( 'time_format', 'g:i a' );
-$countdown_stamp     = strtotime( $target_utc );
 
-$countdown_static = false !== $countdown_stamp
-	? sprintf(
+/*
+ * The start as a reader should see it: in the event's own timezone or the
+ * site's, as the timezone mode says, the same as the date block. This used to
+ * format the UTC instant above as if it were local time, so the sentence gave
+ * the start in UTC.
+ */
+$countdown_zone = blockendar_display_timezone( $post_id );
+
+if ( $start_time ) {
+	[ $countdown_date, $countdown_time ] = blockendar_convert_datetime(
+		(string) $start_date,
+		(string) $start_time,
+		$countdown_zone['event'],
+		$countdown_zone['display']
+	);
+
+	$countdown_static = sprintf(
 		/* translators: 1: event start date, 2: event start time. */
 		__( 'Starts on %1$s at %2$s.', 'blockendar' ),
-		date_i18n( $countdown_date_fmt, $countdown_stamp ),
-		date_i18n( $countdown_time_fmt, $countdown_stamp )
-	)
-	: '';
+		blockendar_format_wall_clock( $countdown_date, $countdown_date_fmt ),
+		blockendar_format_wall_clock( "$countdown_date $countdown_time", $countdown_time_fmt )
+	);
+} else {
+	// An all-day event has no time to give, and no instant to convert.
+	$countdown_static = sprintf(
+		/* translators: %s: event start date. */
+		__( 'Starts on %s.', 'blockendar' ),
+		blockendar_format_wall_clock( (string) $start_date, $countdown_date_fmt )
+	);
+}
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => 'blockendar-event-countdown' ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	data-target="<?php echo esc_attr( $target_utc ); ?>"
