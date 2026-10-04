@@ -330,8 +330,7 @@ class Exporter {
 			$lines[] = 'DTSTART;VALUE=DATE:' . str_replace( '-', '', $row->start_date );
 			if ( ! $ongoing ) {
 				// iCal all-day end is exclusive, so add one day.
-				$end_exclusive = gmdate( 'Ymd', strtotime( $row->end_date . ' +1 day' ) );
-				$lines[]       = 'DTEND;VALUE=DATE:' . $end_exclusive;
+				$lines[] = 'DTEND;VALUE=DATE:' . str_replace( '-', '', blockendar_next_day( $row->end_date ) );
 			}
 		} else {
 			$lines[] = 'DTSTART:' . $this->utc_to_ical( $row->start_datetime );
@@ -407,14 +406,30 @@ class Exporter {
 	 * @param object $row Index row.
 	 */
 	private function build_sequence( object $row ): int {
-		$created  = strtotime( (string) ( $row->post_date_gmt ?? '' ) );
-		$modified = strtotime( (string) ( $row->post_modified_gmt ?? '' ) );
+		$created  = $this->gmt_timestamp( (string) ( $row->post_date_gmt ?? '' ) );
+		$modified = $this->gmt_timestamp( (string) ( $row->post_modified_gmt ?? '' ) );
 
 		if ( ! $created || ! $modified || $modified <= $created ) {
 			return 0;
 		}
 
 		return $modified - $created;
+	}
+
+	/**
+	 * Read one of WordPress's GMT datetime columns as a Unix timestamp.
+	 *
+	 * @param string $gmt_datetime Y-m-d H:i:s, in GMT.
+	 * @return int Timestamp, or 0 if the value is empty or not a date.
+	 */
+	private function gmt_timestamp( string $gmt_datetime ): int {
+		if ( '' === $gmt_datetime ) {
+			return 0;
+		}
+
+		$moment = date_create_immutable( $gmt_datetime, new \DateTimeZone( 'UTC' ) );
+
+		return $moment ? max( 0, $moment->getTimestamp() ) : 0;
 	}
 
 	/**

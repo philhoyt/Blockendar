@@ -306,8 +306,7 @@ class IndexBuilder {
 			$end_date     = EventIndex::ONGOING_END_DATE;
 		} else {
 			if ( $all_day ) {
-				$end_date_exclusive = gmdate( 'Y-m-d', strtotime( '+1 day', strtotime( $meta['end_date'] ) ) );
-				$end_local_str      = "{$end_date_exclusive} 00:00:00";
+				$end_local_str = blockendar_next_day( $meta['end_date'] ) . ' 00:00:00';
 			} else {
 				$end_local_str = "{$meta['end_date']} {$end_time}:00";
 			}
