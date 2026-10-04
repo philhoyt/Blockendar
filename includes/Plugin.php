@@ -27,6 +27,7 @@ use Blockendar\REST\EventsController;
 use Blockendar\REST\CalendarController;
 use Blockendar\REST\IcsEndpoint;
 use Blockendar\REST\CoreRouteGuard;
+use Blockendar\REST\RecurrenceField;
 use Blockendar\Blocks\BlockRegistrar;
 use Blockendar\Blocks\TemplateRegistrar;
 use Blockendar\Admin\EventColumns;
@@ -96,6 +97,10 @@ class Plugin {
 		// The same read rules on the wp/v2 routes core registers for the post
 		// type and its taxonomies.
 		( new CoreRouteGuard() )->register();
+
+		// The repeat rule as a field of the event, so the editor saves it with
+		// the event and not beside it.
+		( new RecurrenceField() )->register();
 
 		// Block registration + editor sidebar enqueue.
 		( new BlockRegistrar() )->register();
