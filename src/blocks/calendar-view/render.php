@@ -69,6 +69,11 @@ $data_attrs = [
 	'data-venue-ids'     => wp_json_encode( array_values( $venue_ids ) ),
 	'data-type-ids'      => wp_json_encode( array_values( $type_ids ) ),
 	'data-timezone'      => $site_timezone,
+	// FullCalendar ships its own strings; these tell it which to use, and how
+	// the site writes a time.
+	'data-locale'        => get_locale(),
+	'data-direction'     => is_rtl() ? 'rtl' : 'ltr',
+	'data-time-format'   => (string) \Blockendar\Admin\SettingsPage::get( 'time_format' ),
 ];
 
 /*

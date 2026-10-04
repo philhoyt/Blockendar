@@ -16,6 +16,7 @@ import { useEntityProp, store as coreStore } from '@wordpress/core-data';
 import { useSelect } from '@wordpress/data';
 import { dateI18n, getSettings, gmdateI18n } from '@wordpress/date';
 import { __ } from '@wordpress/i18n';
+import { timezoneLabel } from './timezone-label';
 
 const TIME_FORMAT_OPTIONS = [
 	{
@@ -355,7 +356,11 @@ export function Edit( { attributes, setAttributes, context } ) {
 				{ /* Timezone */ }
 				{ showTimezone && ! activeAllDay && activeTimezone && (
 					<span className="blockendar-event-datetime__tz">
-						({ activeTimezone })
+						{ `(${ timezoneLabel(
+							activeTimezone,
+							activeStartDate,
+							activeStartTime
+						) })` }
 					</span>
 				) }
 

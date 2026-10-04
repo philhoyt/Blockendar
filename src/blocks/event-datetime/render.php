@@ -124,7 +124,7 @@ $render_all_day = $all_day && $show_start_time && ! $render_ongoing;
 	<?php endif; ?>
 
 	<?php if ( $show_tz && ! $all_day ) : ?>
-		<span class="blockendar-event-datetime__tz">(<?php echo esc_html( $tz_str ); ?>)</span>
+		<span class="blockendar-event-datetime__tz">(<?php echo esc_html( blockendar_timezone_label( $tz_str, trim( "$start_date $start_time" ) ) ); ?>)</span>
 	<?php endif; ?>
 
 	<?php if ( $render_all_day && $show_start_date ) : ?>

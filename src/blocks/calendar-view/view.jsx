@@ -9,7 +9,17 @@
  * emits them as separate chunks: the entry script stays small, and a calendar
  * configured for month view alone never downloads the timeGrid or list code.
  */
-import { createRoot, useRef, useEffect, useState } from '@wordpress/element';
+import {
+	createRoot,
+	useCallback,
+	useRef,
+	useEffect,
+	useState,
+} from '@wordpress/element';
+import { speak } from '@wordpress/a11y';
+import { __, _n, sprintf } from '@wordpress/i18n';
+import { eventTimeFormat, localeCandidates } from './locale';
+import { LOCALE_LOADERS } from './locale-loaders';
 
 const MOBILE_MQ = '(max-width: 767px)';
 const MOBILE_VIEW = 'listNextMonth';
@@ -35,12 +45,41 @@ function pluginForView( view ) {
 }
 
 /**
+ * Load FullCalendar's strings for the site's language.
+ *
+ * The first candidate FullCalendar ships is loaded. If it ships none of them,
+ * the calendar stays in English.
+ *
+ * @param {string[]} candidates Locale file names, best first.
+ * @return {Promise<Object|null>} A FullCalendar locale object, or null.
+ */
+async function loadLocale( candidates ) {
+	for ( const code of candidates ) {
+		const load = LOCALE_LOADERS[ code ];
+
+		if ( ! load ) {
+			continue;
+		}
+
+		try {
+			return ( await load() ).default;
+		} catch {
+			// The chunk did not arrive. English is better than no calendar.
+			return null;
+		}
+	}
+
+	return null;
+}
+
+/**
  * Dynamically load FullCalendar plus only the plugins the given views require.
  *
- * @param {string[]} views View names that must be renderable.
- * @return {Promise<{Calendar: Object, plugins: Object[]}>} Loaded module refs.
+ * @param {string[]} views            View names that must be renderable.
+ * @param {string[]} localeCandidates Locale file names to try, best first.
+ * @return {Promise<{Calendar: Object, plugins: Object[], locale: Object|null}>} Loaded module refs.
  */
-async function loadCalendar( views ) {
+async function loadCalendar( views, localeCandidates ) {
 	const needed = new Set();
 
 	views.forEach( ( view ) => {
@@ -54,7 +93,8 @@ async function loadCalendar( views ) {
 	// required regardless of which views the editor enabled.
 	needed.add( pluginForView( MOBILE_VIEW ) );
 
-	const [ { default: Calendar }, ...plugins ] = await Promise.all( [
+	const [ locale, { default: Calendar }, ...plugins ] = await Promise.all( [
+		loadLocale( localeCandidates ),
 		import( '@fullcalendar/react' ),
 		...[ ...needed ].map( ( plugin ) => {
 			if ( 'dayGrid' === plugin ) {
@@ -70,6 +110,7 @@ async function loadCalendar( views ) {
 	return {
 		Calendar,
 		plugins: plugins.map( ( mod ) => mod.default ),
+		locale,
 	};
 }
 
@@ -100,6 +141,7 @@ function parseList( raw, fallback = [] ) {
 function BlockendarCalendar( { dataset, onReady } ) {
 	const calendarRef = useRef( null );
 	const [ loaded, setLoaded ] = useState( null );
+	const [ failed, setFailed ] = useState( false );
 
 	const restUrl = dataset.restUrl ?? '/wp-json/blockendar/v1';
 	const restNonce = dataset.restNonce;
@@ -114,12 +156,14 @@ function BlockendarCalendar( { dataset, onReady } ) {
 
 	const viewButtons = enabledViews.join( ',' );
 
-	// Custom view: rolling 31-day list starting from today.
+	// Custom view: rolling 31-day list starting from today. FullCalendar has no
+	// label of its own for a custom view, so it borrows the locale's for "list".
 	const customViews = {
 		listNextMonth: {
 			type: 'list',
 			duration: { days: 31 },
-			buttonText: 'list',
+			buttonText:
+				loaded?.locale?.buttonText?.list ?? __( 'list', 'blockendar' ),
 		},
 	};
 
@@ -128,7 +172,10 @@ function BlockendarCalendar( { dataset, onReady } ) {
 	useEffect( () => {
 		let cancelled = false;
 
-		loadCalendar( [ ...enabledViews, defaultView ] )
+		loadCalendar(
+			[ ...enabledViews, defaultView ],
+			localeCandidates( dataset.locale )
+		)
 			.then( ( result ) => {
 				if ( ! cancelled ) {
 					setLoaded( result );
@@ -163,79 +210,136 @@ function BlockendarCalendar( { dataset, onReady } ) {
 		return () => mq.removeEventListener( 'change', onChange );
 	}, [ defaultView ] );
 
-	const fetchEvents = ( fetchInfo, successCallback, failureCallback ) => {
-		const params = new URLSearchParams( {
-			start: fetchInfo.startStr,
-			end: fetchInfo.endStr,
-			per_page: 500,
-		} );
+	/*
+	 * Memoised because it sets state. FullCalendar refetches whenever the
+	 * function it is given changes, and a new one on every render would turn
+	 * one failure into a loop. Everything it reads comes from the block's data
+	 * attributes, which do not change.
+	 */
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	const fetchEvents = useCallback(
+		( fetchInfo, successCallback, failureCallback ) => {
+			const params = new URLSearchParams( {
+				start: fetchInfo.startStr,
+				end: fetchInfo.endStr,
+				per_page: 500,
+			} );
 
-		if ( venueIds.length ) {
-			params.set( 'venue', venueIds.join( ',' ) );
-		}
-		if ( typeIds.length ) {
-			params.set( 'type', typeIds.join( ',' ) );
-		}
-		if ( featuredOnly ) {
-			params.set( 'featured', '1' );
-		}
+			if ( venueIds.length ) {
+				params.set( 'venue', venueIds.join( ',' ) );
+			}
+			if ( typeIds.length ) {
+				params.set( 'type', typeIds.join( ',' ) );
+			}
+			if ( featuredOnly ) {
+				params.set( 'featured', '1' );
+			}
 
-		// Present only for a logged-in visitor on a site whose REST API is not
-		// public; without it the cookie is ignored and the request is anonymous.
-		const headers = restNonce ? { 'X-WP-Nonce': restNonce } : {};
+			// Present only for a logged-in visitor on a site whose REST API is not
+			// public; without it the cookie is ignored and the request is anonymous.
+			const headers = restNonce ? { 'X-WP-Nonce': restNonce } : {};
 
-		fetch( `${ restUrl }/calendar?${ params.toString() }`, { headers } )
-			.then( ( r ) => {
-				if ( ! r.ok ) {
-					throw new Error(
-						`Blockendar: calendar fetch failed (${ r.status })`
+			fetch( `${ restUrl }/calendar?${ params.toString() }`, { headers } )
+				.then( ( r ) => {
+					if ( ! r.ok ) {
+						throw new Error(
+							`Blockendar: calendar fetch failed (${ r.status })`
+						);
+					}
+					return r.json();
+				} )
+				.then( ( events ) => {
+					setFailed( false );
+					successCallback( events );
+
+					// The grid changes without the page reloading; say what
+					// arrived to someone who cannot see it.
+					speak(
+						sprintf(
+							/* translators: %d: number of events. */
+							_n(
+								'%d event loaded.',
+								'%d events loaded.',
+								events.length,
+								'blockendar'
+							),
+							events.length
+						)
 					);
-				}
-				return r.json();
-			} )
-			.then( ( events ) => successCallback( events ) )
-			.catch( failureCallback );
-	};
+				} )
+				.catch( ( error ) => {
+					// The server-rendered list is gone by now, so without this
+					// the visitor is left with an empty grid and no reason.
+					setFailed( true );
+					failureCallback( error );
+				} );
+		},
+		[]
+	);
 
 	if ( ! loaded ) {
 		return null;
 	}
 
-	const { Calendar, plugins } = loaded;
+	const { Calendar, plugins, locale } = loaded;
 
 	return (
-		<Calendar
-			ref={ calendarRef }
-			plugins={ plugins }
-			timeZone={ timezone }
-			initialView={ isMobile() ? MOBILE_VIEW : defaultView }
-			firstDay={ firstDay }
-			slotDuration={ slotDuration }
-			views={ customViews }
-			headerToolbar={ {
-				left: 'prev,next today',
-				center: 'title',
-				right: viewButtons,
-			} }
-			events={ fetchEvents }
-			dayMaxEvents={ 3 }
-			eventDidMount={ ( info ) => {
-				const color = info.event.backgroundColor;
-				if ( color ) {
-					info.el.style.setProperty(
-						'--blockendar-event-color',
-						color
-					);
-				}
-			} }
-			eventClick={ ( info ) => {
-				if ( info.event.url ) {
-					info.jsEvent.preventDefault();
-					window.location.href = info.event.url;
-				}
-			} }
-			height="auto"
-		/>
+		<>
+			{ failed && (
+				<div className="blockendar-calendar-error" role="alert">
+					<p>
+						{ __(
+							'The events could not be loaded.',
+							'blockendar'
+						) }
+					</p>
+					<button
+						type="button"
+						className="wp-element-button"
+						onClick={ () =>
+							calendarRef.current?.getApi().refetchEvents()
+						}
+					>
+						{ __( 'Try again', 'blockendar' ) }
+					</button>
+				</div>
+			) }
+			<Calendar
+				ref={ calendarRef }
+				plugins={ plugins }
+				locale={ locale ?? undefined }
+				direction={ 'rtl' === dataset.direction ? 'rtl' : 'ltr' }
+				eventTimeFormat={ eventTimeFormat( dataset.timeFormat ) }
+				timeZone={ timezone }
+				initialView={ isMobile() ? MOBILE_VIEW : defaultView }
+				firstDay={ firstDay }
+				slotDuration={ slotDuration }
+				views={ customViews }
+				headerToolbar={ {
+					left: 'prev,next today',
+					center: 'title',
+					right: viewButtons,
+				} }
+				events={ fetchEvents }
+				dayMaxEvents={ 3 }
+				eventDidMount={ ( info ) => {
+					const color = info.event.backgroundColor;
+					if ( color ) {
+						info.el.style.setProperty(
+							'--blockendar-event-color',
+							color
+						);
+					}
+				} }
+				eventClick={ ( info ) => {
+					if ( info.event.url ) {
+						info.jsEvent.preventDefault();
+						window.location.href = info.event.url;
+					}
+				} }
+				height="auto"
+			/>
+		</>
 	);
 }
 

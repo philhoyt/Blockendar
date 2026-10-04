@@ -248,6 +248,31 @@ function blockendar_format_wall_clock( string $value, string $format ): string {
 }
 
 /**
+ * A short label for a timezone, as it applies at one moment.
+ *
+ * The abbreviation in force then — "CDT" in July, "CST" in January — or
+ * "UTC+05:30" for a zone that has no abbreviation or is an offset to begin
+ * with. A reader recognises either; "America/Chicago" is an identifier.
+ *
+ * @param string $timezone       Timezone identifier or offset.
+ * @param string $local_datetime Date, optionally with a time, in that timezone.
+ * @return string The label, or the identifier unchanged if it is not a timezone.
+ */
+function blockendar_timezone_label( string $timezone, string $local_datetime ): string {
+	try {
+		$moment = new \DateTimeImmutable( $local_datetime, new \DateTimeZone( $timezone ) );
+	} catch ( \Exception ) {
+		return $timezone;
+	}
+
+	$abbreviation = $moment->format( 'T' );
+
+	// A zone with no name of its own comes back as "+04" or "GMT+0530",
+	// depending on the PHP version. Write those one way.
+	return preg_match( '/^[A-Za-z]+$/', $abbreviation ) ? $abbreviation : 'UTC' . $moment->format( 'P' );
+}
+
+/**
  * Convert a "UTC+5.5"-style manual offset into a form DateTimeZone accepts.
  *
  * WordPress and The Events Calendar both write a manual UTC offset as

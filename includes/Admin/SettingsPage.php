@@ -371,7 +371,8 @@ class SettingsPage {
 			'time_format'            => get_option( 'time_format', 'g:i a' ),
 			'timezone_mode'          => 'site',
 			'calendar_default_view'  => 'dayGridMonth',
-			'calendar_first_day'     => 0,
+			// WordPress's own "Week Starts On", until the site chooses otherwise.
+			'calendar_first_day'     => max( 0, min( 6, (int) get_option( 'start_of_week', 0 ) ) ),
 			'calendar_slot_duration' => '00:30:00',
 			'events_slug'            => 'events',
 			'map_default_zoom'       => 14,
