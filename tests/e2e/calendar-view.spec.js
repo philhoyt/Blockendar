@@ -9,6 +9,7 @@
 
 const { test, expect } = require( '@playwright/test' );
 const { wpCli } = require( './wp-cli' );
+const { loginAsAdmin } = require( './editor' );
 
 let pageId;
 let eventId;
@@ -245,4 +246,59 @@ test( 'the fallback is removed once the calendar mounts', async ( {
 	await expect( page.locator( '.blockendar-calendar-fallback' ) ).toHaveCount(
 		0
 	);
+} );
+
+/**
+ * Write the plugin settings option as JSON.
+ *
+ * @param {Object} settings Settings to store.
+ */
+function setSettings( settings ) {
+	wpCli( [
+		'option',
+		'update',
+		'blockendar_settings',
+		JSON.stringify( settings ),
+		'--format=json',
+	] );
+}
+
+/*
+ * With the REST API set to non-public the calendar route needs a logged-in
+ * reader. Cookie authentication only counts when the request carries a wp_rest
+ * nonce — without one WordPress treats even a logged-in visitor as anonymous —
+ * so the block has to send it, or the people the setting is meant to let in
+ * see an empty grid.
+ */
+test.describe( 'with a non-public REST API', () => {
+	test.beforeAll( () => {
+		setSettings( { rest_public: false, rest_feed_token: '' } );
+	} );
+
+	test.afterAll( () => {
+		setSettings( { rest_public: true, rest_feed_token: '' } );
+	} );
+
+	test( 'a logged-in visitor still gets events on the calendar', async ( {
+		page,
+	} ) => {
+		await loginAsAdmin( page );
+		await page.goto( `/?p=${ pageId }` );
+
+		await expect( page.locator( '.fc' ) ).toBeVisible( { timeout: 15000 } );
+		await expect(
+			page.locator( '.fc-event-title', { hasText: 'E2E Calendar Event' } )
+		).toBeVisible( { timeout: 15000 } );
+	} );
+
+	test( 'a logged-out visitor is not handed a nonce', async ( { page } ) => {
+		await page.goto( `/?p=${ pageId }` );
+
+		await expect(
+			page.locator( '.wp-block-blockendar-calendar-view' )
+		).toBeVisible();
+		await expect(
+			page.locator( '.wp-block-blockendar-calendar-view' )
+		).not.toHaveAttribute( 'data-rest-nonce' );
+	} );
 } );

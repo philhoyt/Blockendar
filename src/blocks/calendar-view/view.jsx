@@ -102,6 +102,7 @@ function BlockendarCalendar( { dataset, onReady } ) {
 	const [ loaded, setLoaded ] = useState( null );
 
 	const restUrl = dataset.restUrl ?? '/wp-json/blockendar/v1';
+	const restNonce = dataset.restNonce;
 	const venueIds = parseList( dataset.venueIds );
 	const typeIds = parseList( dataset.typeIds );
 	const featuredOnly = dataset.featuredOnly === 'true';
@@ -179,7 +180,11 @@ function BlockendarCalendar( { dataset, onReady } ) {
 			params.set( 'featured', '1' );
 		}
 
-		fetch( `${ restUrl }/calendar?${ params.toString() }` )
+		// Present only for a logged-in visitor on a site whose REST API is not
+		// public; without it the cookie is ignored and the request is anonymous.
+		const headers = restNonce ? { 'X-WP-Nonce': restNonce } : {};
+
+		fetch( `${ restUrl }/calendar?${ params.toString() }`, { headers } )
 			.then( ( r ) => {
 				if ( ! r.ok ) {
 					throw new Error(
