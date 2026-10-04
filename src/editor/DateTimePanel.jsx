@@ -8,7 +8,6 @@ import {
 } from '@wordpress/editor';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useState, useEffect, useRef } from '@wordpress/element';
-import apiFetch from '@wordpress/api-fetch';
 import {
 	ToggleControl,
 	SelectControl,
@@ -16,13 +15,19 @@ import {
 	TextControl,
 	DatePicker,
 	RadioControl,
-	Button,
 	Notice,
 	__experimentalVStack as VStack,
 	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
+import {
+	endDateUpdates,
+	endTimeUpdates,
+	minuteOptions,
+	startTimeUpdates,
+} from './datetime';
 import { getOngoingMetaUpdates } from './ongoing';
+import { dateParts, formFromRule, ruleFromForm } from './recurrence';
 
 const {
 	timezones = [],
@@ -34,12 +39,11 @@ const {
 // DateInput — native <input type="date"> styled to match WP components
 // ---------------------------------------------------------------------------
 
-function DateInput( { value, onChange, min } ) {
+function DateInput( { value, onChange } ) {
 	return (
 		<input
 			type="date"
 			value={ value }
-			min={ min }
 			onChange={ ( e ) => onChange( e.target.value ) }
 			style={ {
 				display: 'block',
@@ -61,11 +65,6 @@ function DateInput( { value, onChange, min } ) {
 // ---------------------------------------------------------------------------
 // TimeSelect — clean select-based time picker
 // ---------------------------------------------------------------------------
-
-const MINUTE_OPTIONS = Array.from( { length: 12 }, ( _, i ) => {
-	const v = String( i * 5 ).padStart( 2, '0' );
-	return { label: v, value: v };
-} );
 
 const HOUR_OPTIONS_12 = Array.from( { length: 12 }, ( _, i ) => {
 	const v = String( i + 1 );
@@ -102,8 +101,11 @@ function toHHMM( h24, m ) {
 
 function TimeSelect( { value, onChange } ) {
 	const { h24, m } = parseTime( value );
-	const roundedM = ( Math.round( m / 5 ) * 5 ) % 60;
-	const minuteStr = String( roundedM ).padStart( 2, '0' );
+
+	// The stored minute, as it is. Rounding it to the five-minute grid showed a
+	// time the event did not have, and changing the hour then saved it.
+	const minuteStr = String( m ).padStart( 2, '0' );
+	const MINUTE_OPTIONS = minuteOptions( m );
 
 	if ( is12Hour ) {
 		const isPm = h24 >= 12;
@@ -116,7 +118,7 @@ function TimeSelect( { value, onChange } ) {
 			if ( isPm ) {
 				h24n += 12;
 			}
-			onChange( toHHMM( h24n, roundedM ) );
+			onChange( toHHMM( h24n, m ) );
 		};
 
 		const onAmPm = ( ampm ) => {
@@ -126,7 +128,7 @@ function TimeSelect( { value, onChange } ) {
 			if ( pm ) {
 				h24n += 12;
 			}
-			onChange( toHHMM( h24n, roundedM ) );
+			onChange( toHHMM( h24n, m ) );
 		};
 
 		return (
@@ -183,7 +185,7 @@ function TimeSelect( { value, onChange } ) {
 					value={ String( h24 ).padStart( 2, '0' ) }
 					options={ HOUR_OPTIONS_24 }
 					onChange={ ( h ) =>
-						onChange( toHHMM( parseInt( h, 10 ), roundedM ) )
+						onChange( toHHMM( parseInt( h, 10 ), m ) )
 					}
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
@@ -210,7 +212,6 @@ function TimeSelect( { value, onChange } ) {
 // Recurrence helpers
 // ---------------------------------------------------------------------------
 
-const BYDAY_CODES = [ 'SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA' ];
 const WEEKDAY_NAMES = [
 	__( 'Sunday', 'blockendar' ),
 	__( 'Monday', 'blockendar' ),
@@ -244,20 +245,17 @@ const MONTH_NAMES = [
 ];
 
 function getDateParts( dateStr ) {
-	if ( ! dateStr ) {
+	const parts = dateParts( dateStr );
+
+	if ( ! parts ) {
 		return null;
 	}
-	const d = new Date( dateStr + 'T12:00:00' );
-	const dow = d.getDay();
-	const dom = d.getDate();
-	const nth = Math.min( Math.ceil( dom / 7 ), 5 );
+
 	return {
-		byday: BYDAY_CODES[ dow ],
-		dayName: WEEKDAY_NAMES[ dow ],
-		nth,
-		nthLabel: NTH_LABELS[ nth ],
-		monthName: MONTH_NAMES[ d.getMonth() ],
-		dom,
+		...parts,
+		dayName: WEEKDAY_NAMES[ parts.dow ],
+		nthLabel: NTH_LABELS[ parts.nth ],
+		monthName: MONTH_NAMES[ parts.month ],
 	};
 }
 
@@ -293,153 +291,81 @@ function buildFreqOptions( startDate ) {
 	];
 }
 
-function presetToPayload( preset, startDate ) {
-	switch ( preset ) {
-		case 'daily':
-			return {
-				frequency: 'daily',
-				interval_val: 1,
-				byday: null,
-				bymonthday: null,
-				bysetpos: null,
-			};
-		case 'weekly_day': {
-			const p = getDateParts( startDate );
-			return {
-				frequency: 'weekly',
-				interval_val: 1,
-				byday: p?.byday ?? null,
-				bymonthday: null,
-				bysetpos: null,
-			};
-		}
-		case 'monthly_weekday': {
-			const p = getDateParts( startDate );
-			return {
-				frequency: 'monthly',
-				interval_val: 1,
-				byday: p?.byday ?? null,
-				bymonthday: null,
-				bysetpos: p?.nth?.toString() ?? null,
-			};
-		}
-		case 'yearly_date':
-			return {
-				frequency: 'yearly',
-				interval_val: 1,
-				byday: null,
-				bymonthday: null,
-				bysetpos: null,
-			};
-		default:
-			return null;
-	}
-}
-
-function ruleToPreset( r ) {
-	switch ( r?.frequency ) {
-		case 'daily':
-			return 'daily';
-		case 'weekly':
-			return 'weekly_day';
-		case 'monthly':
-			return 'monthly_weekday';
-		case 'yearly':
-			return 'yearly_date';
-		default:
-			return 'none';
-	}
-}
-
 // ---------------------------------------------------------------------------
 // RecurrenceSection — rendered inside DateTimePanel
 // ---------------------------------------------------------------------------
 
-function RecurrenceSection( { postId, startDate, ongoing } ) {
-	const [ preset, setPreset ] = useState( 'none' );
-	const [ endType, setEndType ] = useState( 'never' );
-	const [ untilDate, setUntilDate ] = useState( '' );
-	const [ count, setCount ] = useState( '' );
-	const [ saved, setSaved ] = useState( false );
-	const [ error, setError ] = useState( '' );
-
+/*
+ * The rule is a field of the event, `blockendar_recurrence`, edited with
+ * editPost() like the event's meta. It is saved in the same request as the
+ * event, marks the event as changed, and is thrown away with everything else
+ * when the author leaves without saving.
+ *
+ * It used to be sent to its own route the moment a control changed, so a rule
+ * the author tried and abandoned was already in the database.
+ */
+function RecurrenceSection( { startDate, ongoing } ) {
+	const rule = useSelect( ( select ) =>
+		select( editorStore ).getEditedPostAttribute( 'blockendar_recurrence' )
+	);
 	const { editPost } = useDispatch( editorStore );
 
-	// Load existing recurrence rule on mount.
+	// The controls keep their own state because they can say more than a rule
+	// can: "On date" has to stay selected while no date has been picked yet.
+	const [ form, setForm ] = useState( () => formFromRule( rule ) );
+
+	// Follow the rule when it changes from outside the controls — the event
+	// finishing loading, an undo — unless the controls already describe it.
 	useEffect( () => {
-		if ( ! postId ) {
-			return;
-		}
+		setForm( ( current ) => {
+			const stored = formFromRule( rule );
+			const written = ruleFromForm(
+				{ ...current, preset: stored.preset },
+				startDate
+			);
+			const sameEnd =
+				( written.until_date ?? null ) ===
+					( rule?.until_date ?? null ) &&
+				( written.count ?? null ) === ( rule?.count ?? null );
 
-		apiFetch( { path: `/blockendar/v1/events/${ postId }` } )
-			.then( ( data ) => {
-				if ( data?.recurrence ) {
-					const r = data.recurrence;
-					const p = ruleToPreset( r );
-					setPreset( p );
-					setEndType(
-						// eslint-disable-next-line no-nested-ternary
-						r.until_date ? 'date' : r.count ? 'count' : 'never'
-					);
-					setUntilDate( r.until_date ?? '' );
-					setCount( r.count?.toString() ?? '' );
-				}
-			} )
-			.catch( () => {} );
-	}, [ postId ] );
+			if ( ! sameEnd ) {
+				return stored;
+			}
 
-	// Detect when the post finishes saving and auto-save the recurrence rule.
-	const isSaving = useSelect(
-		( select ) =>
-			select( editorStore ).isSavingPost() &&
-			! select( editorStore ).isAutosavingPost()
-	);
-	const prevSavingRef = useRef( false );
-	// Keep a ref to current state values to avoid stale closures in the effect.
-	const stateRef = useRef( { preset, startDate, endType, untilDate, count } );
-	stateRef.current = { preset, startDate, endType, untilDate, count };
+			return current.preset === stored.preset
+				? current
+				: { ...current, preset: stored.preset };
+		} );
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ rule ] );
 
+	const apply = ( next ) => {
+		setForm( next );
+		editPost( {
+			blockendar_recurrence: ruleFromForm( next, startDate ),
+			meta: { blockendar_recurrence_preset: next.preset },
+		} );
+	};
+
+	// "Weekly" means weekly on the start date's weekday, so a new start date is
+	// a new rule. Not on mount: opening an event must not edit it.
+	const previousStartDate = useRef( startDate );
 	useEffect( () => {
-		const justFinishedSaving = prevSavingRef.current && ! isSaving;
-		prevSavingRef.current = isSaving;
-
-		if ( ! justFinishedSaving || ! postId ) {
+		if ( previousStartDate.current === startDate ) {
 			return;
 		}
 
-		const {
-			preset: p,
-			startDate: sd,
-			endType: et,
-			untilDate: ud,
-			count: c,
-		} = stateRef.current;
+		previousStartDate.current = startDate;
 
-		if ( p === 'none' ) {
-			apiFetch( {
-				path: `/blockendar/v1/events/${ postId }/recurrence`,
-				method: 'DELETE',
-			} ).catch( () => {} );
-			return;
+		if ( form.preset !== 'none' ) {
+			editPost( {
+				blockendar_recurrence: ruleFromForm( form, startDate ),
+			} );
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ startDate ] );
 
-		const base = presetToPayload( p, sd );
-
-		if ( ! base ) {
-			return;
-		}
-
-		apiFetch( {
-			path: `/blockendar/v1/events/${ postId }/recurrence`,
-			method: 'POST',
-			data: {
-				...base,
-				until_date: et === 'date' ? ud : null,
-				count: et === 'count' ? parseInt( c, 10 ) || null : null,
-			},
-		} ).catch( () => {} );
-	}, [ isSaving, postId ] );
-
+	const { preset, endType, untilDate, count } = form;
 	const freqOptions = buildFreqOptions( startDate );
 
 	// Ongoing events are never recurring. Keep this section mounted so the
@@ -460,58 +386,13 @@ function RecurrenceSection( { postId, startDate, ongoing } ) {
 		);
 	}
 
-	// Core save logic — accepts explicit values so it can be called from
-	// onChange handlers (before React state has updated) as well as the button.
-	const doSave = async ( p, et, ud, c ) => {
-		setError( '' );
-		setSaved( false );
-
-		if ( p === 'none' ) {
-			try {
-				await apiFetch( {
-					path: `/blockendar/v1/events/${ postId }/recurrence`,
-					method: 'DELETE',
-				} );
-				setSaved( true );
-			} catch ( e ) {
-				setError( e?.message ?? __( 'Save failed.', 'blockendar' ) );
-			}
-			return;
-		}
-
-		const base = presetToPayload( p, startDate );
-
-		if ( ! base ) {
-			return;
-		}
-
-		try {
-			await apiFetch( {
-				path: `/blockendar/v1/events/${ postId }/recurrence`,
-				method: 'POST',
-				data: {
-					...base,
-					until_date: et === 'date' ? ud : null,
-					count: et === 'count' ? parseInt( c, 10 ) || null : null,
-				},
-			} );
-			setSaved( true );
-		} catch ( e ) {
-			setError( e?.message ?? __( 'Save failed.', 'blockendar' ) );
-		}
-	};
-
 	return (
 		<VStack spacing={ 4 }>
 			<SelectControl
 				label={ __( 'Repeats', 'blockendar' ) }
 				value={ preset }
 				options={ freqOptions }
-				onChange={ ( val ) => {
-					setPreset( val );
-					editPost( { meta: { blockendar_recurrence_preset: val } } );
-					doSave( val, endType, untilDate, count );
-				} }
+				onChange={ ( val ) => apply( { ...form, preset: val } ) }
 				__nextHasNoMarginBottom
 				__next40pxDefaultSize
 			/>
@@ -535,20 +416,20 @@ function RecurrenceSection( { postId, startDate, ongoing } ) {
 								value: 'count',
 							},
 						] }
-						onChange={ ( val ) => {
-							setEndType( val );
-							doSave( preset, val, untilDate, count );
-						} }
+						onChange={ ( val ) =>
+							apply( { ...form, endType: val } )
+						}
 					/>
 
 					{ endType === 'date' && (
 						<DatePicker
 							currentDate={ untilDate || undefined }
-							onChange={ ( val ) => {
-								const d = val?.split( 'T' )[ 0 ] ?? '';
-								setUntilDate( d );
-								doSave( preset, endType, d, count );
-							} }
+							onChange={ ( val ) =>
+								apply( {
+									...form,
+									untilDate: val?.split( 'T' )[ 0 ] ?? '',
+								} )
+							}
 							__nextRemoveHelpButton
 						/>
 					) }
@@ -562,28 +443,11 @@ function RecurrenceSection( { postId, startDate, ongoing } ) {
 							type="number"
 							min={ 1 }
 							value={ count }
-							onChange={ setCount }
+							onChange={ ( val ) =>
+								apply( { ...form, count: val } )
+							}
 							__nextHasNoMarginBottom
 						/>
-					) }
-
-					<Button
-						variant="secondary"
-						onClick={ () =>
-							doSave( preset, endType, untilDate, count )
-						}
-					>
-						{ __( 'Save recurrence', 'blockendar' ) }
-					</Button>
-
-					{ saved && (
-						<p style={ { color: 'green', margin: 0 } }>
-							{ __( 'Saved.', 'blockendar' ) }
-						</p>
-					) }
-
-					{ error && (
-						<p style={ { color: 'red', margin: 0 } }>{ error }</p>
 					) }
 				</>
 			) }
@@ -596,10 +460,10 @@ function RecurrenceSection( { postId, startDate, ongoing } ) {
 // ---------------------------------------------------------------------------
 
 export function DateTimePanel() {
-	const { meta, postId } = useSelect( ( select ) => ( {
-		meta: select( editorStore ).getEditedPostAttribute( 'meta' ) ?? {},
-		postId: select( editorStore ).getCurrentPostId(),
-	} ) );
+	const meta = useSelect(
+		( select ) =>
+			select( editorStore ).getEditedPostAttribute( 'meta' ) ?? {}
+	);
 	const { editPost } = useDispatch( editorStore );
 
 	const setMeta = ( updates ) =>
@@ -641,12 +505,6 @@ export function DateTimePanel() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [] );
 
-	const now = new Date();
-	const pad = ( n ) => String( n ).padStart( 2, '0' );
-	const today = `${ now.getFullYear() }-${ pad( now.getMonth() + 1 ) }-${ pad(
-		now.getDate()
-	) }`;
-
 	const allDay = !! meta.blockendar_all_day;
 	const ongoing = !! meta.blockendar_ongoing;
 	const startDate = meta.blockendar_start_date ?? '';
@@ -662,14 +520,7 @@ export function DateTimePanel() {
 		value: tz,
 	} ) );
 
-	// Returns hhmm advanced by `mins` minutes (wraps at midnight).
-	const addMinutes = ( hhmm, mins ) => {
-		const [ h, m ] = hhmm.split( ':' ).map( Number );
-		const total = h * 60 + m + mins;
-		return toHHMM( Math.floor( total / 60 ) % 24, total % 60 );
-	};
-
-	const sameDay = startDate && endDate && startDate === endDate;
+	const event = { startDate, endDate, startTime, endTime };
 
 	// When start date changes, pull end date forward if it would precede start.
 	const handleStartDateChange = ( val ) => {
@@ -684,28 +535,13 @@ export function DateTimePanel() {
 		setMeta( updates );
 	};
 
-	// When start time changes, keep end time at least 5 min ahead on the same day.
-	const handleStartTimeChange = ( val ) => {
-		const updates = { blockendar_start_time: val };
-		if ( sameDay && endTime <= val ) {
-			updates.blockendar_end_time = addMinutes( val, 60 );
-		}
-		setMeta( updates );
-	};
-
-	// When end date changes, clamp to start date if it would precede it.
-	const handleEndDateChange = ( val ) => {
-		setMeta( { blockendar_end_date: val < startDate ? startDate : val } );
-	};
-
-	// When end time changes, clamp to start time + 5 min on the same day.
-	const handleEndTimeChange = ( val ) => {
-		if ( sameDay && val <= startTime ) {
-			setMeta( { blockendar_end_time: addMinutes( startTime, 5 ) } );
-			return;
-		}
-		setMeta( { blockendar_end_time: val } );
-	};
+	// The rules for the other three are in ./datetime, where they are tested.
+	const handleStartTimeChange = ( val ) =>
+		setMeta( startTimeUpdates( event, val ) );
+	const handleEndDateChange = ( val ) =>
+		setMeta( endDateUpdates( event, val ) );
+	const handleEndTimeChange = ( val ) =>
+		setMeta( endTimeUpdates( event, val ) );
 
 	return (
 		<PluginDocumentSettingPanel
@@ -721,7 +557,6 @@ export function DateTimePanel() {
 				>
 					<DateInput
 						value={ startDate }
-						min={ today }
 						onChange={ handleStartDateChange }
 					/>
 				</BaseControl>
@@ -816,7 +651,6 @@ export function DateTimePanel() {
 				/>
 
 				<RecurrenceSection
-					postId={ postId }
 					startDate={ startDate }
 					ongoing={ ongoing }
 				/>

@@ -1,5 +1,5 @@
 /**
- * Event Details sidebar panel (status, cost, registration, capacity, flags).
+ * Event Details sidebar panel (status, cost, registration, flags).
  */
 import {
 	PluginDocumentSettingPanel,
