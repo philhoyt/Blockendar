@@ -27,6 +27,58 @@ class EventPostType {
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_post_type' ] );
+
+		/*
+		 * An event's dates, recurrence and details exist only as block-editor
+		 * panels, so an event opened in the classic editor cannot be given a
+		 * date. The Classic Editor plugin turns the block editor off at priority
+		 * 100 on one of these two filters, depending on its mode; these run
+		 * after it. The third is the plugin's own way of asking.
+		 */
+		add_filter( 'use_block_editor_for_post_type', [ $this, 'require_block_editor_for_post_type' ], 1000, 2 );
+		add_filter( 'use_block_editor_for_post', [ $this, 'require_block_editor_for_post' ], 1000, 2 );
+		add_filter( 'classic_editor_enabled_editors_for_post_type', [ $this, 'classic_editor_editors' ], 10, 2 );
+	}
+
+	/**
+	 * Keep the block editor on for the event post type.
+	 *
+	 * @param bool   $use_block_editor Whether the post type uses the block editor.
+	 * @param string $post_type        Post type being checked.
+	 */
+	public function require_block_editor_for_post_type( $use_block_editor, $post_type ): bool {
+		return self::POST_TYPE === $post_type ? true : (bool) $use_block_editor;
+	}
+
+	/**
+	 * Keep the block editor on for an individual event.
+	 *
+	 * @param bool          $use_block_editor Whether the post uses the block editor.
+	 * @param \WP_Post|null $post             Post being edited.
+	 */
+	public function require_block_editor_for_post( $use_block_editor, $post ): bool {
+		return $post instanceof \WP_Post && self::POST_TYPE === $post->post_type ? true : (bool) $use_block_editor;
+	}
+
+	/**
+	 * Tell the Classic Editor plugin events have no classic editor.
+	 *
+	 * It uses the answer for its "Edit (Classic)" row links and its editor
+	 * switcher, neither of which should be offered.
+	 *
+	 * @param array  $editors   Editors enabled for the post type.
+	 * @param string $post_type Post type being checked.
+	 * @return array
+	 */
+	public function classic_editor_editors( $editors, $post_type ) {
+		if ( self::POST_TYPE !== $post_type ) {
+			return $editors;
+		}
+
+		return [
+			'classic_editor' => false,
+			'block_editor'   => true,
+		];
 	}
 
 	/**
