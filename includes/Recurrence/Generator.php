@@ -565,13 +565,14 @@ class Generator {
 		$start_time = $all_day ? '00:00' : ( $meta['start_time'] ?: '00:00' );
 		$end_time   = $all_day ? '00:00' : ( $meta['end_time'] ?: $start_time );
 
-		if ( $all_day ) {
-			$end_date = gmdate( 'Y-m-d', strtotime( '+1 day', strtotime( $end_date ) ) );
-		}
+		// An all-day event stops at midnight after its last day. That is the
+		// instant end_utc holds; end_date stays the last day itself, as it is
+		// for a single event, because every reader takes it to be inclusive.
+		$end_local_date = $all_day ? blockendar_next_day( $end_date ) : $end_date;
 
 		try {
 			$start_dt = new \DateTimeImmutable( "{$start_date} {$start_time}:00", $tz );
-			$end_dt   = new \DateTimeImmutable( "{$end_date} {$end_time}:00", $tz );
+			$end_dt   = new \DateTimeImmutable( "{$end_local_date} {$end_time}:00", $tz );
 		} catch ( \Exception ) {
 			return null;
 		}

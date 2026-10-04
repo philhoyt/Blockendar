@@ -292,7 +292,13 @@ class GeneratorExpandTest extends TestCase {
 	// All-day events
 	// -------------------------------------------------------------------------
 
-	public function test_all_day_event_end_stored_as_next_day(): void {
+	/**
+	 * end_date is the event's last day, as it is for a single event; the
+	 * instant it stops, midnight after that day, is end_utc. This used to
+	 * assert that end_date was the day after — the generator stored it that
+	 * way, and every reader of the column then ran the event a day long.
+	 */
+	public function test_all_day_event_ends_on_its_last_day_and_stops_at_the_next_midnight(): void {
 		$rule  = $this->rule(
 			[
 				'frequency'    => 'daily',
@@ -311,9 +317,12 @@ class GeneratorExpandTest extends TestCase {
 		);
 
 		$this->assertCount( 1, $pairs );
-		// end_date should be the day after start.
-		$expected_end = ( new \DateTimeImmutable( self::TODAY ) )->modify( '+1 day' )->format( 'Y-m-d' );
-		$this->assertSame( $expected_end, $pairs[0]['end_date'] );
+		$this->assertSame( self::TODAY, $pairs[0]['start_date'] );
+		$this->assertSame( self::TODAY, $pairs[0]['end_date'] );
+
+		$next_day = ( new \DateTimeImmutable( self::TODAY ) )->modify( '+1 day' )->format( 'Y-m-d' );
+		$this->assertSame( self::TODAY . ' 00:00:00', $pairs[0]['start_utc'] );
+		$this->assertSame( $next_day . ' 00:00:00', $pairs[0]['end_utc'] );
 	}
 
 	// -------------------------------------------------------------------------
