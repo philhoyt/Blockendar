@@ -19,6 +19,20 @@ if ( ! $post_id ) {
 
 $status = get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled';
 
+/*
+ * One occurrence of a series can be cancelled while the event itself is not.
+ * The occurrence in question is the one the rest of the page is about: the
+ * list item being rendered, the date in the address, or the next one coming.
+ * It is read only for a cancellation. Everything else is the event's own
+ * status, and an event with no rows in the index (a draft, a preview) has
+ * nothing else to go by.
+ */
+$occurrence = blockendar_resolve_occurrence( $post_id );
+
+if ( null !== $occurrence && 'cancelled' === ( $occurrence->status ?? '' ) ) {
+	$status = 'cancelled';
+}
+
 if ( 'scheduled' === $status ) {
 	return;
 }
