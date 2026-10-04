@@ -209,6 +209,13 @@ class Schema {
 			// upgrade, and there is no point reindexing into a table that is
 			// not yet shaped correctly.
 			if ( $is_upgrade && $applied ) {
+				// Version 5 moved per-occurrence cancellations from the index
+				// rows to the rules. The rebuild below works from the rules, so
+				// the ones that exist only as rows are copied across first.
+				if ( version_compare( (string) $stored, '5', '<' ) ) {
+					( new \Blockendar\Recurrence\RuleRepository() )->adopt_index_cancellations();
+				}
+
 				( new IndexBuilder() )->queue_full_rebuild();
 			}
 		}

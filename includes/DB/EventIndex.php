@@ -714,27 +714,40 @@ class EventIndex {
 			// again; it is not logged unless the last attempt fails too.
 			$suppressed  = $wpdb->suppress_errors( true );
 			$transaction = $this->begin();
+			$written     = false;
 
-			/*
-			 * Take the post's rows before touching them. Two builds of one
-			 * event at the same moment then run one after the other, where
-			 * otherwise each could hold what the other was waiting for.
-			 */
-			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->query(
-				$wpdb->prepare( "SELECT id FROM {$events_table} WHERE post_id = %d FOR UPDATE", $post_id )
-			);
-			// phpcs:enable
+			try {
+				/*
+				 * Take the post's rows before touching them. Two builds of one
+				 * event at the same moment then run one after the other, where
+				 * otherwise each could hold what the other was waiting for.
+				 *
+				 * If this fails, nothing else is attempted. A deadlock here
+				 * means the server has already undone the transaction, and
+				 * anything written after it would be written for good, with
+				 * nothing to take it back if a later statement failed.
+				 */
+				// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$locked = $wpdb->query(
+					$wpdb->prepare( "SELECT id FROM {$events_table} WHERE post_id = %d FOR UPDATE", $post_id )
+				);
+				// phpcs:enable
 
-			$written = false !== $this->delete_rows( $post_id ) && $this->write_rows( $post_id, $rows, 0 );
-			$error   = $written ? '' : (string) $wpdb->last_error;
+				$written = false !== $locked
+					&& false !== $this->delete_rows( $post_id )
+					&& $this->write_rows( $post_id, $rows, 0 );
 
-			// On a deadlock the server has already undone the transaction. Only
-			// worth repeating when the transaction was ours to begin with.
-			$deadlocked = ! $written && 'transaction' === $transaction && $this->last_error_was_deadlock();
+				$error = $written ? '' : (string) $wpdb->last_error;
 
-			$this->end( $transaction, $written );
-			$wpdb->suppress_errors( $suppressed );
+				// On a deadlock the server has already undone the transaction. Only
+				// worth repeating when the transaction was ours to begin with.
+				$deadlocked = ! $written && 'transaction' === $transaction && $this->last_error_was_deadlock();
+			} finally {
+				// Reached on an exception as well, so that neither an open
+				// transaction nor silenced errors outlive this call.
+				$this->end( $transaction, $written );
+				$wpdb->suppress_errors( $suppressed );
+			}
 		} while ( $deadlocked && $attempts < self::DEADLOCK_ATTEMPTS );
 
 		if ( ! $written && '' !== $error ) {
@@ -1043,15 +1056,17 @@ class EventIndex {
 	}
 
 	/**
-	 * Every occurrence start a post has in the index, as UTC datetimes.
+	 * The start date of every occurrence a post has in the index, Y-m-d.
 	 *
 	 * Read straight from the table, for the nightly roll to tell which
-	 * occurrences are already there.
+	 * occurrences are already there. The local date and not the UTC instant:
+	 * an event with no timezone of its own takes the site's, and when that
+	 * changes every instant moves while every date stays where it was.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return string[]
 	 */
-	public function start_datetimes( int $post_id ): array {
+	public function start_dates( int $post_id ): array {
 		global $wpdb;
 
 		$events_table = Schema::events_table();
@@ -1059,7 +1074,7 @@ class EventIndex {
 		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$values = $wpdb->get_col(
 			$wpdb->prepare(
-				"SELECT start_datetime FROM {$events_table} WHERE post_id = %d",
+				"SELECT start_date FROM {$events_table} WHERE post_id = %d",
 				$post_id
 			)
 		);

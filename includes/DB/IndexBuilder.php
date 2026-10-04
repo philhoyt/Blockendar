@@ -60,6 +60,28 @@ class IndexBuilder {
 	const REBUILD_BATCH = 100;
 
 	/**
+	 * Argument carried by a scheduled pass that continues a rebuild, as
+	 * opposed to one that asks for a rebuild. A continuing pass that finds no
+	 * rebuild in progress does nothing, so one left on the schedule after the
+	 * rebuild finished cannot start it over.
+	 */
+	const CONTINUE = 'continue';
+
+	/**
+	 * Passes in a row that may start and save no progress before the rebuild
+	 * is given up. An event that kills every pass would otherwise be retried
+	 * once a minute for good.
+	 */
+	const REBUILD_MAX_STALLS = 5;
+
+	/**
+	 * Most events flush_dirty() will rebuild in the request that changed them.
+	 * More than this — a venue deleted from thousands of events — goes to the
+	 * background rebuild instead.
+	 */
+	const DIRTY_FLUSH_LIMIT = 50;
+
+	/**
 	 * The post meta an index row is built from.
 	 *
 	 * A change to any of these changes the row. The event's other meta — its
@@ -84,7 +106,10 @@ class IndexBuilder {
 	 * Shared by every instance: the hooks that fill it belong to the one the
 	 * plugin registers, and a build by any other has to be able to clear it.
 	 *
-	 * @var array<int, true> Keyed by post ID.
+	 * Kept per site. On a network, code can switch to another site and write
+	 * to an event there; its ID means a different post here.
+	 *
+	 * @var array<int, array<int, true>> Keyed by site ID, then post ID.
 	 */
 	private static array $dirty = [];
 
@@ -106,7 +131,7 @@ class IndexBuilder {
 		add_action( 'trashed_post', [ $this, 'on_delete' ] );
 		add_action( 'untrashed_post', [ $this, 'on_untrash' ] );
 		add_action( self::DEFERRED_HOOK, [ $this, 'build_for_post' ] );
-		add_action( self::REBUILD_HOOK, [ $this, 'run_scheduled_rebuild' ], 10, 0 );
+		add_action( self::REBUILD_HOOK, [ $this, 'run_scheduled_rebuild' ], 10, 1 );
 
 		// A row is built from the event's meta and terms, and both can be
 		// written without the event being saved: by an importer, a sync, a
@@ -185,7 +210,7 @@ class IndexBuilder {
 		}
 
 		// The queued build covers whatever marked this event dirty.
-		unset( self::$dirty[ $post_id ] );
+		unset( self::$dirty[ get_current_blog_id() ][ $post_id ] );
 
 		// Collapse repeated saves of the same event into one pending job.
 		if ( ! wp_next_scheduled( self::DEFERRED_HOOK, [ $post_id ] ) ) {
@@ -199,7 +224,7 @@ class IndexBuilder {
 	 * @param int $post_id Event post ID.
 	 */
 	public function mark_dirty( int $post_id ): void {
-		self::$dirty[ $post_id ] = true;
+		self::$dirty[ get_current_blog_id() ][ $post_id ] = true;
 	}
 
 	/**
@@ -207,12 +232,28 @@ class IndexBuilder {
 	 *
 	 * Runs when the request ends. Code that needs the index current sooner —
 	 * a CLI command that reads it back, a test — calls this itself.
+	 *
+	 * Only the current site's events are rebuilt. On a network, code that
+	 * switches to another site and writes to its events has to call this
+	 * before switching back, or save the event, as it always had to.
 	 */
 	public function flush_dirty(): void {
+		$post_ids = self::dirty();
+
+		// Too many to rebuild before the request is killed, and what was not
+		// reached would be lost with it. The background rebuild does the same
+		// work in passes; from the beginning, since one already under way may
+		// be past some of these.
+		if ( count( $post_ids ) > self::DIRTY_FLUSH_LIMIT ) {
+			unset( self::$dirty[ get_current_blog_id() ] );
+			$this->queue_full_rebuild();
+			return;
+		}
+
 		// build_for_post() takes each one off the list, so a second flush, or
 		// the one at shutdown after an early one, finds nothing to do.
-		foreach ( array_keys( self::$dirty ) as $post_id ) {
-			unset( self::$dirty[ $post_id ] );
+		foreach ( $post_ids as $post_id ) {
+			unset( self::$dirty[ get_current_blog_id() ][ $post_id ] );
 
 			// Only published events have rows. One that is not published lost
 			// them when it stopped being, and one that is gone has none.
@@ -225,12 +266,12 @@ class IndexBuilder {
 	}
 
 	/**
-	 * IDs of the events waiting for flush_dirty().
+	 * IDs of the current site's events waiting for flush_dirty().
 	 *
 	 * @return int[]
 	 */
 	public static function dirty(): array {
-		return array_keys( self::$dirty );
+		return array_keys( self::$dirty[ get_current_blog_id() ] ?? [] );
 	}
 
 	/**
@@ -371,7 +412,7 @@ class IndexBuilder {
 	 */
 	public function build_for_post( int $post_id ): void {
 		// Whatever marked the event dirty is covered by this build.
-		unset( self::$dirty[ $post_id ] );
+		unset( self::$dirty[ get_current_blog_id() ][ $post_id ] );
 
 		// Every public read path joins the index against wp_posts on
 		// post_status = 'publish', so an unpublished post must never hold rows
@@ -440,8 +481,9 @@ class IndexBuilder {
 	 *                                 always done, so a pass cannot stall.
 	 * @param callable|null $on_post   Called after each event.
 	 * @param int           $lock_wait Seconds to wait for another pass to finish.
-	 * @return array{ rebuilt: int, skipped: int, done: bool } Totals so far for
-	 *         the whole rebuild, and whether it has finished.
+	 * @return array{ rebuilt: int, skipped: int, done: bool, locked: bool } Totals
+	 *         so far for the whole rebuild, whether it has finished, and whether
+	 *         this pass did nothing because another holds the lock.
 	 */
 	public function rebuild_step( float $budget = self::REBUILD_BUDGET, ?callable $on_post = null, int $lock_wait = 0 ): array {
 		global $wpdb;
@@ -455,90 +497,130 @@ class IndexBuilder {
 				'rebuilt' => $state['rebuilt'],
 				'skipped' => $state['skipped'],
 				'done'    => false,
+				'locked'  => true,
 			];
 		}
 
-		$deadline    = microtime( true ) + $budget;
-		$state       = $this->rebuild_state();
-		$out_of_time = false;
+		try {
+			$state = $this->rebuild_state();
 
-		do {
-			$post_ids = $wpdb->get_col(
-				$wpdb->prepare(
-					"SELECT ID FROM {$wpdb->posts}
-					WHERE post_type = %s AND post_status = 'publish' AND ID > %d
-					ORDER BY ID ASC
-					LIMIT %d",
-					EventPostType::POST_TYPE,
-					$state['last_id'],
-					self::REBUILD_BATCH
-				)
-			);
+			// Each pass that starts is counted, and the count is cleared when
+			// progress is saved. Passes that keep starting and never saving are
+			// being killed at the same event every time.
+			if ( $state['stalls'] >= self::REBUILD_MAX_STALLS ) {
+				delete_option( self::CURSOR_OPTION );
 
-			foreach ( $post_ids as $post_id ) {
-				$post_id = (int) $post_id;
-
-				$this->build_for_post( $post_id );
-
-				if ( $this->index->has_rows( $post_id ) ) {
-					++$state['rebuilt'];
-				} else {
-					++$state['skipped'];
-				}
-
-				$state['last_id'] = $post_id;
-
-				if ( null !== $on_post ) {
-					$on_post( $post_id );
-				}
-
-				if ( microtime( true ) >= $deadline ) {
-					$out_of_time = true;
-					break;
-				}
+				return [
+					'rebuilt' => $state['rebuilt'],
+					'skipped' => $state['skipped'],
+					'done'    => true,
+					'locked'  => false,
+				];
 			}
 
-			// Stored after every batch, not only at the end, so a pass that is
-			// killed loses one batch of progress at most.
+			// Written before any work, so that a pass killed in its first batch
+			// still leaves the rebuild on record as unfinished.
+			++$state['stalls'];
 			update_option( self::CURSOR_OPTION, $state, false );
 
-			$more = count( $post_ids ) === self::REBUILD_BATCH;
-		} while ( ! $out_of_time && $more );
+			$deadline    = microtime( true ) + $budget;
+			$out_of_time = false;
 
-		if ( ! $out_of_time ) {
-			$this->finish_rebuild();
+			do {
+				$post_ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT ID FROM {$wpdb->posts}
+						WHERE post_type = %s AND post_status = 'publish' AND ID > %d
+						ORDER BY ID ASC
+						LIMIT %d",
+						EventPostType::POST_TYPE,
+						$state['last_id'],
+						self::REBUILD_BATCH
+					)
+				);
+
+				foreach ( $post_ids as $post_id ) {
+					$post_id = (int) $post_id;
+
+					$this->build_for_post( $post_id );
+
+					if ( $this->index->has_rows( $post_id ) ) {
+						++$state['rebuilt'];
+					} else {
+						++$state['skipped'];
+					}
+
+					$state['last_id'] = $post_id;
+					$state['stalls']  = 0;
+
+					if ( null !== $on_post ) {
+						$on_post( $post_id );
+					}
+
+					if ( microtime( true ) >= $deadline ) {
+						$out_of_time = true;
+						break;
+					}
+				}
+
+				// Stored after every batch, not only at the end, so a pass that is
+				// killed loses one batch of progress at most.
+				update_option( self::CURSOR_OPTION, $state, false );
+
+				$more = count( $post_ids ) === self::REBUILD_BATCH;
+			} while ( ! $out_of_time && $more );
+
+			if ( ! $out_of_time ) {
+				$this->finish_rebuild();
+			}
+		} finally {
+			$this->release_rebuild_lock();
 		}
-
-		$this->release_rebuild_lock();
 
 		return [
 			'rebuilt' => $state['rebuilt'],
 			'skipped' => $state['skipped'],
 			'done'    => ! $out_of_time,
+			'locked'  => false,
 		];
 	}
 
 	/**
-	 * Cron entry point: run one pass and queue another if there is more to do.
+	 * Cron entry point: run one pass, with the next one already queued.
 	 *
-	 * @param float $budget Seconds to work for.
+	 * WP-Cron takes an event off the schedule before running it. If the next
+	 * pass were queued only once this one had finished, a pass that was killed
+	 * would leave nothing behind and the rebuild would stop for good. So the
+	 * next is queued first, a minute out, and brought forward if this pass
+	 * ends with more to do.
+	 *
+	 * @param string $mode   CONTINUE for a pass that carries on a rebuild;
+	 *                       anything else asks for one.
+	 * @param float  $budget Seconds to work for.
 	 */
-	public function run_scheduled_rebuild( float $budget = self::REBUILD_BUDGET ): void {
+	public function run_scheduled_rebuild( $mode = '', float $budget = self::REBUILD_BUDGET ): void {
+		if ( self::CONTINUE === $mode && ! $this->is_rebuilding() ) {
+			return;
+		}
+
+		$this->queue_rebuild( MINUTE_IN_SECONDS );
+
 		$result = $this->rebuild_step( $budget );
 
-		if ( ! $result['done'] ) {
+		if ( ! $result['done'] && ! $result['locked'] ) {
+			wp_clear_scheduled_hook( self::REBUILD_HOOK, [ self::CONTINUE ] );
 			$this->queue_rebuild();
 		}
 	}
 
 	/**
-	 * Queue a background pass, unless one is queued already.
+	 * Queue a pass to carry on the rebuild, unless one is queued already.
 	 *
 	 * @param int $delay Seconds from now.
 	 */
 	public function queue_rebuild( int $delay = 0 ): void {
-		if ( ! wp_next_scheduled( self::REBUILD_HOOK ) ) {
-			wp_schedule_single_event( time() + $delay, self::REBUILD_HOOK );
+		if ( ! wp_next_scheduled( self::REBUILD_HOOK, [ self::CONTINUE ] ) ) {
+			wp_schedule_single_event( time() + $delay, self::REBUILD_HOOK, [ self::CONTINUE ] );
 		}
 	}
 
@@ -550,7 +632,23 @@ class IndexBuilder {
 	 */
 	public function queue_full_rebuild(): void {
 		delete_option( self::CURSOR_OPTION );
-		$this->queue_rebuild();
+
+		if ( ! wp_next_scheduled( self::REBUILD_HOOK ) ) {
+			wp_schedule_single_event( time(), self::REBUILD_HOOK );
+		}
+	}
+
+	/**
+	 * Queue a pass for a rebuild that is unfinished and has none queued.
+	 *
+	 * Deactivating the plugin clears its scheduled events and leaves the
+	 * record of where a rebuild had got to. Called where an administrator is
+	 * being told a rebuild is in progress, so that it is.
+	 */
+	public function resume_if_stalled(): void {
+		if ( $this->is_rebuilding() ) {
+			$this->queue_rebuild();
+		}
 	}
 
 	/**
@@ -570,7 +668,7 @@ class IndexBuilder {
 	/**
 	 * Where the rebuild in progress has got to, or the start of a new one.
 	 *
-	 * @return array{ last_id: int, rebuilt: int, skipped: int }
+	 * @return array{ last_id: int, rebuilt: int, skipped: int, stalls: int }
 	 */
 	private function rebuild_state(): array {
 		$stored = get_option( self::CURSOR_OPTION, [] );
@@ -580,6 +678,7 @@ class IndexBuilder {
 			'last_id' => (int) ( $stored['last_id'] ?? 0 ),
 			'rebuilt' => (int) ( $stored['rebuilt'] ?? 0 ),
 			'skipped' => (int) ( $stored['skipped'] ?? 0 ),
+			'stalls'  => (int) ( $stored['stalls'] ?? 0 ),
 		];
 	}
 
@@ -620,8 +719,9 @@ class IndexBuilder {
 		update_option( 'blockendar_last_index_rebuild', gmdate( 'Y-m-d H:i:s' ) );
 		delete_option( self::CURSOR_OPTION );
 
-		// A pass still queued would find no cursor and start all over again.
-		wp_clear_scheduled_hook( self::REBUILD_HOOK );
+		// Only the passes that were to carry this rebuild on. A rebuild asked
+		// for in the meantime, by an upgrade say, is a separate request.
+		wp_clear_scheduled_hook( self::REBUILD_HOOK, [ self::CONTINUE ] );
 	}
 
 	/**
@@ -637,7 +737,10 @@ class IndexBuilder {
 
 		$got = $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK( %s, %d )', $this->rebuild_lock_name(), $wait ) );
 
-		return '1' === (string) $got;
+		// 0 is "someone else has it". NULL is "this server will not do named
+		// locks", which no amount of waiting changes; the rebuild goes ahead
+		// without one rather than never running.
+		return '0' !== (string) $got;
 	}
 
 	/**

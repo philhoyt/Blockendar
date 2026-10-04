@@ -248,6 +248,63 @@ class RuleRepository {
 		return $this->upsert( $post_id, [ 'cancellations' => $cancellations ] );
 	}
 
+	/**
+	 * Copy cancellations that exist only as index rows onto their rules.
+	 *
+	 * Before cancellations were kept on the rule, cancelling an occurrence set
+	 * the status of its index row and nothing else. The upgrade that adds the
+	 * column rebuilds the index from the rules, which would put every such
+	 * occurrence back as scheduled. Run once, before that rebuild.
+	 *
+	 * A series whose own status is cancelled has every row cancelled and no
+	 * single occurrence called off; it is left alone.
+	 *
+	 * @return int Occurrences whose cancellation was copied.
+	 */
+	public function adopt_index_cancellations(): int {
+		global $wpdb;
+
+		$events_table = Schema::events_table();
+		$rules_table  = Schema::recurrence_table();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$rows = $wpdb->get_results(
+			"SELECT e.post_id, e.start_date FROM {$events_table} e
+			INNER JOIN {$rules_table} r ON r.post_id = e.post_id
+			WHERE e.status = 'cancelled'
+			ORDER BY e.post_id, e.start_date"
+		);
+		// phpcs:enable
+
+		$by_post = [];
+
+		foreach ( (array) $rows as $row ) {
+			$by_post[ (int) $row->post_id ][] = (string) $row->start_date;
+		}
+
+		$adopted = 0;
+
+		foreach ( $by_post as $post_id => $dates ) {
+			if ( 'cancelled' === get_post_meta( $post_id, 'blockendar_status', true ) ) {
+				continue;
+			}
+
+			$rule = $this->get( $post_id );
+
+			if ( null === $rule ) {
+				continue;
+			}
+
+			$new = array_values( array_diff( array_unique( $dates ), $rule->cancellations ) );
+
+			if ( ! empty( $new ) && $this->upsert( $post_id, [ 'cancellations' => array_merge( $rule->cancellations, $new ) ] ) ) {
+				$adopted += count( $new );
+			}
+		}
+
+		return $adopted;
+	}
+
 	// -------------------------------------------------------------------------
 	// Sanitizers
 	// -------------------------------------------------------------------------

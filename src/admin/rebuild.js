@@ -15,9 +15,11 @@ const defaultWait = ( ms ) =>
 /**
  * Post to the rebuild route until the rebuild has finished.
  *
- * A pass that made no progress means another one holds the lock — the
- * background run, usually. Asking again at once would only ask the same thing
- * in a tight loop, so that case waits first.
+ * `waiting` in a response means another pass was running — the background
+ * one, usually — and this request did nothing. Asking again at once would only
+ * ask the same thing in a tight loop, each request starting WordPress to be
+ * told to wait, so that case holds off first. So does a response whose totals
+ * have not moved, in case the route is older than the flag.
  *
  * @param {Function} post               Posts to the rebuild route; resolves to its response.
  * @param {Object}   options
@@ -42,7 +44,7 @@ export async function runRebuild(
 
 		const total = result.rebuilt + result.skipped;
 
-		if ( total === handled ) {
+		if ( result.waiting || total === handled ) {
 			await wait( STALLED_DELAY );
 		}
 

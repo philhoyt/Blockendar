@@ -199,13 +199,15 @@ class Generator {
 		}
 
 		/*
-		 * What is new is what is not there yet, compared occurrence by
-		 * occurrence. Taking everything after the last indexed start instead
-		 * was thrown by a date added by hand: one three years out is the last
-		 * row the event has, nothing the rule produces comes after it, and the
-		 * series stopped growing.
+		 * What is new is what is not there yet, compared date by date. Taking
+		 * everything after the last indexed start instead was thrown by a date
+		 * added by hand: one three years out is the last row the event has,
+		 * nothing the rule produces comes after it, and the series stopped
+		 * growing. By date, so that a date already indexed — by the rule or as
+		 * an addition, at whatever instant it was worked out — is never
+		 * written a second time.
 		 */
-		$indexed = array_flip( $this->index->start_datetimes( $post_id ) );
+		$indexed = array_flip( $this->index->start_dates( $post_id ) );
 
 		// Nothing indexed yet — there is no tail to extend, so build it once.
 		if ( empty( $indexed ) ) {
@@ -219,7 +221,7 @@ class Generator {
 		$rows = [];
 
 		foreach ( $this->expand_dates( $rule, $meta ) as $date_pair ) {
-			if ( ! isset( $indexed[ $date_pair['start_utc'] ] ) ) {
+			if ( ! isset( $indexed[ $date_pair['start_date'] ] ) ) {
 				$rows[] = $this->occurrence_row( $shared, $date_pair, $rule );
 			}
 		}

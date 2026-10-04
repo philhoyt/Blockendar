@@ -452,19 +452,23 @@ class EventsController extends AbstractController {
 	 * Runs one pass of the rebuild, not the whole of it: a large site does not
 	 * fit in a request. `in_progress` says there is more to do; the caller
 	 * posts again to carry on. A background pass is queued as well, so a
-	 * rebuild whose caller goes away still finishes.
+	 * rebuild whose caller goes away still finishes. `waiting` says a pass was
+	 * already running and this request left it to it.
 	 */
 	public function rebuild_index( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$result = $this->builder->rebuild_step();
+		// Queued before the work, so the rebuild is carried on even if this
+		// request is killed or the caller never comes back.
+		$this->builder->queue_rebuild( MINUTE_IN_SECONDS );
 
-		if ( ! $result['done'] ) {
-			$this->builder->queue_rebuild( MINUTE_IN_SECONDS );
-		}
+		$result = $this->builder->rebuild_step();
 
 		return $this->respond(
 			[
 				'success'     => true,
 				'in_progress' => ! $result['done'],
+				// Another pass was running, so this one did nothing. A caller
+				// in a loop should hold off before asking again.
+				'waiting'     => $result['locked'],
 				'rebuilt'     => $result['rebuilt'],
 				'skipped'     => $result['skipped'],
 				'rebuilt_at'  => $result['done'] ? get_option( 'blockendar_last_index_rebuild' ) : null,
