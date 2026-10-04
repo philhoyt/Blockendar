@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Blockendar\CPT\EventPostType;
+use Blockendar\DB\IndexBuilder;
 use Blockendar\Taxonomy\EventTag;
 use Blockendar\Taxonomy\EventType;
 use Blockendar\Taxonomy\Venue;
@@ -983,9 +984,7 @@ class TaxonomyPrefixMigration {
 			$this->clean_caches();
 			flush_rewrite_rules( false );
 
-			if ( ! wp_next_scheduled( 'blockendar_index_rebuild_after_upgrade' ) ) {
-				wp_schedule_single_event( time(), 'blockendar_index_rebuild_after_upgrade' );
-			}
+			( new IndexBuilder() )->queue_full_rebuild();
 
 			delete_option( self::CURSOR_OPTION );
 			delete_transient( self::BLOCKED_TRANSIENT );

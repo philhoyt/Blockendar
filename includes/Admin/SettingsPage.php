@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Blockendar\DB\EventIndex;
+use Blockendar\DB\IndexBuilder;
 
 /**
  * Registers the Settings > Blockendar admin page and the blockendar_settings option.
@@ -223,10 +224,11 @@ class SettingsPage {
 
 		return new \WP_REST_Response(
 			[
-				'index_row_count' => $index->get_total_row_count(),
-				'last_rebuild'    => get_option( 'blockendar_last_index_rebuild', null ),
-				'db_version'      => get_option( 'blockendar_db_version', null ),
-				'plugin_version'  => BLOCKENDAR_VERSION,
+				'index_row_count'     => $index->get_total_row_count(),
+				'last_rebuild'        => get_option( 'blockendar_last_index_rebuild', null ),
+				'rebuild_in_progress' => ( new IndexBuilder() )->is_rebuild_pending(),
+				'db_version'          => get_option( 'blockendar_db_version', null ),
+				'plugin_version'      => BLOCKENDAR_VERSION,
 			]
 		);
 	}

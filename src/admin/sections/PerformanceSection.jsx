@@ -6,12 +6,17 @@ import {
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
+import { runRebuild } from '../rebuild';
 
 const { statsUrl, rebuildUrl } = window.blockendarSettings ?? {};
+
+/** How often to look again while a background rebuild runs, in milliseconds. */
+const POLL_INTERVAL = 5000;
 
 export function PerformanceSection() {
 	const [ stats, setStats ] = useState( null );
 	const [ rebuilding, setRebuilding ] = useState( false );
+	const [ handled, setHandled ] = useState( null );
 	const [ notice, setNotice ] = useState( null );
 
 	const loadStats = () => {
@@ -22,15 +27,32 @@ export function PerformanceSection() {
 
 	useEffect( loadStats, [] );
 
+	// A rebuild queued by an upgrade, or one this page started and left, runs
+	// in the background. Keep looking until it is done.
+	const inBackground = ! rebuilding && !! stats?.rebuild_in_progress;
+
+	useEffect( () => {
+		if ( ! inBackground ) {
+			return undefined;
+		}
+
+		const timer = setInterval( loadStats, POLL_INTERVAL );
+
+		return () => clearInterval( timer );
+	}, [ inBackground ] );
+
 	const handleRebuild = async () => {
 		setRebuilding( true );
 		setNotice( null );
 
 		try {
-			const result = await apiFetch( {
-				url: rebuildUrl,
-				method: 'POST',
-			} );
+			const result = await runRebuild(
+				() => apiFetch( { url: rebuildUrl, method: 'POST' } ),
+				{
+					onProgress: ( pass ) =>
+						setHandled( pass.rebuilt + pass.skipped ),
+				}
+			);
 			setNotice( {
 				type: 'success',
 				/*
@@ -57,8 +79,11 @@ export function PerformanceSection() {
 				type: 'error',
 				message: e?.message ?? __( 'Rebuild failed.', 'blockendar' ),
 			} );
+			// It may be carrying on in the background; the table says so.
+			loadStats();
 		} finally {
 			setRebuilding( false );
+			setHandled( null );
 		}
 	};
 
@@ -73,6 +98,15 @@ export function PerformanceSection() {
 					onRemove={ () => setNotice( null ) }
 				>
 					{ notice.message }
+				</Notice>
+			) }
+
+			{ inBackground && (
+				<Notice status="info" isDismissible={ false }>
+					{ __(
+						'The event index is being rebuilt in the background. Events stay available while it runs.',
+						'blockendar'
+					) }
 				</Notice>
 			) }
 
@@ -113,9 +147,23 @@ export function PerformanceSection() {
 						? __( 'Rebuilding…', 'blockendar' )
 						: __( 'Rebuild Event Index', 'blockendar' ) }
 				</Button>
+				{ rebuilding && null !== handled && (
+					<p aria-live="polite">
+						{ sprintf(
+							/* translators: %d: number of events processed so far. */
+							_n(
+								'%d event so far.',
+								'%d events so far.',
+								handled,
+								'blockendar'
+							),
+							handled
+						) }
+					</p>
+				) }
 				<p className="description">
 					{ __(
-						'Clears and regenerates the event occurrence index from all published events. Use after bulk imports or plugin upgrades.',
+						'Regenerates the event occurrence index from all published events. Events stay available while it runs. Use after bulk imports.',
 						'blockendar'
 					) }
 				</p>

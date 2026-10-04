@@ -78,14 +78,6 @@ class Plugin {
 		// naming the old taxonomies keeps rendering.
 		( new LegacyBlockAttributes() )->register();
 
-		// Background rebuild triggered by a schema upgrade (fires via WP-Cron).
-		add_action(
-			'blockendar_index_rebuild_after_upgrade',
-			function () {
-				( new IndexBuilder() )->rebuild_all();
-			}
-		);
-
 		// Daily cron job to roll the recurrence horizon forward.
 		( new Cron() )->register();
 

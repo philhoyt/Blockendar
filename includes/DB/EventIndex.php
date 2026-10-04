@@ -787,6 +787,31 @@ class EventIndex {
 	}
 
 	/**
+	 * Whether a post has any row in the index.
+	 *
+	 * Read straight from the table: a full rebuild asks this once per event,
+	 * about rows it has just written.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public function has_rows( int $post_id ): bool {
+		global $wpdb;
+
+		$events_table = Schema::events_table();
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$found = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT 1 FROM {$events_table} WHERE post_id = %d LIMIT 1",
+				$post_id
+			)
+		);
+		// phpcs:enable
+
+		return null !== $found;
+	}
+
+	/**
 	 * Get the total number of rows in the index (for stats display).
 	 */
 	public function get_total_row_count(): int {

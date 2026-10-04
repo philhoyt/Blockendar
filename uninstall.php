@@ -51,7 +51,9 @@ function blockendar_uninstall_site(): void {
 	$options = [
 		'blockendar_db_version',
 		'blockendar_version',
+		'blockendar_previous_version',
 		'blockendar_last_index_rebuild',
+		'blockendar_rebuild_cursor',
 		'blockendar_settings',
 
 		/*

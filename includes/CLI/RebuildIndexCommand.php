@@ -27,8 +27,9 @@ class RebuildIndexCommand {
 	/**
 	 * Rebuilds the event index from CPT post meta.
 	 *
-	 * Truncates the blockendar_events table and re-materialises every published
-	 * event, including all recurring-event instances up to the horizon.
+	 * Replaces every published event's rows in turn, including all
+	 * recurring-event instances up to the horizon, then removes rows whose
+	 * event is gone. The index stays in use while it runs.
 	 *
 	 * ## OPTIONS
 	 *
@@ -49,29 +50,35 @@ class RebuildIndexCommand {
 		$dry_run = (bool) ( $assoc_args['dry-run'] ?? false );
 
 		if ( $dry_run ) {
-			global $wpdb;
-
-			$count = (int) $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s AND post_status = 'publish'",
-					'blockendar_event'
-				)
-			);
-
-			\WP_CLI::log( sprintf( 'Dry run: %d published event(s) would be rebuilt.', $count ) );
+			\WP_CLI::log( sprintf( 'Dry run: %d published event(s) would be rebuilt.', $this->published_count() ) );
 			return;
 		}
 
-		\WP_CLI::log( 'Rebuilding Blockendar event index…' );
+		$progress = \WP_CLI\Utils\make_progress_bar( 'Rebuilding Blockendar event index', $this->published_count() );
+		$builder  = new IndexBuilder();
+		$result   = $builder->rebuild_all( fn() => $progress->tick() );
 
-		$builder = new IndexBuilder();
-		$result  = $builder->rebuild_all();
+		$progress->finish();
 
 		\WP_CLI::success(
 			sprintf(
 				'Done. Rebuilt: %d, Skipped: %d.',
 				$result['rebuilt'],
 				$result['skipped']
+			)
+		);
+	}
+
+	/**
+	 * How many published events a rebuild will go through.
+	 */
+	private function published_count(): int {
+		global $wpdb;
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s AND post_status = 'publish'",
+				'blockendar_event'
 			)
 		);
 	}

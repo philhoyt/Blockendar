@@ -428,16 +428,26 @@ class EventsController extends AbstractController {
 
 	/**
 	 * POST /blockendar/v1/index/rebuild
+	 *
+	 * Runs one pass of the rebuild, not the whole of it: a large site does not
+	 * fit in a request. `in_progress` says there is more to do; the caller
+	 * posts again to carry on. A background pass is queued as well, so a
+	 * rebuild whose caller goes away still finishes.
 	 */
 	public function rebuild_index( WP_REST_Request $request ): WP_REST_Response|WP_Error {
-		$result = $this->builder->rebuild_all();
+		$result = $this->builder->rebuild_step();
+
+		if ( ! $result['done'] ) {
+			$this->builder->queue_rebuild( MINUTE_IN_SECONDS );
+		}
 
 		return $this->respond(
 			[
-				'success'    => true,
-				'rebuilt'    => $result['rebuilt'],
-				'skipped'    => $result['skipped'],
-				'rebuilt_at' => get_option( 'blockendar_last_index_rebuild' ),
+				'success'     => true,
+				'in_progress' => ! $result['done'],
+				'rebuilt'     => $result['rebuilt'],
+				'skipped'     => $result['skipped'],
+				'rebuilt_at'  => $result['done'] ? get_option( 'blockendar_last_index_rebuild' ) : null,
 			]
 		);
 	}

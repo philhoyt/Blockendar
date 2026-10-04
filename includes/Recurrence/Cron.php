@@ -68,7 +68,7 @@ class Cron {
 			wp_unschedule_event( $timestamp, self::HOOK );
 		}
 
-		wp_unschedule_hook( 'blockendar_index_rebuild_after_upgrade' );
+		wp_unschedule_hook( \Blockendar\DB\IndexBuilder::REBUILD_HOOK );
 		wp_unschedule_hook( \Blockendar\DB\IndexBuilder::DEFERRED_HOOK );
 	}
 }

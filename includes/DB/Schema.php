@@ -190,7 +190,7 @@ class Schema {
 			// upgrade, and there is no point reindexing into a table that is
 			// not yet shaped correctly.
 			if ( $is_upgrade && $applied ) {
-				wp_schedule_single_event( time(), 'blockendar_index_rebuild_after_upgrade' );
+				( new IndexBuilder() )->queue_full_rebuild();
 			}
 		}
 	}
