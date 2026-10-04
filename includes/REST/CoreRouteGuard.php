@@ -41,6 +41,7 @@ class CoreRouteGuard {
 	 */
 	public function register(): void {
 		add_filter( 'rest_request_before_callbacks', [ $this, 'require_login_when_not_public' ], 10, 3 );
+		add_filter( 'rest_request_before_callbacks', [ $this, 'refuse_terms_of_protected_event' ], 10, 3 );
 		add_filter( 'rest_prepare_' . EventPostType::POST_TYPE, [ $this, 'withhold_protected_data' ], 10, 2 );
 	}
 
@@ -67,6 +68,40 @@ class CoreRouteGuard {
 		return new WP_Error(
 			'blockendar_rest_not_public',
 			__( 'Sorry, you must be logged in to read event data.', 'blockendar' ),
+			[ 'status' => rest_authorization_required_code() ]
+		);
+	}
+
+	/**
+	 * Refuse to list the terms of a password-protected event.
+	 *
+	 * The term routes accept ?post= and answer for any publicly viewable post,
+	 * which a protected post is. Left alone, that names the venue that
+	 * withhold_protected_data() removes from the event's own response.
+	 *
+	 * @param mixed           $response Result so far; a WP_Error if an earlier filter refused.
+	 * @param array           $handler  Route handler matched for the request.
+	 * @param WP_REST_Request $request  Current request.
+	 * @return mixed
+	 */
+	public function refuse_terms_of_protected_event( mixed $response, array $handler, WP_REST_Request $request ): mixed {
+		if ( is_wp_error( $response ) || empty( $request['post'] ) ) {
+			return $response;
+		}
+
+		$post = get_post( (int) $request['post'] );
+
+		if ( ! $post || EventPostType::POST_TYPE !== $post->post_type || '' === $post->post_password ) {
+			return $response;
+		}
+
+		if ( current_user_can( 'edit_post', $post->ID ) || ! $this->is_guarded_route( $request->get_route() ) ) {
+			return $response;
+		}
+
+		return new WP_Error(
+			'blockendar_rest_protected_event',
+			__( 'Sorry, you are not allowed to view terms for this event.', 'blockendar' ),
 			[ 'status' => rest_authorization_required_code() ]
 		);
 	}

@@ -354,12 +354,16 @@ class RestPermissionsTest extends WP_UnitTestCase {
 	/**
 	 * Dispatch a GET request through the REST server.
 	 *
-	 * @param string $route Route to request.
+	 * @param string $route  Route to request.
+	 * @param array  $params Query parameters.
 	 */
-	private function dispatch_get( string $route ): \WP_REST_Response {
+	private function dispatch_get( string $route, array $params = [] ): \WP_REST_Response {
 		do_action( 'rest_api_init' );
 
-		return rest_get_server()->dispatch( new WP_REST_Request( 'GET', $route ) );
+		$request = new WP_REST_Request( 'GET', $route );
+		$request->set_query_params( $params );
+
+		return rest_get_server()->dispatch( $request );
 	}
 
 	/**
@@ -423,6 +427,53 @@ class RestPermissionsTest extends WP_UnitTestCase {
 
 		// The venue assignment leads straight to the venue's address.
 		$this->assertArrayNotHasKey( 'event-venues', $single->get_data() );
+	}
+
+	/**
+	 * Core lists a post's terms to anyone when the post is publicly viewable,
+	 * and a password-protected post counts as that. Without this, withholding
+	 * the venue from the event's own response is undone by asking the venue
+	 * route which venues the event has.
+	 */
+	public function test_core_term_routes_do_not_list_the_terms_of_a_password_protected_event(): void {
+		$post_id = $this->seed_protected_event();
+		$venue   = self::factory()->term->create_and_get( [ 'taxonomy' => 'blockendar_event_venue' ] );
+		wp_set_object_terms( $post_id, [ $venue->term_id ], 'blockendar_event_venue' );
+		wp_set_current_user( 0 );
+
+		$response = $this->dispatch_get( '/wp/v2/event-venues', [ 'post' => $post_id ] );
+
+		$this->assertSame( 401, $response->get_status() );
+		$this->assertStringNotContainsString( $venue->name, (string) wp_json_encode( $response->get_data() ) );
+	}
+
+	public function test_core_term_routes_still_list_the_terms_of_an_unprotected_event(): void {
+		$post_id = self::factory()->post->create(
+			[
+				'post_type'   => 'blockendar_event',
+				'post_status' => 'publish',
+			]
+		);
+		$venue   = self::factory()->term->create_and_get( [ 'taxonomy' => 'blockendar_event_venue' ] );
+		wp_set_object_terms( $post_id, [ $venue->term_id ], 'blockendar_event_venue' );
+		wp_set_current_user( 0 );
+
+		$response = $this->dispatch_get( '/wp/v2/event-venues', [ 'post' => $post_id ] );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( [ $venue->term_id ], wp_list_pluck( $response->get_data(), 'id' ) );
+	}
+
+	public function test_core_term_routes_list_a_protected_events_terms_for_an_editor(): void {
+		$post_id = $this->seed_protected_event();
+		$venue   = self::factory()->term->create_and_get( [ 'taxonomy' => 'blockendar_event_venue' ] );
+		wp_set_object_terms( $post_id, [ $venue->term_id ], 'blockendar_event_venue' );
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+
+		$response = $this->dispatch_get( '/wp/v2/event-venues', [ 'post' => $post_id ] );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( [ $venue->term_id ], wp_list_pluck( $response->get_data(), 'id' ) );
 	}
 
 	public function test_core_route_keeps_event_meta_for_an_editor(): void {
