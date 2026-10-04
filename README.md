@@ -109,6 +109,12 @@ subscription keeps moving instead of freezing on the range it was first fetched
 with. Both bounds are configurable in settings. The feed cannot show events
 further ahead than the recurrence horizon has generated.
 
+`start` and `end`, here and on `GET /wp-json/blockendar/v1/events`, take three
+forms. A date (`2026-10-03`) is that whole day in the site's timezone, so the
+same date as both bounds returns one day. A datetime (`2026-10-03 14:00:00`) is
+UTC. An ISO 8601 value (`2026-10-03T14:00:00-05:00`) is honoured with its
+offset.
+
 The Calendar View block can show two subscribe buttons, each toggleable:
 **iCalendar** for Apple Calendar, Outlook and most other apps, and **Google
 Calendar** for a one-click add. Both inherit the block's venue, type and
