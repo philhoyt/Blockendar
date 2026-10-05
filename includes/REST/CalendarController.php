@@ -320,6 +320,16 @@ class CalendarController extends AbstractController {
 			],
 		];
 
+		// The chip's text is drawn on the type's colour, which a site owner
+		// picks freely. Left at the calendar's white it was white on yellow.
+		// An event with no type colour is sent neither: the calendar's
+		// stylesheet colours it, and a site may have themed that.
+		$text_color = '' !== $color ? blockendar_readable_text_color( $color ) : '';
+
+		if ( '' !== $text_color ) {
+			$event['textColor'] = $text_color;
+		}
+
 		// Ongoing events carry a sentinel end in the index; give FullCalendar no
 		// end at all so the chip renders on the start day only.
 		if ( ! $ongoing ) {

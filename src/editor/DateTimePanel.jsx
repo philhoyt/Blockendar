@@ -39,9 +39,12 @@ const {
 // DateInput — native <input type="date"> styled to match WP components
 // ---------------------------------------------------------------------------
 
-function DateInput( { value, onChange } ) {
+function DateInput( { id, value, onChange } ) {
 	return (
 		<input
+			// The id is what ties the input to its label: BaseControl renders
+			// <label for>, and without a matching id here the field had no name.
+			id={ id }
 			type="date"
 			value={ value }
 			onChange={ ( e ) => onChange( e.target.value ) }
@@ -59,6 +62,27 @@ function DateInput( { value, onChange } ) {
 				background: '#fff',
 			} }
 		/>
+	);
+}
+
+// ---------------------------------------------------------------------------
+// TimeGroup — names a time picker's selects as a group
+// ---------------------------------------------------------------------------
+
+/*
+ * A time is three selects, labelled "Hour", "Minute" and "AM or PM" for the
+ * start and the end alike. A label cannot point at three controls, so the
+ * visible "Start Time" / "End Time" names a group instead, and a screen reader
+ * announces it on the way in: "End Time, group; Hour".
+ */
+function TimeGroup( { id, label, children } ) {
+	return (
+		<div role="group" aria-labelledby={ `${ id }-label` }>
+			<BaseControl.VisualLabel id={ `${ id }-label` }>
+				{ label }
+			</BaseControl.VisualLabel>
+			{ children }
+		</div>
 	);
 }
 
@@ -556,22 +580,22 @@ export function DateTimePanel() {
 					__nextHasNoMarginBottom
 				>
 					<DateInput
+						id="blockendar-start-date"
 						value={ startDate }
 						onChange={ handleStartDateChange }
 					/>
 				</BaseControl>
 
 				{ ! allDay && (
-					<BaseControl
+					<TimeGroup
 						id="blockendar-start-time"
 						label={ __( 'Start Time', 'blockendar' ) }
-						__nextHasNoMarginBottom
 					>
 						<TimeSelect
 							value={ startTime }
 							onChange={ handleStartTimeChange }
 						/>
-					</BaseControl>
+					</TimeGroup>
 				) }
 
 				{ ! allDay && ! ongoing && (
@@ -588,16 +612,15 @@ export function DateTimePanel() {
 				) }
 
 				{ ! allDay && ! ongoing && (
-					<BaseControl
+					<TimeGroup
 						id="blockendar-end-time"
 						label={ __( 'End Time', 'blockendar' ) }
-						__nextHasNoMarginBottom
 					>
 						<TimeSelect
 							value={ endTime }
 							onChange={ handleEndTimeChange }
 						/>
-					</BaseControl>
+					</TimeGroup>
 				) }
 
 				{ ! ongoing && (
@@ -607,6 +630,7 @@ export function DateTimePanel() {
 						__nextHasNoMarginBottom
 					>
 						<DateInput
+							id="blockendar-end-date"
 							value={ endDate }
 							onChange={ handleEndDateChange }
 						/>

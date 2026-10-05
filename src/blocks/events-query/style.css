@@ -42,8 +42,9 @@
 	display: none !important;
 }
 
+/* 70%, not 50%: at half strength dark text on white was 3.5:1. */
 .blockendar-events-query__empty {
-	color: color-mix(in srgb, currentcolor 50%, transparent);
+	color: color-mix(in srgb, currentcolor 70%, transparent);
 }
 
 /* Pagination */
@@ -84,7 +85,7 @@
 }
 
 .blockendar-events-query__pagination .page-numbers .dots {
-	opacity: 0.5;
+	opacity: 0.7;
 }
 
 /* Editor-only ghost placeholders for grid preview */
