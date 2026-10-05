@@ -294,6 +294,40 @@ class JsonLdTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'endDate', $event );
 	}
 
+	/**
+	 * An event that is over has no next occurrence, and its page goes on
+	 * showing the date it was entered with. The markup says the same.
+	 */
+	public function test_an_event_that_is_over_is_still_described_with_its_date(): void {
+		$event = $this->event(
+			$this->make_event(
+				[
+					'start_date' => '2020-02-03',
+					'end_date'   => '2020-02-03',
+				]
+			)
+		);
+
+		$this->assertSame( '2020-02-03T19:00:00-06:00', $event['startDate'] );
+	}
+
+	public function test_a_series_that_is_over_is_described_with_its_first_date_as_its_page_shows(): void {
+		$post_id = $this->make_event(
+			[
+				'start_date' => '2020-02-03',
+				'end_date'   => '2020-02-03',
+			],
+			null,
+			[],
+			[
+				'frequency' => 'weekly',
+				'count'     => 3,
+			]
+		);
+
+		$this->assertSame( '2020-02-03T19:00:00-06:00', $this->event( $post_id )['startDate'] );
+	}
+
 	// -------------------------------------------------------------------------
 	// The place
 	// -------------------------------------------------------------------------

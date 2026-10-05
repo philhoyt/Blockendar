@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Blockendar\Admin\SettingsPage;
 use Blockendar\CPT\EventPostType;
+use Blockendar\DB\EventIndex;
 use Blockendar\Taxonomy\Venue;
 
 /**
@@ -90,7 +91,7 @@ class JsonLd {
 			return null;
 		}
 
-		$occurrence = blockendar_resolve_occurrence( $post->ID );
+		$occurrence = blockendar_resolve_occurrence( $post->ID ) ?? $this->past_occurrence( $post->ID );
 
 		if ( null === $occurrence ) {
 			return null;
@@ -343,6 +344,23 @@ class JsonLd {
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	/**
+	 * The occurrence to describe when an event has none still to come.
+	 *
+	 * The page of an event that is over goes on showing the date the event
+	 * was entered with, so that is the occurrence described; failing that,
+	 * the last one there was.
+	 *
+	 * @param int $post_id Event post ID.
+	 * @return object|null Index row, or null for an event with no rows at all.
+	 */
+	private function past_occurrence( int $post_id ): ?object {
+		$entered = (string) get_post_meta( $post_id, 'blockendar_start_date', true );
+		$first   = '' !== $entered ? EventIndex::get_occurrence_by_date( $post_id, $entered ) : null;
+
+		return $first ?? EventIndex::last_occurrence( $post_id );
+	}
 
 	/**
 	 * Whether the Event has the place Google requires: a Place with an address.
