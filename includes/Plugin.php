@@ -40,6 +40,7 @@ use Blockendar\CLI\MigrateTaxonomiesCommand;
 use Blockendar\CLI\RebuildIndexCommand;
 use Blockendar\Migration\LegacyBlockAttributes;
 use Blockendar\Migration\TaxonomyPrefixMigration;
+use Blockendar\SEO\JsonLd;
 
 /**
  * Bootstraps all plugin components.
@@ -80,6 +81,9 @@ class Plugin {
 		// Block markup in theme files, parts, patterns and restored revisions still
 		// naming the old taxonomies keeps rendering.
 		( new LegacyBlockAttributes() )->register();
+
+		// schema.org Event markup in the head of single event pages.
+		( new JsonLd() )->register();
 
 		// Daily cron job to roll the recurrence horizon forward.
 		( new Cron() )->register();

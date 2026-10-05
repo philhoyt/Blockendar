@@ -148,6 +148,45 @@ Four filters are available:
 iCalendar has no pagination, so events past the ceiling are simply absent. A feed
 that hits it says so in `X-WR-CALDESC` and raises a notice on the settings screen.
 
+## Search engines
+
+A single event page carries a schema.org `Event` in its head, as JSON-LD, which is what lets a search engine show the event with its date and place. It describes the occurrence the page is showing and is built only from what the event has:
+
+- `name`, `url`, `description` (the excerpt) and `image` (the featured image).
+- `startDate` and `endDate`: local time with its offset in the event's timezone, or dates alone for an all-day event. An ongoing event, or one with no end time, has no `endDate`.
+- `eventStatus`, from the occurrence, so one cancelled date of a series is `EventCancelled` on its own page.
+- `location`: the venue as a `Place` with a `PostalAddress` and coordinates.
+- `offers`, when the cost is a number (a cost of `0` is a free event): price, the site's currency, the registration link, and `SoldOut` when the event is sold out.
+
+There is no organiser or performer, because Blockendar stores neither, and nothing is filled in to satisfy a validator.
+
+Google's Event guidelines require a physical place with an address and do not cover online-only events. An event with an online venue, no venue, or a venue with no address therefore gets no markup by default, since it could only be reported as invalid in Search Console. A password-protected or unpublished event never gets any.
+
+Two filters change this:
+
+```php
+// Print the markup for every event, including online ones.
+add_filter( 'blockendar_json_ld_enabled', '__return_true' );
+
+// Add to or change the Event. Return an empty array to print nothing.
+add_filter(
+	'blockendar_json_ld_event',
+	function ( array $event, int $post_id, object $occurrence ) {
+		$event['organizer'] = [
+			'@type' => 'Organization',
+			'name'  => 'Springfield Council',
+		];
+		return $event;
+	},
+	10,
+	3
+);
+```
+
+`blockendar_json_ld_enabled` receives the default, the post ID and the occurrence. An online venue is described with `OnlineEventAttendanceMode` and, when it has a stream link, a `VirtualLocation`.
+
+The Event Venue block can show a **Get directions** link. It goes to Google Maps by default; `blockendar_venue_directions_url` (URL, venue term ID) sends it elsewhere.
+
 ## Working with other plugins
 
 **Classic Editor.** Events always open in the block editor, whatever Classic
