@@ -17,6 +17,7 @@ import { CurrencySection } from './sections/CurrencySection';
 import { RecurringSection } from './sections/RecurringSection';
 import { PerformanceSection } from './sections/PerformanceSection';
 import { RestApiSection } from './sections/RestApiSection';
+import { readSettings } from './settings-load';
 
 const { nonce, optionName, defaults } = window.blockendarSettings ?? {};
 
@@ -37,26 +38,36 @@ const SECTIONS = [
 export function SettingsApp() {
 	const [ settings, setSettings ] = useState( defaults ?? {} );
 	const [ saving, setSaving ] = useState( false );
+	// Until the saved settings are on screen, what is on screen is the
+	// defaults, and saving would write those over the real ones.
+	const [ loaded, setLoaded ] = useState( false );
 	const [ notice, setNotice ] = useState( null ); // { type, message }
 	const [ activeSection, setActiveSection ] = useState( 'general' );
 
 	// Load current settings on mount.
 	useEffect( () => {
+		const failed = () =>
+			setNotice( {
+				type: 'error',
+				message: __(
+					'The saved settings could not be loaded, so what is shown here is not what the site is using. Saving is turned off so they are not overwritten. Reload the page to try again.',
+					'blockendar'
+				),
+			} );
+
 		apiFetch( { path: '/wp/v2/settings' } )
 			.then( ( data ) => {
-				if ( data[ optionName ] ) {
-					setSettings( ( prev ) => ( {
-						...prev,
-						...data[ optionName ],
-					} ) );
+				const read = readSettings( data, optionName );
+
+				if ( ! read.ok ) {
+					failed();
+					return;
 				}
+
+				setSettings( ( prev ) => ( { ...prev, ...read.settings } ) );
+				setLoaded( true );
 			} )
-			.catch( () => {
-				setNotice( {
-					type: 'error',
-					message: __( 'Could not load settings.', 'blockendar' ),
-				} );
-			} );
+			.catch( failed );
 	}, [] );
 
 	const update = ( partial ) =>
@@ -100,7 +111,7 @@ export function SettingsApp() {
 			{ notice && (
 				<Notice
 					status={ notice.type }
-					isDismissible
+					isDismissible={ loaded }
 					onRemove={ () => setNotice( null ) }
 				>
 					{ notice.message }
@@ -167,7 +178,7 @@ export function SettingsApp() {
 							<Button
 								variant="primary"
 								isBusy={ saving }
-								disabled={ saving }
+								disabled={ saving || ! loaded }
 								onClick={ handleSave }
 							>
 								{ saving
