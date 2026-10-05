@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -106,6 +106,29 @@ Each site in a multisite network gets its own database tables. The plugin has no
 4. Admin Settings page.
 
 == Changelog ==
+
+= 2.1.1 =
+* Added: the repeat rule in the REST API lists the dates cancelled, as cancellations.
+* Added: events in /blockendar/v1/calendar carry a textColor when their event type has a colour.
+* Changed: rebuilding the event index no longer empties it first. Events stay on the site while it runs, a rebuild that is interrupted carries on where it stopped, and a plugin update only rebuilds when the release needs it. POST /blockendar/v1/index/rebuild now does one pass and reports in_progress; the Rebuild Event Index button keeps going until it is done and shows its progress.
+* Changed: saving an event writes its occurrences in batches and in one step. That is about ten times faster for a long series, and a failure partway can no longer leave it half written.
+* Changed: listings make better use of a persistent object cache such as Redis or Memcached, and cached results expire after a day. With Hide events set to when they end, or some hours after, an event can stay in an upcoming list for up to a minute longer.
+* Changed: skipping a date in a series set to end after a number of occurrences no longer adds a date at the end to make up the number. A series that already has skipped dates loses those extra dates.
+* Changed: text on calendar events is black or white, whichever reads better on the event type's colour, and events with no type colour are a darker blue. CSS that sets the text colour of coloured calendar events is overridden; --fc-event-bg-color still sets the colour of the rest.
+* Changed: POST /blockendar/v1/events/{id}/instances/{date}/cancel answers 400 for an event that does not repeat. Set the event's status to cancel it.
+* Fixed: an occurrence of a recurring event cancelled through the REST API went back to scheduled the next time the event was saved. Cancellations made before this release are kept.
+* Fixed: the Event Status Badge block now says Cancelled on a cancelled occurrence, on its page and in lists.
+* Fixed: cancelling or skipping an occurrence did not show on sites with a persistent object cache until something else changed.
+* Fixed: a recurring event with a date added far in the future stopped gaining new occurrences.
+* Fixed: changing an event's date, venue or event type from code, or deleting a venue or event type, left listings out of date until the event was saved by hand.
+* Fixed: a date added to a recurring event that the series already included was listed twice.
+* Fixed: an event whose end was entered before its start could appear in the wrong date ranges.
+* Fixed: on a site whose settings were last saved before 1.0.0, the settings page showed default values instead of the saved ones, and saving overwrote them.
+* Fixed: the Start Date, End Date, Start Time and End Time fields in the event editor now have names for screen readers.
+* Fixed: the No events found message and past day numbers on the calendar were too faint to read easily, and the calendar's buttons were small on touch screens.
+* Fixed: /blockendar/v1/events refused order=asc and order=desc in lower case.
+* Fixed: the events list and the venue, event type and event tag screens used WordPress's wording for categories and tags.
+* Fixed: deleting a site from a multisite network left the plugin's tables behind.
 
 = 2.1.0 =
 * Added: a wpml-config.xml, so WPML and Polylang know which event fields a translation carries. Event listings and the calendar still show every language's copy of an event, and a repeat rule is not carried to a translation.
@@ -374,6 +397,9 @@ Each site in a multisite network gets its own database tables. The plugin has no
 * GitHub-based automatic update notifications.
 
 == Upgrade Notice ==
+
+= 2.1.1 =
+Fixes to the event index, recurring events, the settings page and accessibility. A small database update runs by itself and the event index is rebuilt in the background; events stay on the site throughout. Two things may look different: text on calendar events can change between white and black to stay readable, and a series set to end after a number of occurrences no longer gains a date when one is skipped.
 
 = 2.1.0 =
 Many fixes to recurring events, the editor, the calendar and the importer from The Events Calendar. The event index is rebuilt automatically after updating. Two things change: a repeat rule is now saved with the event, so the Save recurrence button is gone, and a calendar whose first day was never set now follows WordPress's Week Starts On.
