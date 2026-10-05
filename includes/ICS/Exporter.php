@@ -462,15 +462,7 @@ class Exporter {
 			return '';
 		}
 
-		$parts = array_filter(
-			[
-				$term->name,
-				get_term_meta( $venue_term_id, 'blockendar_venue_address', true ),
-				get_term_meta( $venue_term_id, 'blockendar_venue_city', true ),
-				get_term_meta( $venue_term_id, 'blockendar_venue_state', true ),
-				get_term_meta( $venue_term_id, 'blockendar_venue_country', true ),
-			]
-		);
+		$parts = array_filter( [ $term->name, blockendar_venue_address( $venue_term_id ) ] );
 
 		return implode( ', ', $parts );
 	}

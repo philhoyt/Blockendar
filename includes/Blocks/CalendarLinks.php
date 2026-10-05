@@ -181,11 +181,7 @@ class CalendarLinks {
 			return '' !== $stream_url ? $stream_url : $name;
 		}
 
-		$parts = [ $name ];
-
-		foreach ( [ 'address', 'city', 'state', 'country' ] as $field ) {
-			$parts[] = self::plain_text( (string) get_term_meta( $term->term_id, "blockendar_venue_{$field}", true ) );
-		}
+		$parts = [ $name, self::plain_text( blockendar_venue_address( $term->term_id ) ) ];
 
 		return implode( ', ', array_filter( $parts, static fn( string $part ): bool => '' !== $part ) );
 	}

@@ -366,3 +366,63 @@ function blockendar_readable_text_color( string $background ): string {
 	// Contrast with white is 1.05 / ( L + 0.05 ); with black, ( L + 0.05 ) / 0.05.
 	return 1.05 / ( $luminance + 0.05 ) >= ( $luminance + 0.05 ) / 0.05 ? '#ffffff' : '#000000';
 }
+
+/**
+ * A venue's address on one line: street, city, state and postal code, country.
+ *
+ * One place for the wording, because the venue block, the calendar feed and
+ * the add-to-calendar links each used to put the parts together themselves.
+ * The state and the postal code share a part ("IL 62701"); a part that is
+ * empty is left out.
+ *
+ * @param int $term_id Venue term ID.
+ */
+function blockendar_venue_address( int $term_id ): string {
+	$field = static fn( string $name ): string => trim( (string) get_term_meta( $term_id, "blockendar_venue_{$name}", true ) );
+
+	$parts = [
+		$field( 'address' ),
+		$field( 'city' ),
+		trim( $field( 'state' ) . ' ' . $field( 'postal_code' ) ),
+		$field( 'country' ),
+	];
+
+	return implode( ', ', array_filter( $parts, static fn( string $part ): bool => '' !== $part ) );
+}
+
+/**
+ * A link to directions to a venue, or '' when there is nowhere to send anyone.
+ *
+ * The coordinates are used when the venue has them and the address otherwise.
+ * A virtual venue has no directions. The format is Google's documented Maps
+ * URL (developers.google.com/maps/documentation/urls): api=1 and a destination,
+ * with the starting point left for the visitor's device to supply.
+ *
+ * @param int $term_id Venue term ID.
+ */
+function blockendar_venue_directions_url( int $term_id ): string {
+	if ( get_term_meta( $term_id, 'blockendar_venue_virtual', true ) ) {
+		return '';
+	}
+
+	$lat = (float) get_term_meta( $term_id, 'blockendar_venue_lat', true );
+	$lng = (float) get_term_meta( $term_id, 'blockendar_venue_lng', true );
+
+	// 0, 0 is what an unset pair of coordinates reads as, as on the map block.
+	$destination = $lat && $lng ? "{$lat},{$lng}" : rawurlencode( blockendar_venue_address( $term_id ) );
+
+	$url = '' !== $destination ? 'https://www.google.com/maps/dir/?api=1&destination=' . $destination : '';
+
+	/**
+	 * Filter the directions link for a venue, to use another maps service.
+	 *
+	 * Return an empty string for no link. Anything that is not an http or
+	 * https address is treated as empty.
+	 *
+	 * @param string $url     The link, or '' when the venue has neither coordinates nor an address.
+	 * @param int    $term_id Venue term ID.
+	 */
+	$url = apply_filters( 'blockendar_venue_directions_url', $url, $term_id );
+
+	return is_string( $url ) ? esc_url_raw( $url, [ 'http', 'https' ] ) : '';
+}

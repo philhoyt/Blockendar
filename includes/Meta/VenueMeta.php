@@ -55,10 +55,11 @@ class VenueMeta {
 		$taxonomy = Venue::TAXONOMY;
 
 		$string_fields = [
-			'blockendar_venue_address' => 'Street address line 1.',
-			'blockendar_venue_city'    => 'City.',
-			'blockendar_venue_state'   => 'State / Province.',
-			'blockendar_venue_country' => 'ISO 3166-1 alpha-2 country code.',
+			'blockendar_venue_address'     => 'Street address line 1.',
+			'blockendar_venue_city'        => 'City.',
+			'blockendar_venue_state'       => 'State / Province.',
+			'blockendar_venue_postal_code' => 'Postal or ZIP code.',
+			'blockendar_venue_country'     => 'ISO 3166-1 alpha-2 country code.',
 		];
 
 		foreach ( $string_fields as $key => $description ) {
@@ -217,6 +218,17 @@ class VenueMeta {
 		</div>
 
 		<div class="form-field blockendar-venue-address-row">
+			<label for="blockendar_venue_postal_code"><?php esc_html_e( 'Postal code', 'blockendar' ); ?></label>
+			<input
+				type="text"
+				id="blockendar_venue_postal_code"
+				name="blockendar_venue_postal_code"
+				value=""
+				autocomplete="postal-code"
+			/>
+		</div>
+
+		<div class="form-field blockendar-venue-address-row">
 			<label for="blockendar_venue_country"><?php esc_html_e( 'Country', 'blockendar' ); ?></label>
 			<input
 				type="text"
@@ -268,6 +280,7 @@ class VenueMeta {
 		$address    = get_term_meta( $id, 'blockendar_venue_address', true );
 		$city       = get_term_meta( $id, 'blockendar_venue_city', true );
 		$state      = get_term_meta( $id, 'blockendar_venue_state', true );
+		$postal     = get_term_meta( $id, 'blockendar_venue_postal_code', true );
 		$country    = get_term_meta( $id, 'blockendar_venue_country', true );
 		$lat        = get_term_meta( $id, 'blockendar_venue_lat', true );
 		$lng        = get_term_meta( $id, 'blockendar_venue_lng', true );
@@ -347,6 +360,21 @@ class VenueMeta {
 
 		<tr class="form-field blockendar-venue-address-row">
 			<th scope="row">
+				<label for="blockendar_venue_postal_code"><?php esc_html_e( 'Postal code', 'blockendar' ); ?></label>
+			</th>
+			<td>
+				<input
+					type="text"
+					id="blockendar_venue_postal_code"
+					name="blockendar_venue_postal_code"
+					value="<?php echo esc_attr( $postal ); ?>"
+					autocomplete="postal-code"
+				/>
+			</td>
+		</tr>
+
+		<tr class="form-field blockendar-venue-address-row">
+			<th scope="row">
 				<label for="blockendar_venue_country"><?php esc_html_e( 'Country', 'blockendar' ); ?></label>
 			</th>
 			<td>
@@ -412,11 +440,12 @@ class VenueMeta {
 		update_term_meta( $term_id, 'blockendar_venue_virtual', isset( $_POST['blockendar_venue_virtual'] ) );
 
 		$string_fields = [
-			'blockendar_venue_address'    => 'sanitize_text_field',
-			'blockendar_venue_city'       => 'sanitize_text_field',
-			'blockendar_venue_state'      => 'sanitize_text_field',
-			'blockendar_venue_country'    => 'sanitize_text_field',
-			'blockendar_venue_stream_url' => 'esc_url_raw',
+			'blockendar_venue_address'     => 'sanitize_text_field',
+			'blockendar_venue_city'        => 'sanitize_text_field',
+			'blockendar_venue_state'       => 'sanitize_text_field',
+			'blockendar_venue_postal_code' => 'sanitize_text_field',
+			'blockendar_venue_country'     => 'sanitize_text_field',
+			'blockendar_venue_stream_url'  => 'esc_url_raw',
 		];
 
 		foreach ( $string_fields as $key => $sanitizer ) {
