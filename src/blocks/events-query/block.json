@@ -58,6 +58,10 @@
 			"type": "boolean",
 			"default": false
 		},
+		"featuredOnly": {
+			"type": "boolean",
+			"default": false
+		},
 		"order": {
 			"type": "string",
 			"default": ""

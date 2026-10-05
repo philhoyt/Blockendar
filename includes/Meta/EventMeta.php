@@ -26,6 +26,25 @@ class EventMeta {
 	 */
 	public function register(): void {
 		add_action( 'init', [ $this, 'register_meta' ] );
+		add_action( 'rest_after_insert_' . EventPostType::POST_TYPE, [ $this, 'clear_stale_reason' ] );
+	}
+
+	/**
+	 * Drop the status reason from an event saved as scheduled.
+	 *
+	 * The editor hides the field once the event is back on, and the text would
+	 * stay in the post's meta, which WordPress's own REST route gives to
+	 * anyone who can read the event. A reason for a postponement that is over
+	 * is nobody's business.
+	 *
+	 * @param \WP_Post $post The event that was saved.
+	 */
+	public function clear_stale_reason( \WP_Post $post ): void {
+		$status = (string) get_post_meta( $post->ID, 'blockendar_status', true );
+
+		if ( '' === $status || 'scheduled' === $status ) {
+			delete_post_meta( $post->ID, 'blockendar_status_reason' );
+		}
 	}
 
 	/**
@@ -132,6 +151,21 @@ class EventMeta {
 						'enum' => [ 'scheduled', 'cancelled', 'postponed', 'sold_out' ],
 					],
 				],
+			]
+		);
+
+		// Why the event has the status it has. Plain text, shown with the
+		// status while the event is not simply going ahead.
+		register_post_meta(
+			$post_type,
+			'blockendar_status_reason',
+			[
+				'type'              => 'string',
+				'description'       => 'Why the event is cancelled, postponed or sold out.',
+				'single'            => true,
+				'default'           => '',
+				'sanitize_callback' => [ $this, 'sanitize_reason' ],
+				'show_in_rest'      => true,
 			]
 		);
 
@@ -282,6 +316,15 @@ class EventMeta {
 		} catch ( \Exception ) {
 			return '';
 		}
+	}
+
+	/**
+	 * Sanitize a status reason: one line of plain text.
+	 *
+	 * @param mixed $value Raw value.
+	 */
+	public function sanitize_reason( mixed $value ): string {
+		return is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
 	}
 
 	/**

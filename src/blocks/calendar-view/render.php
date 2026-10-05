@@ -168,7 +168,7 @@ $fallback_date_fmt = \Blockendar\Admin\SettingsPage::get( 'date_format' );
 	<?php if ( ! empty( $fallback_events ) ) : ?>
 		<ul class="blockendar-calendar-fallback">
 			<?php foreach ( $fallback_events as $fallback_event ) : ?>
-				<li class="blockendar-calendar-fallback__item">
+				<li class="<?php echo esc_attr( implode( ' ', array_merge( [ 'blockendar-calendar-fallback__item' ], blockendar_event_state_classes( ! empty( $fallback_event->featured ), $fallback_event->status ?? '' ) ) ) ); ?>">
 					<a href="<?php echo esc_url( (string) get_permalink( (int) $fallback_event->post_id ) ); ?>">
 						<?php echo esc_html( (string) $fallback_event->post_title ); ?>
 					</a>

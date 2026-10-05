@@ -606,6 +606,11 @@ class EventsController extends AbstractController {
 			$meta[ str_replace( 'blockendar_', '', $key ) ] = get_post_meta( $post_id, $key, true );
 		}
 
+		// The reason goes with the status it explains. This route is public,
+		// and one left over from a postponement that has ended is not served.
+		$going_ahead           = in_array( $meta['status'], [ '', 'scheduled' ], true );
+		$meta['status_reason'] = $going_ahead ? '' : (string) get_post_meta( $post_id, 'blockendar_status_reason', true );
+
 		return $meta;
 	}
 

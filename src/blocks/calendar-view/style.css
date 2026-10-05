@@ -163,6 +163,24 @@
 }
 
 /* --------------------------------------------------------------------------
+	Featured and cancelled events. The classes come with each event from the
+	server. A cancelled event is struck through, not faded: fading would take
+	its text below a readable contrast. A featured event is set in bold.
+	-------------------------------------------------------------------------- */
+
+.wp-block-blockendar-calendar-view .is-status-cancelled .fc-event-title,
+.wp-block-blockendar-calendar-view .is-status-cancelled .fc-list-event-title,
+.blockendar-calendar-fallback__item.is-status-cancelled a {
+	text-decoration: line-through;
+}
+
+.wp-block-blockendar-calendar-view .is-featured .fc-event-title,
+.wp-block-blockendar-calendar-view .is-featured .fc-list-event-title,
+.blockendar-calendar-fallback__item.is-featured a {
+	font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
 	List view
 	-------------------------------------------------------------------------- */
 

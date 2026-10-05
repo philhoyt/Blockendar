@@ -145,10 +145,14 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 
 	const terms = useSelect(
 		( select ) =>
-			select( coreStore ).getEntityRecords( 'taxonomy', 'blockendar_event_type', {
-				per_page: -1,
-				_fields: [ 'id', 'name' ],
-			} ),
+			select( coreStore ).getEntityRecords(
+				'taxonomy',
+				'blockendar_event_type',
+				{
+					per_page: -1,
+					_fields: [ 'id', 'name' ],
+				}
+			),
 		[]
 	);
 
@@ -206,7 +210,8 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 		 * the whole array as children with their original clientIds, and
 		 * duplicate clientIds corrupt the editor's block tree.
 		 */
-		const cloneCard = () => previewBlocks.map( ( block ) => cloneBlock( block ) );
+		const cloneCard = () =>
+			previewBlocks.map( ( block ) => cloneBlock( block ) );
 
 		replaceInnerBlocks(
 			clientId,
@@ -554,6 +559,18 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 							__nextHasNoMarginBottom
 						/>
 						<ToggleControl
+							label={ __( 'Featured only', 'blockendar' ) }
+							help={ __(
+								'Lists only events marked as featured.',
+								'blockendar'
+							) }
+							checked={ !! attributes.featuredOnly }
+							onChange={ ( val ) =>
+								setAttributes( { featuredOnly: val } )
+							}
+							__nextHasNoMarginBottom
+						/>
+						<ToggleControl
 							label={ __( 'Show pagination', 'blockendar' ) }
 							checked={ showPagination }
 							onChange={ ( val ) =>
@@ -676,17 +693,19 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 				   copy would be ambiguous about which one owns the template.
 				*/ }
 				{ ! hasResolved &&
-					Array.from( { length: previewCount - 1 } ).map( ( _, i ) => (
-						<div
-							key={ `ghost-${ i }` }
-							className="blockendar-events-query__ghost"
-							aria-hidden="true"
-						>
-							<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--title" />
-							<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--meta" />
-							<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--meta" />
-						</div>
-					) ) }
+					Array.from( { length: previewCount - 1 } ).map(
+						( _, i ) => (
+							<div
+								key={ `ghost-${ i }` }
+								className="blockendar-events-query__ghost"
+								aria-hidden="true"
+							>
+								<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--title" />
+								<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--meta" />
+								<div className="blockendar-events-query__ghost-line blockendar-events-query__ghost-line--meta" />
+							</div>
+						)
+					) }
 
 				{ hasResolved &&
 					events.slice( 1 ).map( ( event ) => (

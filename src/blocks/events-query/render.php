@@ -164,8 +164,12 @@ $past_filter = $show_past ? [ 'ended_before' => $cutoff ] : [];
 // Read active URL filters (only applied in standard query mode — not inherit/relatedTo).
 $url_filters = FilterContext::get_active_filters( $query_id );
 
+// "Featured only" narrows whichever of the three queries below runs, and the
+// count its page links are worked out from.
+$featured_filter = ! empty( $attributes['featuredOnly'] ) ? [ 'featured' => true ] : [];
+
 $index     = new EventIndex();
-$base_args = $past_filter + [
+$base_args = $past_filter + $featured_filter + [
 	'per_page' => $per_page + 1,
 	'page'     => $current_page,
 	'orderby'  => 'start_datetime',
@@ -188,7 +192,7 @@ if ( $inherit ) {
 	}
 	// WP_Post (singular) and post type archives: no additional filter.
 
-	$inherit_filters = $past_filter + [
+	$inherit_filters = $past_filter + $featured_filter + [
 		'type_term_id'  => $inherit_type,
 		'venue_term_id' => $inherit_venue,
 		'per_page'      => $per_page,
@@ -285,7 +289,7 @@ if ( $inherit ) {
 			->format( 'Y-m-d H:i:s' );
 	}
 
-	$standard_filters = $past_filter + [
+	$standard_filters = $past_filter + $featured_filter + [
 		'type_term_id'         => ! empty( $effective_type_ids ) ? $effective_type_ids : null,
 		'exclude_type_term_id' => ! empty( $exclude_type_ids ) ? $exclude_type_ids : null,
 		'venue_term_id'        => $url_filters['venue_id'],
@@ -395,7 +399,7 @@ add_filter( 'post_type_link', 'blockendar_occurrence_permalink_filter', 10, 2 );
 
 ?><ul <?php echo get_block_wrapper_attributes( $wrapper_attrs ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 <?php foreach ( $events as $row ) : ?>
-	<li class="blockendar-events-query__item">
+	<li class="<?php echo esc_attr( implode( ' ', array_merge( [ 'blockendar-events-query__item' ], blockendar_event_state_classes( ! empty( $row->featured ), $row->status ?? '' ) ) ) ); ?>">
 		<?php
 		// Expose the current occurrence row so blockendar_resolve_occurrence() can
 		// return it from inner block render callbacks without a URL query param.

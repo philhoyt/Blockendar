@@ -32,6 +32,7 @@
 		<custom-field action="copy">blockendar_ongoing</custom-field>
 		<custom-field action="copy">blockendar_recurrence_preset</custom-field>
 		<custom-field action="copy">blockendar_status</custom-field>
+		<custom-field action="translate">blockendar_status_reason</custom-field>
 		<custom-field action="copy">blockendar_featured</custom-field>
 		<custom-field action="copy">blockendar_hide_from_listings</custom-field>
 

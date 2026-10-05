@@ -17,7 +17,8 @@ if ( ! $post_id ) {
 	return;
 }
 
-$status = get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled';
+$event_status = get_post_meta( $post_id, 'blockendar_status', true ) ?: 'scheduled';
+$status       = $event_status;
 
 /*
  * One occurrence of a series can be cancelled while the event itself is not.
@@ -43,6 +44,16 @@ $labels = [
 	'sold_out'  => __( 'Sold Out', 'blockendar' ),
 ];
 $label  = $labels[ $status ] ?? ucfirst( $status );
+
+/*
+ * The reason explains the event's own status. It is not shown when what is
+ * on show is one date cancelled by itself: that cancellation has no reason of
+ * its own, and the event's would be the wrong one.
+ */
+$show_reason = (bool) ( $attributes['showReason'] ?? true );
+$reason      = $show_reason && $status === $event_status
+	? trim( (string) get_post_meta( $post_id, 'blockendar_status_reason', true ) )
+	: '';
 ?>
 <?php
 /*
@@ -56,4 +67,7 @@ $label  = $labels[ $status ] ?? ucfirst( $status );
 ?>
 <div <?php echo get_block_wrapper_attributes( [ 'class' => "blockendar-event-status blockendar-status blockendar-status--$status" ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php echo esc_html( $label ); ?>
+	<?php if ( '' !== $reason ) : ?>
+		<span class="blockendar-status__reason"><?php echo esc_html( $reason ); ?></span>
+	<?php endif; ?>
 </div>
