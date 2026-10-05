@@ -14,6 +14,7 @@ A block-native WordPress events plugin.
 - **Events Query block** — Flexible query block for custom event displays; shows individual occurrences of recurring events with correct dates and occurrence-aware links
 - **7 single-event blocks** — Date/time, venue, cost, status, countdown, map, add-to-calendar
 - **Custom database layer** — All date range queries run against a dedicated indexed table (`{prefix}blockendar_events`)
+- **Search engine markup** — schema.org `Event` data on every single event page, built from the event's own date, venue and price
 - **REST API** — Full read/write API under `blockendar/v1`, including iCal feed and index rebuild endpoints
 - **Venues** — Taxonomy with rich meta (address, coordinates, capacity, website) and inline venue creation in the editor
 - **Admin settings** — Date/time formats, timezone mode, calendar defaults, map provider, currency, recurrence horizon, and more
@@ -242,6 +243,18 @@ Two third-party requests to OpenStreetMap are possible:
 See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Policy).
 
 ## Changelog
+
+### 2.2.0
+- Added: single event pages carry schema.org `Event` markup, so a search engine can show an event with its date and place. It describes the date the page is showing, and is built only from what the event has. Events with an online venue, no venue, or a venue with no address are left out by default, because Google's guidelines do not cover them. Filters: `blockendar_json_ld_enabled` and `blockendar_json_ld_event`.
+- Added: a postal code on venues, shown in the Event Venue block, in calendar feeds, in the Google and Outlook links, and as `postal_code` with the venue in the REST API.
+- Added: a **Show directions link** option on the Event Venue block. It links to directions to the venue's coordinates, or to its address when it has none; an online venue gets no link. Filter: `blockendar_venue_directions_url`.
+- Added: a **Link venue name** option on the Event Venue block, linking the name to the venue's other events.
+- Added: featured, cancelled, postponed and sold-out events are marked with classes (`is-featured`, `is-status-cancelled` and so on) on each Events Query item and on each calendar event, for a theme to style. One cancelled date of a recurring event is marked on its own.
+- Added: a **Featured only** option on the Events Query block.
+- Added: a reason for a cancelled, postponed or sold-out event, entered in the editor and shown by the Event Status Badge block beside the status. A **Show reason** option on the block turns it off.
+- Added: `classNames` on events in `/blockendar/v1/calendar`, and `status_reason` in the `meta` of `/blockendar/v1/events/{id}`.
+- Changed: on the calendar, a cancelled event is struck through and a featured event is bold.
+- Changed: the Featured event toggle in the editor now says what it does.
 
 ### 2.1.1
 - Added: the repeat rule in the REST API lists the dates cancelled, as `cancellations`.

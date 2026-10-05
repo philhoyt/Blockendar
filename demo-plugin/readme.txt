@@ -3,7 +3,7 @@ Contributors: philhoyt
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 2.1.1
+Stable tag: 2.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,6 +26,9 @@ setting. Content of your own is never touched.
 Requires Blockendar 1.7.0 or newer.
 
 == Changelog ==
+
+= 2.2.0 =
+* Changed: the demo venues have postal codes, which Blockendar 2.2.0 adds to venues.
 
 = 2.1.1 =
 * Changed: version only, to stay in step with Blockendar 2.1.1. The demo content and the seeder are unchanged.
