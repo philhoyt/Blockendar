@@ -341,6 +341,47 @@ test( 'the Hide events control offers three rules and a slider for the hours one
 	await expect( hoursSlider ).toHaveCount( 0 );
 } );
 
+test( 'Featured only can be switched on in the Query panel', async ( {
+	page,
+} ) => {
+	test.setTimeout( 120000 );
+
+	await loginAsAdmin( page );
+	const canvas = await openEditor( page, postId );
+	await expect(
+		canvas.locator( '.blockendar-events-query' ).first()
+	).toBeVisible( { timeout: 30000 } );
+
+	await selectEventsQueryBlock( page );
+
+	const queryPanel = page.getByRole( 'button', {
+		name: 'Query',
+		exact: true,
+	} );
+
+	if (
+		( await queryPanel.count() ) &&
+		'false' === ( await queryPanel.first().getAttribute( 'aria-expanded' ) )
+	) {
+		await queryPanel.first().click();
+	}
+
+	const toggle = page.getByLabel( 'Featured only' );
+	await expect( toggle ).not.toBeChecked();
+	await toggle.check();
+
+	const saved = await page.evaluate(
+		() =>
+			window.wp.data
+				.select( 'core/block-editor' )
+				.getBlocks()
+				.find( ( block ) => block.name === 'blockendar/events-query' )
+				.attributes.featuredOnly
+	);
+
+	expect( saved ).toBe( true );
+} );
+
 test( 'each layout gets its own template that the toolbar switches between', async ( {
 	page,
 } ) => {
