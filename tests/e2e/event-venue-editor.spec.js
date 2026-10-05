@@ -54,6 +54,14 @@ test.beforeAll( () => {
 		'blockendar_venue_city',
 		VENUE_CITY,
 	] );
+	wpCli( [
+		'term',
+		'meta',
+		'update',
+		venueTermId,
+		'blockendar_venue_postal_code',
+		'97201',
+	] );
 
 	eventId = wpCliId( [
 		'post',
@@ -153,6 +161,65 @@ test( 'the address from term meta reaches the editor', async ( { page } ) => {
 	await expect(
 		block.locator( '.blockendar-event-venue__address' )
 	).toContainText( VENUE_CITY, { timeout: 30000 } );
+} );
+
+test( 'the postal code is part of the address in the editor', async ( {
+	page,
+} ) => {
+	await loginAsAdmin( page );
+	const canvas = await openEditor( page, eventId );
+
+	await expect(
+		canvas.locator( '.blockendar-event-venue__address' ).first()
+	).toHaveText( '42 River Road, Portland, 97201', { timeout: 30000 } );
+} );
+
+/*
+ * The two options are off on every block that exists, so nothing changes
+ * until an author turns one on.
+ */
+test( 'the directions link and the name link appear when switched on', async ( {
+	page,
+} ) => {
+	test.setTimeout( 120000 );
+
+	await loginAsAdmin( page );
+	const canvas = await openEditor( page, eventId );
+
+	const block = canvas.locator( '.blockendar-event-venue' ).first();
+	await expect( block ).toBeVisible( { timeout: 30000 } );
+	await expect( block.locator( '.blockendar-event-venue__name' ) ).toHaveText(
+		VENUE_NAME,
+		{ timeout: 30000 }
+	);
+
+	await expect(
+		block.locator( '.blockendar-event-venue__directions' )
+	).toHaveCount( 0 );
+	await expect(
+		block.locator( '.blockendar-event-venue__name a' )
+	).toHaveCount( 0 );
+
+	// Select the block and open its settings, as clicking it would.
+	await page.evaluate( () => {
+		const { select, dispatch } = window.wp.data;
+		const venue = select( 'core/block-editor' )
+			.getBlocks()
+			.find( ( b ) => b.name === 'blockendar/event-venue' );
+
+		dispatch( 'core/block-editor' ).selectBlock( venue.clientId );
+		dispatch( 'core/edit-post' ).openGeneralSidebar( 'edit-post/block' );
+	} );
+
+	await page.getByLabel( 'Show directions link' ).check();
+	await expect(
+		block.locator( '.blockendar-event-venue__directions' )
+	).toHaveText( 'Get directions' );
+
+	await page.getByLabel( 'Link venue name' ).check();
+	await expect(
+		block.locator( '.blockendar-event-venue__name a' )
+	).toHaveText( VENUE_NAME );
 } );
 
 /*

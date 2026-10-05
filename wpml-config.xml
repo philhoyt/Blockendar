@@ -49,6 +49,7 @@
 		<custom-term-field action="translate">blockendar_venue_state</custom-term-field>
 
 		<custom-term-field action="copy">blockendar_venue_country</custom-term-field>
+		<custom-term-field action="copy">blockendar_venue_postal_code</custom-term-field>
 		<custom-term-field action="copy">blockendar_venue_lat</custom-term-field>
 		<custom-term-field action="copy">blockendar_venue_lng</custom-term-field>
 		<custom-term-field action="copy">blockendar_venue_virtual</custom-term-field>

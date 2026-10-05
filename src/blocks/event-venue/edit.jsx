@@ -17,7 +17,7 @@ const PLACEHOLDER = [
 ];
 
 export function Edit( { attributes, setAttributes, context } ) {
-	const { showAddress } = attributes;
+	const { showAddress, showDirections, linkName } = attributes;
 	const postId = context?.postId;
 
 	// Get all term IDs assigned to this post.
@@ -73,6 +73,30 @@ export function Edit( { attributes, setAttributes, context } ) {
 						}
 						__nextHasNoMarginBottom
 					/>
+					<ToggleControl
+						label={ __( 'Show directions link', 'blockendar' ) }
+						help={ __(
+							'Links to directions to the venue. Not shown for an online venue.',
+							'blockendar'
+						) }
+						checked={ !! showDirections }
+						onChange={ ( val ) =>
+							setAttributes( { showDirections: val } )
+						}
+						__nextHasNoMarginBottom
+					/>
+					<ToggleControl
+						label={ __( 'Link venue name', 'blockendar' ) }
+						help={ __(
+							'Links the name to the other events at this venue.',
+							'blockendar'
+						) }
+						checked={ !! linkName }
+						onChange={ ( val ) =>
+							setAttributes( { linkName: val } )
+						}
+						__nextHasNoMarginBottom
+					/>
 				</PanelBody>
 			</InspectorControls>
 
@@ -94,7 +118,14 @@ export function Edit( { attributes, setAttributes, context } ) {
 						: [
 								meta.blockendar_venue_address ?? '',
 								meta.blockendar_venue_city ?? '',
-								meta.blockendar_venue_state ?? '',
+								// State and postal code share a part, as on
+								// the front end: "IL 62701".
+								[
+									meta.blockendar_venue_state ?? '',
+									meta.blockendar_venue_postal_code ?? '',
+								]
+									.filter( Boolean )
+									.join( ' ' ),
 								meta.blockendar_venue_country ?? '',
 						  ]
 								.filter( Boolean )
@@ -102,35 +133,68 @@ export function Edit( { attributes, setAttributes, context } ) {
 
 					return (
 						<>
-						{ ! isFirst && <hr className="blockendar-event-venue__divider" /> }
-						<div key={ i } className="blockendar-event-venue__body">
-							<span className="blockendar-event-venue__name">
-								{ venue.name }
-							</span>
-
-							{ virtual ? (
-								<>
-									<span className="blockendar-event-venue__virtual-badge">
-										{ __( 'Online', 'blockendar' ) }
-									</span>
-									{ stream && (
-										<a
-											className="blockendar-event-venue__stream"
-											href={ stream }
-										>
-											{ __( 'Join stream', 'blockendar' ) }
-										</a>
-									) }
-								</>
-							) : (
-								showAddress &&
-								addressStr && (
-									<address className="blockendar-event-venue__address">
-										{ addressStr }
-									</address>
-								)
+							{ ! isFirst && (
+								<hr className="blockendar-event-venue__divider" />
 							) }
-						</div>
+							<div
+								key={ i }
+								className="blockendar-event-venue__body"
+							>
+								<span className="blockendar-event-venue__name">
+									{ linkName ? (
+										// A link in the editor would navigate away
+										// from it; this only shows that it is one.
+										<a
+											href="#venue"
+											onClick={ ( e ) =>
+												e.preventDefault()
+											}
+										>
+											{ venue.name }
+										</a>
+									) : (
+										venue.name
+									) }
+								</span>
+
+								{ virtual ? (
+									<>
+										<span className="blockendar-event-venue__virtual-badge">
+											{ __( 'Online', 'blockendar' ) }
+										</span>
+										{ stream && (
+											<a
+												className="blockendar-event-venue__stream"
+												href={ stream }
+											>
+												{ __(
+													'Join stream',
+													'blockendar'
+												) }
+											</a>
+										) }
+									</>
+								) : (
+									showAddress &&
+									addressStr && (
+										<address className="blockendar-event-venue__address">
+											{ addressStr }
+										</address>
+									)
+								) }
+
+								{ showDirections && ! virtual && (
+									// Where it leads is worked out on the
+									// server, from the coordinates or address.
+									<a
+										className="blockendar-event-venue__directions"
+										href="#directions"
+										onClick={ ( e ) => e.preventDefault() }
+									>
+										{ __( 'Get directions', 'blockendar' ) }
+									</a>
+								) }
+							</div>
 						</>
 					);
 				} ) }

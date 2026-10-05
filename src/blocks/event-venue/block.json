@@ -54,6 +54,14 @@
 		"showAddress": {
 			"type": "boolean",
 			"default": true
+		},
+		"showDirections": {
+			"type": "boolean",
+			"default": false
+		},
+		"linkName": {
+			"type": "boolean",
+			"default": false
 		}
 	},
 	"render": "file:./render.php",

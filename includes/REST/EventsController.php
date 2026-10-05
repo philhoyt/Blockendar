@@ -624,16 +624,17 @@ class EventsController extends AbstractController {
 		$term = $terms[0];
 
 		return [
-			'id'      => $term->term_id,
-			'name'    => $term->name,
-			'slug'    => $term->slug,
-			'city'    => get_term_meta( $term->term_id, 'blockendar_venue_city', true ),
-			'state'   => get_term_meta( $term->term_id, 'blockendar_venue_state', true ),
-			'country' => get_term_meta( $term->term_id, 'blockendar_venue_country', true ),
-			'address' => get_term_meta( $term->term_id, 'blockendar_venue_address', true ),
-			'lat'     => get_term_meta( $term->term_id, 'blockendar_venue_lat', true ),
-			'lng'     => get_term_meta( $term->term_id, 'blockendar_venue_lng', true ),
-			'virtual' => (bool) get_term_meta( $term->term_id, 'blockendar_venue_virtual', true ),
+			'id'          => $term->term_id,
+			'name'        => $term->name,
+			'slug'        => $term->slug,
+			'city'        => get_term_meta( $term->term_id, 'blockendar_venue_city', true ),
+			'state'       => get_term_meta( $term->term_id, 'blockendar_venue_state', true ),
+			'postal_code' => get_term_meta( $term->term_id, 'blockendar_venue_postal_code', true ),
+			'country'     => get_term_meta( $term->term_id, 'blockendar_venue_country', true ),
+			'address'     => get_term_meta( $term->term_id, 'blockendar_venue_address', true ),
+			'lat'         => get_term_meta( $term->term_id, 'blockendar_venue_lat', true ),
+			'lng'         => get_term_meta( $term->term_id, 'blockendar_venue_lng', true ),
+			'virtual'     => (bool) get_term_meta( $term->term_id, 'blockendar_venue_virtual', true ),
 		];
 	}
 
