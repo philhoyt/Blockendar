@@ -582,6 +582,24 @@ class JsonLdTest extends WP_UnitTestCase {
 		$this->assertSame( 'https://schema.org/SoldOut', $event['offers']['availability'] );
 	}
 
+	/**
+	 * PHP writes a float into JSON with as many digits as serialize_precision
+	 * says. Hosts that set it to 17 got a latitude of 39.781700000000001 and a
+	 * price of 19.989999999999998.
+	 */
+	public function test_numbers_are_written_as_they_were_entered_whatever_the_servers_precision(): void {
+		$previous = ini_set( 'serialize_precision', '17' ); // phpcs:ignore WordPress.PHP.IniSet.Risky -- The setting under test.
+
+		$html = $this->head( $this->make_event( [ 'cost' => '19.99' ] ) );
+
+		ini_set( 'serialize_precision', (string) $previous ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+
+		$this->assertStringContainsString( '"price":19.99,', $html );
+		$this->assertStringContainsString( '"latitude":39.7817,', $html );
+		$this->assertStringContainsString( '"longitude":-89.6501}', $html );
+		$this->assertSame( (string) $previous, (string) ini_get( 'serialize_precision' ), 'The setting is put back.' );
+	}
+
 	// -------------------------------------------------------------------------
 	// Image and text
 	// -------------------------------------------------------------------------
@@ -595,6 +613,26 @@ class JsonLdTest extends WP_UnitTestCase {
 		set_post_thumbnail( $post_id, $attachment );
 
 		$this->assertSame( [ wp_get_attachment_url( $attachment ) ], $this->event( $post_id )['image'] );
+	}
+
+	/**
+	 * With no excerpt written, WordPress cuts one from the content and ends it
+	 * with "[…]", which is page furniture, not description.
+	 */
+	public function test_a_description_cut_from_the_content_ends_with_an_ellipsis_alone(): void {
+		$post_id = $this->make_event(
+			[],
+			null,
+			[
+				'post_excerpt' => '',
+				'post_content' => str_repeat( 'The council meets in public. ', 40 ),
+			]
+		);
+
+		$description = $this->event( $post_id )['description'];
+
+		$this->assertStringEndsWith( '…', $description );
+		$this->assertStringNotContainsString( '[', $description );
 	}
 
 	/**

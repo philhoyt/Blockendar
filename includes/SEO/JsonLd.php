@@ -67,8 +67,21 @@ class JsonLd {
 		 * Nothing else is escaped: this is JSON in a script element, not HTML
 		 * and not a JavaScript string, and esc_js() or esc_html() would
 		 * corrupt it.
+		 *
+		 * A float goes into JSON with as many digits as serialize_precision
+		 * says. PHP's default writes 19.99 as 19.99; a host that sets 17
+		 * writes 19.989999999999998, and a latitude of 39.781700000000001.
+		 * -1 asks for the shortest form that reads back as the same number.
+		 * If the host forbids changing it, the output is still valid JSON.
 		 */
+		// phpcs:ignore WordPress.PHP.IniSet.Risky -- Scoped to one encode and restored below.
+		$precision = ini_set( 'serialize_precision', '-1' );
+
 		$json = wp_json_encode( $data, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+
+		if ( false !== $precision ) {
+			ini_set( 'serialize_precision', $precision ); // phpcs:ignore WordPress.PHP.IniSet.Risky
+		}
 
 		if ( false === $json ) {
 			return;
@@ -148,7 +161,9 @@ class JsonLd {
 			'url'      => $url,
 		];
 
-		$description = $this->plain( get_the_excerpt( $post ) );
+		// With no excerpt written, WordPress cuts one from the content and ends
+		// it with "[…]". The brackets are page furniture; the ellipsis stays.
+		$description = (string) preg_replace( '/\s*\[(?:…|\.\.\.)\]$/u', '…', $this->plain( get_the_excerpt( $post ) ) );
 
 		if ( '' !== $description ) {
 			$data['description'] = $description;
