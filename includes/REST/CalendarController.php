@@ -311,6 +311,8 @@ class CalendarController extends AbstractController {
 			'url'           => add_query_arg( 'occurrence_date', $row->start_date, get_permalink( $post_id ) ),
 			'color'         => $color,
 			'status'        => $row->status,
+			// FullCalendar puts these on the event's element.
+			'classNames'    => blockendar_event_state_classes( ! empty( $row->featured ), $row->status ),
 			'extendedProps' => [
 				'venue'    => $venue,
 				'types'    => $types,

@@ -13,6 +13,7 @@ import {
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { statusHasReason, statusUpdate } from './status';
 
 const STATUS_OPTIONS = [
 	{ label: __( 'Scheduled', 'blockendar' ), value: 'scheduled' },
@@ -42,12 +43,25 @@ export function EventDetailsPanel() {
 					label={ __( 'Event status', 'blockendar' ) }
 					value={ meta.blockendar_status ?? 'scheduled' }
 					options={ STATUS_OPTIONS }
-					onChange={ ( val ) =>
-						setMeta( { blockendar_status: val } )
-					}
+					onChange={ ( val ) => setMeta( statusUpdate( val ) ) }
 					__nextHasNoMarginBottom
 					__next40pxDefaultSize
 				/>
+
+				{ statusHasReason( meta.blockendar_status ) && (
+					<TextControl
+						label={ __( 'Reason', 'blockendar' ) }
+						help={ __(
+							'Optional. Shown beside the status, for example “The speaker is unwell.”',
+							'blockendar'
+						) }
+						value={ meta.blockendar_status_reason ?? '' }
+						onChange={ ( val ) =>
+							setMeta( { blockendar_status_reason: val } )
+						}
+						__nextHasNoMarginBottom
+					/>
+				) }
 
 				<TextControl
 					label={ __( 'Cost (display)', 'blockendar' ) }
@@ -71,7 +85,7 @@ export function EventDetailsPanel() {
 				<ToggleControl
 					label={ __( 'Featured event', 'blockendar' ) }
 					help={ __(
-						'Highlights this event in listings and the calendar.',
+						'Shown in bold on the calendar and marked for your theme to style in listings. A listing can be set to show featured events only.',
 						'blockendar'
 					) }
 					checked={ !! meta.blockendar_featured }

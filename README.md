@@ -148,6 +148,25 @@ Four filters are available:
 iCalendar has no pagination, so events past the ceiling are simply absent. A feed
 that hits it says so in `X-WR-CALDESC` and raises a notice on the settings screen.
 
+## Featured, cancelled and postponed events
+
+Every place an event is listed says what state it is in, with the same classes:
+
+- `is-featured` when the event is marked as featured.
+- `is-status-scheduled`, `is-status-cancelled`, `is-status-postponed` or `is-status-sold_out`.
+
+They are on each item of an Events Query block (`.blockendar-events-query__item`), on each event on the calendar, and on each item of the calendar's plain list. The status is the occurrence's, so one cancelled date of a series is marked and the others are not.
+
+On the calendar a cancelled event is struck through and a featured one is bold. List items are not styled: the classes are there for a theme, for example:
+
+```css
+.blockendar-events-query__item.is-status-cancelled .wp-block-post-title {
+	text-decoration: line-through;
+}
+```
+
+An Events Query block can be set to **Featured only**. A status other than Scheduled can be given a **Reason** in the editor, which the Event Status Badge block shows beside the status unless its **Show reason** option is off.
+
 ## Search engines
 
 A single event page carries a schema.org `Event` in its head, as JSON-LD, which is what lets a search engine show the event with its date and place. It describes the occurrence the page is showing and is built only from what the event has:

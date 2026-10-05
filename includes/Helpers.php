@@ -426,3 +426,28 @@ function blockendar_venue_directions_url( int $term_id ): string {
 
 	return is_string( $url ) ? esc_url_raw( $url, [ 'http', 'https' ] ) : '';
 }
+
+/**
+ * Classes that say what state an occurrence is in, for a theme to style.
+ *
+ * `is-featured` when the event is featured, and `is-status-…` for its status:
+ * scheduled, cancelled, postponed or sold_out. The same classes go on a list
+ * item, a calendar event and an item of the calendar's plain list, so one
+ * rule covers all three.
+ *
+ * @param mixed $featured Whether the event is featured.
+ * @param mixed $status   The occurrence's status.
+ * @return string[]
+ */
+function blockendar_event_state_classes( mixed $featured, mixed $status ): array {
+	$status  = sanitize_html_class( (string) $status );
+	$classes = [];
+
+	if ( $featured ) {
+		$classes[] = 'is-featured';
+	}
+
+	$classes[] = 'is-status-' . ( '' !== $status ? $status : 'scheduled' );
+
+	return $classes;
+}
