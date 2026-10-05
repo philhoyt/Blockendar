@@ -38,17 +38,28 @@ class Venue {
 	 */
 	public function register_taxonomy(): void {
 		$labels = [
-			'name'              => _x( 'Venues', 'taxonomy general name', 'blockendar' ),
-			'singular_name'     => _x( 'Venue', 'taxonomy singular name', 'blockendar' ),
-			'search_items'      => __( 'Search Venues', 'blockendar' ),
-			'all_items'         => __( 'All Venues', 'blockendar' ),
-			'parent_item'       => __( 'Parent Venue', 'blockendar' ),
-			'parent_item_colon' => __( 'Parent Venue:', 'blockendar' ),
-			'edit_item'         => __( 'Edit Venue', 'blockendar' ),
-			'update_item'       => __( 'Update Venue', 'blockendar' ),
-			'add_new_item'      => __( 'Add New Venue', 'blockendar' ),
-			'new_item_name'     => __( 'New Venue Name', 'blockendar' ),
-			'menu_name'         => __( 'Venues', 'blockendar' ),
+			'name'                  => _x( 'Venues', 'taxonomy general name', 'blockendar' ),
+			'singular_name'         => _x( 'Venue', 'taxonomy singular name', 'blockendar' ),
+			'search_items'          => __( 'Search Venues', 'blockendar' ),
+			'all_items'             => __( 'All Venues', 'blockendar' ),
+			'parent_item'           => __( 'Parent Venue', 'blockendar' ),
+			'parent_item_colon'     => __( 'Parent Venue:', 'blockendar' ),
+			'edit_item'             => __( 'Edit Venue', 'blockendar' ),
+			'update_item'           => __( 'Update Venue', 'blockendar' ),
+			'add_new_item'          => __( 'Add New Venue', 'blockendar' ),
+			'new_item_name'         => __( 'New Venue Name', 'blockendar' ),
+			'menu_name'             => __( 'Venues', 'blockendar' ),
+
+			// Without these WordPress supplies its own, worded for categories.
+			'view_item'             => __( 'View Venue', 'blockendar' ),
+			'not_found'             => __( 'No venues found.', 'blockendar' ),
+			'no_terms'              => __( 'No venues', 'blockendar' ),
+			'filter_by_item'        => __( 'Filter by venue', 'blockendar' ),
+			'items_list_navigation' => __( 'Venues list navigation', 'blockendar' ),
+			'items_list'            => __( 'Venues list', 'blockendar' ),
+			'back_to_items'         => __( '&larr; Go to Venues', 'blockendar' ),
+			'item_link'             => __( 'Venue Link', 'blockendar' ),
+			'item_link_description' => __( 'A link to a venue.', 'blockendar' ),
 		];
 
 		$args = [

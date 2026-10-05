@@ -158,7 +158,7 @@
 | 6.7 | `event-description` | Displays event post content | 🔲 | |
 | 6.8 | `event-categories` | Displays linked event type terms | 🔲 | |
 | 6.9 | `event-tags` | Displays linked event tag terms | 🔲 | |
-| 6.10 | `event-status` | Displays styled badge for cancelled / postponed / sold out | 🔲 | |
+| 6.10 | `event-status` | Displays the status as text for cancelled / postponed / sold out (unstyled by design; styled with the block's own controls) | 🔲 | |
 | 6.11 | `event-countdown` | Counts down to event start in real time | 🔲 | |
 | 6.12 | `event-countdown` | Shows "Event has started" or similar when past | 🔲 | |
 | 6.13 | `event-map` | Renders Leaflet map when venue has lat/lng | 🔲 | |

@@ -37,17 +37,28 @@ class EventType {
 	 */
 	public function register_taxonomy(): void {
 		$labels = [
-			'name'              => _x( 'Event Types', 'taxonomy general name', 'blockendar' ),
-			'singular_name'     => _x( 'Event Type', 'taxonomy singular name', 'blockendar' ),
-			'search_items'      => __( 'Search Event Types', 'blockendar' ),
-			'all_items'         => __( 'All Event Types', 'blockendar' ),
-			'parent_item'       => __( 'Parent Event Type', 'blockendar' ),
-			'parent_item_colon' => __( 'Parent Event Type:', 'blockendar' ),
-			'edit_item'         => __( 'Edit Event Type', 'blockendar' ),
-			'update_item'       => __( 'Update Event Type', 'blockendar' ),
-			'add_new_item'      => __( 'Add New Event Type', 'blockendar' ),
-			'new_item_name'     => __( 'New Event Type Name', 'blockendar' ),
-			'menu_name'         => __( 'Event Types', 'blockendar' ),
+			'name'                  => _x( 'Event Types', 'taxonomy general name', 'blockendar' ),
+			'singular_name'         => _x( 'Event Type', 'taxonomy singular name', 'blockendar' ),
+			'search_items'          => __( 'Search Event Types', 'blockendar' ),
+			'all_items'             => __( 'All Event Types', 'blockendar' ),
+			'parent_item'           => __( 'Parent Event Type', 'blockendar' ),
+			'parent_item_colon'     => __( 'Parent Event Type:', 'blockendar' ),
+			'edit_item'             => __( 'Edit Event Type', 'blockendar' ),
+			'update_item'           => __( 'Update Event Type', 'blockendar' ),
+			'add_new_item'          => __( 'Add New Event Type', 'blockendar' ),
+			'new_item_name'         => __( 'New Event Type Name', 'blockendar' ),
+			'menu_name'             => __( 'Event Types', 'blockendar' ),
+
+			// Without these WordPress supplies its own, worded for categories.
+			'view_item'             => __( 'View Event Type', 'blockendar' ),
+			'not_found'             => __( 'No event types found.', 'blockendar' ),
+			'no_terms'              => __( 'No event types', 'blockendar' ),
+			'filter_by_item'        => __( 'Filter by event type', 'blockendar' ),
+			'items_list_navigation' => __( 'Event types list navigation', 'blockendar' ),
+			'items_list'            => __( 'Event types list', 'blockendar' ),
+			'back_to_items'         => __( '&larr; Go to Event Types', 'blockendar' ),
+			'item_link'             => __( 'Event Type Link', 'blockendar' ),
+			'item_link_description' => __( 'A link to an event type.', 'blockendar' ),
 		];
 
 		$args = [
