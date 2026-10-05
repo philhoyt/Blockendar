@@ -235,6 +235,61 @@ class GeneratorExpandTest extends TestCase {
 		$this->assertNotContains( $exception, $start_dates );
 	}
 
+	/**
+	 * "After N times" is N dates of the rule. One of them skipped leaves N - 1;
+	 * it is not replaced by another at the end. (RFC 5545: an excluded date is
+	 * removed from the set the count produced.)
+	 */
+	public function test_a_skipped_date_counts_towards_the_number_of_occurrences(): void {
+		$exception = ( new \DateTimeImmutable( self::TODAY ) )->modify( '+7 days' )->format( 'Y-m-d' );
+		$rule      = $this->rule(
+			[
+				'frequency'    => 'weekly',
+				'count'        => 3,
+				'interval_val' => 1,
+				'exceptions'   => json_encode( [ $exception ] ),
+			]
+		);
+
+		$start_dates = array_column( $this->gen->expand( $rule, $this->meta() ), 'start_date' );
+
+		$this->assertSame(
+			[
+				self::TODAY,
+				( new \DateTimeImmutable( self::TODAY ) )->modify( '+14 days' )->format( 'Y-m-d' ),
+			],
+			$start_dates
+		);
+	}
+
+	/**
+	 * The cap on rows is a different limit from the rule's count, and skipped
+	 * dates do not use it up: it bounds what is written, and they are not.
+	 */
+	public function test_skipped_dates_do_not_count_towards_the_row_cap(): void {
+		Monkey\Functions\when( 'get_option' )->alias(
+			static function ( string $name, $default_value = false ) {
+				return 'blockendar_settings' === $name
+					? [
+						'horizon_days'  => 365,
+						'max_instances' => 3,
+					]
+					: $default_value;
+			}
+		);
+
+		$exception = ( new \DateTimeImmutable( self::TODAY ) )->modify( '+1 day' )->format( 'Y-m-d' );
+		$rule      = $this->rule(
+			[
+				'frequency'    => 'daily',
+				'interval_val' => 1,
+				'exceptions'   => json_encode( [ $exception ] ),
+			]
+		);
+
+		$this->assertCount( 3, $this->gen->expand( $rule, $this->meta() ) );
+	}
+
 	public function test_dates_around_exception_are_present(): void {
 		$exception = ( new \DateTimeImmutable( self::TODAY ) )->modify( '+7 days' )->format( 'Y-m-d' );
 		$before    = self::TODAY;

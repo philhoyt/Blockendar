@@ -328,6 +328,7 @@ class Generator {
 
 		$occurrences = [];
 		$count       = 0;
+		$produced    = 0;
 		$cursor      = $event_start;
 
 		$instance_cap = $this->instance_cap();
@@ -345,10 +346,16 @@ class Generator {
 				break;
 			}
 
-			// Stop if count limit reached.
-			if ( null !== $rule->count && $count >= $rule->count ) {
+			// Stop if count limit reached. The limit is on the dates the rule
+			// produces, whether or not each one is kept: "after 6 times" with
+			// one date skipped is five occurrences, not five and a seventh
+			// date to make up the number. $count, the rows kept, is what the
+			// safety cap above bounds.
+			if ( null !== $rule->count && $produced >= $rule->count ) {
 				break;
 			}
+
+			++$produced;
 
 			// Skip exceptions.
 			if ( ! $rule->is_exception( $date_str ) ) {

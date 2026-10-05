@@ -727,10 +727,12 @@ class EventsController extends AbstractController {
 				'default' => 'start_datetime',
 				'enum'    => [ 'start_datetime', 'end_datetime', 'post_title' ],
 			],
+			// Either case: WordPress's own routes spell these in lower case,
+			// and the handler upper-cases whatever it is given.
 			'order'    => [
 				'type'    => 'string',
 				'default' => 'ASC',
-				'enum'    => [ 'ASC', 'DESC' ],
+				'enum'    => [ 'ASC', 'DESC', 'asc', 'desc' ],
 			],
 		];
 	}
