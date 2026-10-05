@@ -251,6 +251,47 @@ test( 'changing only how a series ends can be saved', async ( { page } ) => {
  * already happened could not be entered, and opening one left the field in an
  * invalid state.
  */
+/*
+ * Each label pointed at an id its field did not have, so the two date inputs
+ * had no name at all, and the start and end times were two identical sets of
+ * "Hour", "Minute", "AM or PM". Finding a field by its name is what a screen
+ * reader user does.
+ */
+test( 'the date and time fields can be found by their names', async ( {
+	page,
+} ) => {
+	test.setTimeout( 120000 );
+
+	const id = createEvent( 'E2E Panel Field Names' );
+
+	await loginAsAdmin( page );
+	await openEditor( page, id );
+
+	const panel = await openPanel( page );
+
+	// Exact, because "Ongoing, no end date" contains "end date" too.
+
+	await expect(
+		panel.getByLabel( 'Start Date', { exact: true } )
+	).toHaveAttribute( 'type', 'date' );
+	await expect(
+		panel.getByLabel( 'End Date', { exact: true } )
+	).toHaveAttribute( 'type', 'date' );
+
+	const start = panel.getByRole( 'group', { name: 'Start Time' } );
+	const end = panel.getByRole( 'group', { name: 'End Time' } );
+
+	await expect( start.getByLabel( 'Hour' ) ).toBeVisible();
+	await expect( end.getByLabel( 'Hour' ) ).toBeVisible();
+	await expect( end.getByLabel( 'Minute' ) ).toBeVisible();
+
+	// A click on the visible label lands in its field.
+	await panel.getByText( 'End Date', { exact: true } ).click();
+	await expect(
+		panel.getByLabel( 'End Date', { exact: true } )
+	).toBeFocused();
+} );
+
 test( 'an event can be given a date in the past', async ( { page } ) => {
 	test.setTimeout( 120000 );
 

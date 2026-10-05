@@ -330,3 +330,39 @@ function blockendar_currency_symbol( string $code ): string {
 
 	return $map[ $code ] ?? $code;
 }
+
+/**
+ * Black or white, whichever can be read better on a background colour.
+ *
+ * Contrast is worked out as WCAG 2 defines it, from the relative luminance of
+ * the two colours. One of black and white always reaches the 4.5:1 that
+ * normal-size text needs, whatever the background.
+ *
+ * @param string $background A hex colour, three or six digits, with or without #.
+ * @return string '#000000' or '#ffffff'; '' when the value is not a hex colour.
+ */
+function blockendar_readable_text_color( string $background ): string {
+	$hex = ltrim( trim( $background ), '#' );
+
+	if ( ! preg_match( '/^(?:[0-9a-f]{3}|[0-9a-f]{6})$/i', $hex ) ) {
+		return '';
+	}
+
+	if ( 3 === strlen( $hex ) ) {
+		$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+	}
+
+	$channels = array_map(
+		static function ( string $pair ): float {
+			$channel = hexdec( $pair ) / 255;
+
+			return $channel <= 0.04045 ? $channel / 12.92 : ( ( $channel + 0.055 ) / 1.055 ) ** 2.4;
+		},
+		str_split( $hex, 2 )
+	);
+
+	$luminance = 0.2126 * $channels[0] + 0.7152 * $channels[1] + 0.0722 * $channels[2];
+
+	// Contrast with white is 1.05 / ( L + 0.05 ); with black, ( L + 0.05 ) / 0.05.
+	return 1.05 / ( $luminance + 0.05 ) >= ( $luminance + 0.05 ) / 0.05 ? '#ffffff' : '#000000';
+}

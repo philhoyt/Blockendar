@@ -33,6 +33,15 @@
 	--fc-button-active-bg-color: var(--blockendar-cal-btn-active-bg);
 	--fc-button-active-border-color: var(--blockendar-cal-btn-hover-border);
 	--fc-border-color: color-mix(in srgb, currentcolor 12%, transparent);
+
+	/*
+	 * Colour of an event whose type has none. FullCalendar's own default,
+	 * #3788d8, is 3.7:1 under its white text; this is 5.2:1. Set here as
+	 * FullCalendar's properties, not sent with each event, so a site that
+	 * overrides them keeps its colours.
+	 */
+	--fc-event-bg-color: #2271b1;
+	--fc-event-border-color: #2271b1;
 	--fc-list-event-hover-bg-color: color-mix(in srgb, currentcolor 5%, transparent);
 
 	font-family: inherit;
@@ -90,9 +99,9 @@
 	font-weight: 700;
 }
 
-/* Past day numbers — dimmed */
+/* Past day numbers — dimmed, but not below 4.5:1 for dark text on white */
 .wp-block-blockendar-calendar-view .fc-day-past .fc-daygrid-day-top {
-	opacity: 0.4;
+	opacity: 0.65;
 }
 
 /* --------------------------------------------------------------------------
@@ -147,13 +156,6 @@
 .wp-block-blockendar-calendar-view .fc-daygrid-block-event .fc-event-main {
 	padding-left: var(--blockendar-cal-event-indent);
 }
-
-/* Auto-contrast text colour based on the event type background colour */
-
-/* .wp-block-blockendar-calendar-view .fc-h-event .fc-event-main {
-	color: var(--fc-event-text-color);
-	color: contrast-color( var(--blockendar-event-color, #3788d8) );
-} */
 
 /* Hide the all-day indicator dot on desktop */
 .wp-block-blockendar-calendar-view .fc-daygrid-event-dot {
@@ -296,4 +298,18 @@
 
 .blockendar-calendar-error p {
 	margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+	Touch screens — toolbar buttons big enough for a finger. The rule above
+	shrinks them on narrow screens to fit; this keeps them 44px tall, the
+	size Apple and Google ask for, wherever the pointer is a finger.
+	-------------------------------------------------------------------------- */
+
+@media (pointer: coarse) {
+
+	.wp-block-blockendar-calendar-view .fc-button-primary {
+		min-height: 44px;
+		min-width: 44px;
+	}
 }

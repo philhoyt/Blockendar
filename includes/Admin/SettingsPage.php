@@ -35,6 +35,7 @@ class SettingsPage {
 	public function register(): void {
 		add_action( 'admin_menu', [ $this, 'add_menu_page' ] );
 		add_action( 'init', [ $this, 'register_setting' ] );
+		add_filter( 'rest_pre_get_setting', [ $this, 'rest_value' ], 10, 2 );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue' ] );
 		add_action( 'rest_api_init', [ $this, 'register_rebuild_stats_endpoint' ] );
 		add_action( 'admin_notices', [ $this, 'maybe_show_truncation_notice' ] );
@@ -128,6 +129,33 @@ class SettingsPage {
 				'sanitize_callback' => [ $this, 'sanitize' ],
 			]
 		);
+	}
+
+	/**
+	 * Give the settings endpoint a value it will accept.
+	 *
+	 * WordPress checks a setting against its schema before sending it, with
+	 * nothing allowed beyond the listed properties, and sends null for one that
+	 * does not fit. One key the schema has since dropped, or one value of the
+	 * wrong kind, was enough to hide every setting from the settings page,
+	 * which then showed the defaults and saved them over the real values.
+	 *
+	 * sanitize() keeps the known keys, fills the missing ones and casts the
+	 * rest, so what it returns always fits. The stored option is not rewritten
+	 * here; it is when the settings are next saved.
+	 *
+	 * @param mixed  $value Value another filter supplied, or null.
+	 * @param string $name  Setting name.
+	 * @return mixed The plugin's settings, or $value for every other setting.
+	 */
+	public function rest_value( mixed $value, string $name ): mixed {
+		if ( self::OPTION_NAME !== $name ) {
+			return $value;
+		}
+
+		$stored = get_option( self::OPTION_NAME );
+
+		return is_array( $stored ) ? $this->sanitize( $stored ) : $value;
 	}
 
 	/**

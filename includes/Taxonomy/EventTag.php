@@ -50,6 +50,15 @@ class EventTag {
 			'choose_from_most_used'      => __( 'Choose from the most used event tags', 'blockendar' ),
 			'not_found'                  => __( 'No event tags found.', 'blockendar' ),
 			'menu_name'                  => __( 'Event Tags', 'blockendar' ),
+
+			// Without these WordPress supplies its own, worded for post tags.
+			'view_item'                  => __( 'View Event Tag', 'blockendar' ),
+			'no_terms'                   => __( 'No event tags', 'blockendar' ),
+			'items_list_navigation'      => __( 'Event tags list navigation', 'blockendar' ),
+			'items_list'                 => __( 'Event tags list', 'blockendar' ),
+			'back_to_items'              => __( '&larr; Go to Event Tags', 'blockendar' ),
+			'item_link'                  => __( 'Event Tag Link', 'blockendar' ),
+			'item_link_description'      => __( 'A link to an event tag.', 'blockendar' ),
 		];
 
 		$args = [

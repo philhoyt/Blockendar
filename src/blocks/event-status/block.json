@@ -6,7 +6,7 @@
 	"title": "Event Status Badge",
 	"category": "blockendar",
 	"icon": "flag",
-	"description": "Shows a styled status badge (Cancelled, Postponed, Sold Out). Hidden for scheduled events.",
+	"description": "Shows the event's status (Cancelled, Postponed, Sold Out) as text you can style with the block's colour, typography, spacing and border controls. Hidden for scheduled events.",
 	"keywords": [
 		"status",
 		"badge",
