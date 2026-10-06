@@ -29,6 +29,11 @@ $slot_duration = (string) \Blockendar\Admin\SettingsPage::get( 'calendar_slot_du
 $venue_ids     = array_map( 'intval', (array) ( $attributes['venueIds'] ?? [] ) );
 $type_ids      = array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) );
 $featured_only = ! empty( $attributes['featuredOnly'] ) ? 'true' : 'false';
+$week_numbers  = ! empty( $attributes['weekNumbers'] ) ? 'true' : 'false';
+
+// Clamped here as well as in the editor: a hand-edited block comment could
+// carry 0 or 500, and FullCalendar would honour either.
+$events_per_day = max( 1, min( 10, (int) ( $attributes['eventsPerDay'] ?? 3 ) ) );
 
 // On an event_type taxonomy archive, auto-filter to the queried term.
 if ( is_tax( \Blockendar\Taxonomy\EventType::TAXONOMY ) ) {
@@ -60,20 +65,22 @@ $raw_tz        = wp_timezone_string();
 $site_timezone = preg_match( '/^[A-Za-z]/', $raw_tz ) ? $raw_tz : 'local';
 
 $data_attrs = [
-	'data-rest-url'      => $rest_url,
-	'data-default-view'  => $default_view,
-	'data-first-day'     => (string) $first_day,
-	'data-slot-duration' => $slot_duration,
-	'data-enabled-views' => wp_json_encode( $enabled_views ),
-	'data-featured-only' => $featured_only,
-	'data-venue-ids'     => wp_json_encode( array_values( $venue_ids ) ),
-	'data-type-ids'      => wp_json_encode( array_values( $type_ids ) ),
-	'data-timezone'      => $site_timezone,
+	'data-rest-url'       => $rest_url,
+	'data-default-view'   => $default_view,
+	'data-first-day'      => (string) $first_day,
+	'data-slot-duration'  => $slot_duration,
+	'data-enabled-views'  => wp_json_encode( $enabled_views ),
+	'data-featured-only'  => $featured_only,
+	'data-week-numbers'   => $week_numbers,
+	'data-events-per-day' => (string) $events_per_day,
+	'data-venue-ids'      => wp_json_encode( array_values( $venue_ids ) ),
+	'data-type-ids'       => wp_json_encode( array_values( $type_ids ) ),
+	'data-timezone'       => $site_timezone,
 	// FullCalendar ships its own strings; these tell it which to use, and how
 	// the site writes a time.
-	'data-locale'        => get_locale(),
-	'data-direction'     => is_rtl() ? 'rtl' : 'ltr',
-	'data-time-format'   => (string) \Blockendar\Admin\SettingsPage::get( 'time_format' ),
+	'data-locale'         => get_locale(),
+	'data-direction'      => is_rtl() ? 'rtl' : 'ltr',
+	'data-time-format'    => (string) \Blockendar\Admin\SettingsPage::get( 'time_format' ),
 ];
 
 /*
