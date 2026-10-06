@@ -231,9 +231,25 @@
 	content: " · ";
 }
 
-/* A chip too short for its title has no room for a second line */
+/*
+ * A chip too short for its title has no room for a second line. FullCalendar
+ * marks a chip "short" below 30px; one a little taller still clips the line,
+ * so the chip's own height decides. The harness has its height set by
+ * FullCalendar, so size containment costs it nothing.
+ */
+.wp-block-blockendar-calendar-view .fc-timegrid-event-harness {
+	container-type: size;
+}
+
 .wp-block-blockendar-calendar-view .fc-timegrid-event-short .blockendar-calendar-event__meta {
 	display: none;
+}
+
+@container (max-height: 72px) {
+
+	.wp-block-blockendar-calendar-view .blockendar-calendar-event__meta {
+		display: none;
+	}
 }
 
 /* --------------------------------------------------------------------------
