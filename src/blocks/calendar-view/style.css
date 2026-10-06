@@ -48,6 +48,9 @@
 	--fc-list-event-hover-bg-color: color-mix(in srgb, currentcolor 5%, transparent);
 	--fc-now-indicator-color: var(--blockendar-cal-now-color);
 
+	/* Hours outside business hours, when the site shades them */
+	--fc-non-business-color: color-mix(in srgb, currentcolor 6%, transparent);
+
 	font-family: inherit;
 }
 
