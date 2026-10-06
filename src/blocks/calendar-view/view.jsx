@@ -27,6 +27,8 @@ import {
 	siteNow,
 	eventsPerDay,
 	eventMeta,
+	timeOfDay,
+	businessHoursFromDataset,
 } from './view-config';
 
 const MOBILE_MQ = '(max-width: 767px)';
@@ -232,6 +234,10 @@ function BlockendarCalendar( { dataset, onReady } ) {
 	const enabledViews = parseList( dataset.enabledViews, DEFAULT_VIEWS );
 	const weekNumbers = dataset.weekNumbers === 'true';
 	const dayMaxEvents = eventsPerDay( dataset.eventsPerDay );
+	const slotMinTime = timeOfDay( dataset.slotMinTime, '00:00:00' );
+	const slotMaxTime = timeOfDay( dataset.slotMaxTime, '24:00:00' );
+	const allDaySlot = dataset.allDaySlot !== 'false';
+	const businessHours = businessHoursFromDataset( dataset.businessHours );
 
 	const viewButtons = enabledViews.join( ',' );
 
@@ -397,6 +403,10 @@ function BlockendarCalendar( { dataset, onReady } ) {
 				initialView={ isMobile() ? MOBILE_VIEW : defaultView }
 				firstDay={ firstDay }
 				slotDuration={ slotDuration }
+				slotMinTime={ slotMinTime }
+				slotMaxTime={ slotMaxTime }
+				allDaySlot={ allDaySlot }
+				businessHours={ businessHours }
 				views={ customViews }
 				multiMonthMaxColumns={ 3 }
 				{ ...navLinkOptions( renderableViews ) }
