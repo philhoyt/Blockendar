@@ -174,9 +174,10 @@ function MetaLine( { event } ) {
 /**
  * What goes inside an event chip.
  *
- * The month and year views keep FullCalendar's own content: a chip there is
- * too small for a second line. The week, day and list views get the venue
- * and cost under the title.
+ * The month and year views, and the all-day strip of the week and day views,
+ * keep FullCalendar's own content: a chip there is too small for a second
+ * line. Timed events in the week and day views, and every event in the list
+ * view, get the venue and cost under the title.
  *
  * Custom content replaces FullCalendar's inner markup, so the time-grid
  * branch reproduces its structure (the block's stylesheet and FullCalendar's
@@ -200,7 +201,9 @@ function renderEventContent( arg ) {
 		);
 	}
 
-	if ( ! view.type.startsWith( 'timeGrid' ) ) {
+	// The all-day strip above the hours draws its chips sideways, with no
+	// room for a second line; they keep FullCalendar's own content.
+	if ( ! view.type.startsWith( 'timeGrid' ) || event.allDay ) {
 		return true;
 	}
 
