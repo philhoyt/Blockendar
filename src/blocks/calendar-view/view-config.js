@@ -164,3 +164,77 @@ export function eventMeta( extendedProps = {} ) {
 
 	return { venue, cost: cost || null };
 }
+
+const TIME_OF_DAY = /^([01]\d|2[0-4]):[0-5]\d:[0-5]\d$/;
+
+/**
+ * A time of day for FullCalendar, or the fallback.
+ *
+ * The settings sanitiser already checks this shape, but SettingsPage::get()
+ * hands back whatever is stored, and FullCalendar turns a malformed duration
+ * into null without a word.
+ *
+ * @param {string|undefined} raw      The data attribute value.
+ * @param {string}           fallback Used when the value is not HH:MM:SS.
+ * @return {string} A valid HH:MM:SS.
+ */
+export function timeOfDay( raw, fallback ) {
+	if ( typeof raw !== 'string' || ! TIME_OF_DAY.test( raw ) ) {
+		return fallback;
+	}
+
+	if ( raw.startsWith( '24' ) && '24:00:00' !== raw ) {
+		return fallback;
+	}
+
+	return raw;
+}
+
+/**
+ * FullCalendar's businessHours option from the block's data attribute.
+ *
+ * @param {string|undefined} raw JSON written by render.php, or empty.
+ * @return {Object|false} `{ daysOfWeek, startTime, endTime }`, or false when
+ *   business hours are off or the attribute is unusable.
+ */
+export function businessHoursFromDataset( raw ) {
+	if ( ! raw ) {
+		return false;
+	}
+
+	let parsed;
+
+	try {
+		parsed = JSON.parse( raw );
+	} catch {
+		return false;
+	}
+
+	if ( ! parsed || typeof parsed !== 'object' ) {
+		return false;
+	}
+
+	const daysOfWeek = Array.isArray( parsed.daysOfWeek )
+		? [
+				...new Set(
+					parsed.daysOfWeek
+						.map( ( day ) => parseInt( day, 10 ) )
+						.filter( ( day ) => day >= 0 && day <= 6 )
+				),
+		  ]
+		: [];
+
+	const startTime = timeOfDay( parsed.startTime, '' );
+	const endTime = timeOfDay( parsed.endTime, '' );
+
+	if (
+		! daysOfWeek.length ||
+		! startTime ||
+		! endTime ||
+		endTime <= startTime
+	) {
+		return false;
+	}
+
+	return { daysOfWeek, startTime, endTime };
+}
