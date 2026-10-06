@@ -407,6 +407,10 @@ function BlockendarCalendar( { dataset, onReady } ) {
 				} }
 				events={ fetchEvents }
 				eventContent={ renderEventContent }
+				noEventsContent={ __(
+					'No events in this period.',
+					'blockendar'
+				) }
 				dayMaxEvents={ dayMaxEvents }
 				eventClick={ ( info ) => {
 					if ( info.event.url ) {
