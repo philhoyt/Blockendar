@@ -57,6 +57,14 @@
 		"firstDay": {
 			"type": "integer"
 		},
+		"weekNumbers": {
+			"type": "boolean",
+			"default": false
+		},
+		"eventsPerDay": {
+			"type": "integer",
+			"default": 3
+		},
 		"showSubscribe": {
 			"type": "boolean",
 			"default": false

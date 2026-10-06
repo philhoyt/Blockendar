@@ -290,7 +290,7 @@ class Content {
 		return [
 			$this->intro(
 				'The Event Calendar block',
-				'A full calendar with month, week and list views. Click any event to open it. Recurring events are expanded from the index table, so a weekly series shows every occurrence without creating a post per week.'
+				'A full calendar with month, week, day, list and year views. Click any event to open it, or a day number to open that day. Recurring events are expanded from the index table, so a weekly series shows every occurrence without creating a post per week.'
 			),
 			'<!-- wp:blockendar/calendar-view {"defaultView":"dayGridMonth","align":"wide"} /-->',
 		];

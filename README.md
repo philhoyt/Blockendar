@@ -9,7 +9,7 @@ A block-native WordPress events plugin.
 
 - **Block-based event editor** — Date & time, recurrence, venue, cost, registration, and status managed through dedicated block editor sidebar panels
 - **Recurring events** — Full recurrence rule support (daily, weekly, monthly, yearly) with exceptions, custom additions, and a rolling horizon cron job
-- **Calendar View block** — Interactive FullCalendar-powered calendar with day, week, and month views; exposes a valid iCal feed and an opt-in subscribe button
+- **Calendar View block** — Interactive FullCalendar-powered calendar with month, week, day, list and year views; week numbers, a current-time line, a per-block limit on events shown per day, venue and cost on each event in the week, day and list views, and site-wide settings for the hours shown and business-hours shading; exposes a valid iCal feed and an opt-in subscribe button
 - **Calendar subscriptions** — A live `webcal://` feed people can subscribe to in Apple Calendar, Google Calendar, or Outlook; it rolls forward with the date rather than going stale
 - **Events Query block** — Flexible query block for custom event displays; shows individual occurrences of recurring events with correct dates and occurrence-aware links
 - **7 single-event blocks** — Date/time, venue, cost, status, countdown, map, add-to-calendar

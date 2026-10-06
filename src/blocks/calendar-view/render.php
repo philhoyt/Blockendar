@@ -22,13 +22,46 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 $enabled_views = $attributes['enabledViews'] ?? [ 'dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listNextMonth' ];
 $default_view  = $attributes['defaultView'] ?? \Blockendar\Admin\SettingsPage::get( 'calendar_default_view' );
-$first_day     = (int) ( $attributes['firstDay'] ?? \Blockendar\Admin\SettingsPage::get( 'calendar_first_day' ) );
+
+// Until 2.3.0 the settings page offered FullCalendar's listWeek, a view this
+// block never had a button for. The setting is rewritten on its next save;
+// until then get() hands back what is stored, so the block maps it itself.
+if ( 'listWeek' === $default_view ) {
+	$default_view = 'listNextMonth';
+}
+$first_day = (int) ( $attributes['firstDay'] ?? \Blockendar\Admin\SettingsPage::get( 'calendar_first_day' ) );
 
 // Applies to the time-grid views only; FullCalendar ignores it elsewhere.
 $slot_duration = (string) \Blockendar\Admin\SettingsPage::get( 'calendar_slot_duration' );
+$slot_min_time = (string) \Blockendar\Admin\SettingsPage::get( 'calendar_slot_min_time' );
+$slot_max_time = (string) \Blockendar\Admin\SettingsPage::get( 'calendar_slot_max_time' );
+$all_day_slot  = \Blockendar\Admin\SettingsPage::get( 'calendar_all_day_slot' ) ? 'true' : 'false';
+
+/*
+ * Business hours travel as one JSON object in FullCalendar's own shape, or
+ * an empty attribute when off. An empty day list is "off" too: FullCalendar
+ * would otherwise keep the definition and shade every hour of every day.
+ */
+$business_days  = array_values( array_map( 'intval', (array) \Blockendar\Admin\SettingsPage::get( 'calendar_business_days' ) ) );
+$business_hours = '';
+
+if ( \Blockendar\Admin\SettingsPage::get( 'calendar_business_hours' ) && ! empty( $business_days ) ) {
+	$business_hours = (string) wp_json_encode(
+		[
+			'daysOfWeek' => $business_days,
+			'startTime'  => (string) \Blockendar\Admin\SettingsPage::get( 'calendar_business_start' ),
+			'endTime'    => (string) \Blockendar\Admin\SettingsPage::get( 'calendar_business_end' ),
+		]
+	);
+}
 $venue_ids     = array_map( 'intval', (array) ( $attributes['venueIds'] ?? [] ) );
 $type_ids      = array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) );
 $featured_only = ! empty( $attributes['featuredOnly'] ) ? 'true' : 'false';
+$week_numbers  = ! empty( $attributes['weekNumbers'] ) ? 'true' : 'false';
+
+// Clamped here as well as in the editor: a hand-edited block comment could
+// carry 0 or 500, and FullCalendar would honour either.
+$events_per_day = max( 1, min( 10, (int) ( $attributes['eventsPerDay'] ?? 3 ) ) );
 
 // On an event_type taxonomy archive, auto-filter to the queried term.
 if ( is_tax( \Blockendar\Taxonomy\EventType::TAXONOMY ) ) {
@@ -60,20 +93,26 @@ $raw_tz        = wp_timezone_string();
 $site_timezone = preg_match( '/^[A-Za-z]/', $raw_tz ) ? $raw_tz : 'local';
 
 $data_attrs = [
-	'data-rest-url'      => $rest_url,
-	'data-default-view'  => $default_view,
-	'data-first-day'     => (string) $first_day,
-	'data-slot-duration' => $slot_duration,
-	'data-enabled-views' => wp_json_encode( $enabled_views ),
-	'data-featured-only' => $featured_only,
-	'data-venue-ids'     => wp_json_encode( array_values( $venue_ids ) ),
-	'data-type-ids'      => wp_json_encode( array_values( $type_ids ) ),
-	'data-timezone'      => $site_timezone,
+	'data-rest-url'       => $rest_url,
+	'data-default-view'   => $default_view,
+	'data-first-day'      => (string) $first_day,
+	'data-slot-duration'  => $slot_duration,
+	'data-slot-min-time'  => $slot_min_time,
+	'data-slot-max-time'  => $slot_max_time,
+	'data-all-day-slot'   => $all_day_slot,
+	'data-business-hours' => $business_hours,
+	'data-enabled-views'  => wp_json_encode( $enabled_views ),
+	'data-featured-only'  => $featured_only,
+	'data-week-numbers'   => $week_numbers,
+	'data-events-per-day' => (string) $events_per_day,
+	'data-venue-ids'      => wp_json_encode( array_values( $venue_ids ) ),
+	'data-type-ids'       => wp_json_encode( array_values( $type_ids ) ),
+	'data-timezone'       => $site_timezone,
 	// FullCalendar ships its own strings; these tell it which to use, and how
 	// the site writes a time.
-	'data-locale'        => get_locale(),
-	'data-direction'     => is_rtl() ? 'rtl' : 'ltr',
-	'data-time-format'   => (string) \Blockendar\Admin\SettingsPage::get( 'time_format' ),
+	'data-locale'         => get_locale(),
+	'data-direction'      => is_rtl() ? 'rtl' : 'ltr',
+	'data-time-format'    => (string) \Blockendar\Admin\SettingsPage::get( 'time_format' ),
 ];
 
 /*

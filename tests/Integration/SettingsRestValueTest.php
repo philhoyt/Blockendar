@@ -214,7 +214,12 @@ class SettingsRestValueTest extends WP_UnitTestCase {
 			'the defaults'       => SettingsPage::defaults(),
 			'nothing at all'     => [],
 			'a 0.x site'         => $this->settings_from_before_one_point_oh(),
-			'everything as text' => array_map( 'strval', array_map( static fn( $v ) => is_bool( $v ) ? (int) $v : $v, SettingsPage::defaults() ) ),
+			// A list arrives as a comma string, the way a query string would
+			// carry it; strval() on an array would only warn.
+			'everything as text' => array_map(
+				static fn( $v ) => is_array( $v ) ? implode( ',', $v ) : (string) ( is_bool( $v ) ? (int) $v : $v ),
+				SettingsPage::defaults()
+			),
 			'nonsense'           => array_fill_keys( array_keys( SettingsPage::defaults() ), 'nonsense' ),
 		];
 
@@ -223,5 +228,159 @@ class SettingsRestValueTest extends WP_UnitTestCase {
 
 			$this->assertTrue( $result, "Sanitising {$name}: " . ( is_wp_error( $result ) ? $result->get_error_message() : '' ) );
 		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Week and day view settings (2.3.0)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The four time-of-day keys and the defaults they fall back to.
+	 *
+	 * @return array[]
+	 */
+	public function time_keys(): array {
+		return [
+			'slot min'       => [ 'calendar_slot_min_time', '00:00:00' ],
+			'slot max'       => [ 'calendar_slot_max_time', '24:00:00' ],
+			'business start' => [ 'calendar_business_start', '09:00:00' ],
+			'business end'   => [ 'calendar_business_end', '17:00:00' ],
+		];
+	}
+
+	/**
+	 * @dataProvider time_keys
+	 */
+	public function test_a_malformed_time_keeps_the_default( string $key, string $fallback ): void {
+		$page = new SettingsPage();
+
+		foreach ( [ '9am', '25:00:00', '08:00', '24:30:00', 8, null, [ '08:00:00' ] ] as $bad ) {
+			$this->assertSame( $fallback, $page->sanitize( [ $key => $bad ] )[ $key ], "{$key} given " . wp_json_encode( $bad ) );
+		}
+	}
+
+	/**
+	 * @dataProvider time_keys
+	 */
+	public function test_a_well_formed_time_is_kept( string $key ): void {
+		$page = new SettingsPage();
+
+		// Each key is tested with a value that keeps its pair in order. (Not
+		// str_contains( 'end' ): "calendar" contains it.)
+		$value = str_ends_with( $key, '_end' ) || str_ends_with( $key, '_max_time' ) ? '23:00:00' : '01:00:00';
+
+		$this->assertSame( $value, $page->sanitize( [ $key => $value ] )[ $key ] );
+	}
+
+	public function test_a_slot_range_that_ends_before_it_starts_resets_both(): void {
+		$page = new SettingsPage();
+
+		foreach ( [ '08:00:00', '10:00:00' ] as $max ) {
+			$result = $page->sanitize(
+				[
+					'calendar_slot_min_time' => '10:00:00',
+					'calendar_slot_max_time' => $max,
+				]
+			);
+
+			$this->assertSame( '00:00:00', $result['calendar_slot_min_time'], "max {$max}" );
+			$this->assertSame( '24:00:00', $result['calendar_slot_max_time'], "max {$max}" );
+		}
+	}
+
+	public function test_a_slot_min_of_end_of_day_can_never_pass(): void {
+		$result = ( new SettingsPage() )->sanitize(
+			[
+				'calendar_slot_min_time' => '24:00:00',
+				'calendar_slot_max_time' => '24:00:00',
+			]
+		);
+
+		$this->assertSame( '00:00:00', $result['calendar_slot_min_time'] );
+	}
+
+	public function test_business_hours_that_end_before_they_start_reset_both(): void {
+		$result = ( new SettingsPage() )->sanitize(
+			[
+				'calendar_business_start' => '17:00:00',
+				'calendar_business_end'   => '09:00:00',
+			]
+		);
+
+		$this->assertSame( '09:00:00', $result['calendar_business_start'] );
+		$this->assertSame( '17:00:00', $result['calendar_business_end'] );
+	}
+
+	public function test_one_bad_time_in_a_pair_resets_the_pair(): void {
+		$result = ( new SettingsPage() )->sanitize(
+			[
+				'calendar_business_start' => '08:00:00',
+				'calendar_business_end'   => 'late',
+			]
+		);
+
+		$this->assertSame( '09:00:00', $result['calendar_business_start'], 'a half-valid range is harder to reason about than none' );
+		$this->assertSame( '17:00:00', $result['calendar_business_end'] );
+	}
+
+	/**
+	 * @return array[]
+	 */
+	public function weekday_inputs(): array {
+		return [
+			'not a list at all'    => [ 'nonsense', [ 1, 2, 3, 4, 5 ] ],
+			'only an invalid day'  => [ [ 9 ], [] ],
+			'one invalid, one not' => [ [ 9, 2 ], [ 2 ] ],
+			'a comma string'       => [ '1,1,2', [ 1, 2 ] ],
+			'an empty string'      => [ '', [] ],
+			'a number'             => [ 3, [ 1, 2, 3, 4, 5 ] ],
+			'gaps in the keys'     => [
+				[
+					5 => 6,
+					9 => 0,
+				],
+				[ 6, 0 ],
+			],
+		];
+	}
+
+	/**
+	 * @dataProvider weekday_inputs
+	 */
+	public function test_business_days_are_a_list_of_weekdays( mixed $input, array $expected ): void {
+		$result = ( new SettingsPage() )->sanitize( [ 'calendar_business_days' => $input ] );
+
+		$this->assertSame( $expected, $result['calendar_business_days'] );
+	}
+
+	public function test_the_year_view_is_an_accepted_default(): void {
+		$result = ( new SettingsPage() )->sanitize( [ 'calendar_default_view' => 'multiMonthYear' ] );
+
+		$this->assertSame( 'multiMonthYear', $result['calendar_default_view'] );
+	}
+
+	/**
+	 * Until 2.3.0 the settings page offered listWeek, a view the block never
+	 * had a button for. A site that chose it is read as the block's own list.
+	 */
+	public function test_a_saved_listweek_default_is_read_as_the_blocks_list_view(): void {
+		$this->store_raw( [ 'calendar_default_view' => 'listWeek' ] );
+
+		$this->assertSame( 'listWeek', get_option( SettingsPage::OPTION_NAME )['calendar_default_view'], 'Precondition: the old name is really stored.' );
+		$this->assertSame( 'listNextMonth', $this->from_the_endpoint()['calendar_default_view'] );
+
+		// get() hands the block what is stored, so the block maps it itself.
+		\Blockendar\DB\Schema::create_tables();
+		$html = (string) render_block(
+			[
+				'blockName'    => 'blockendar/calendar-view',
+				'attrs'        => [],
+				'innerBlocks'  => [],
+				'innerHTML'    => '',
+				'innerContent' => [],
+			]
+		);
+
+		$this->assertStringContainsString( 'data-default-view="listNextMonth"', $html );
 	}
 }

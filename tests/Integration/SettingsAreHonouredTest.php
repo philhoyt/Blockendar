@@ -98,6 +98,58 @@ class SettingsAreHonouredTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'data-first-day="6"', $html );
 	}
 
+	public function test_the_week_and_day_view_settings_reach_the_block(): void {
+		update_option(
+			SettingsPage::OPTION_NAME,
+			[
+				'calendar_slot_min_time'  => '08:00:00',
+				'calendar_slot_max_time'  => '20:00:00',
+				'calendar_all_day_slot'   => false,
+				'calendar_business_hours' => true,
+				'calendar_business_days'  => [ 1, 3, 5 ],
+				'calendar_business_start' => '10:00:00',
+				'calendar_business_end'   => '16:00:00',
+			]
+		);
+
+		$html = $this->render( 'blockendar/calendar-view' );
+
+		$this->assertStringContainsString( 'data-slot-min-time="08:00:00"', $html );
+		$this->assertStringContainsString( 'data-slot-max-time="20:00:00"', $html );
+		$this->assertStringContainsString( 'data-all-day-slot="false"', $html );
+		$this->assertStringContainsString(
+			'data-business-hours="' . esc_attr( '{"daysOfWeek":[1,3,5],"startTime":"10:00:00","endTime":"16:00:00"}' ) . '"',
+			$html
+		);
+	}
+
+	public function test_the_week_and_day_view_defaults_are_fullcalendars_own(): void {
+		$html = $this->render( 'blockendar/calendar-view' );
+
+		$this->assertStringContainsString( 'data-slot-min-time="00:00:00"', $html );
+		$this->assertStringContainsString( 'data-slot-max-time="24:00:00"', $html );
+		$this->assertStringContainsString( 'data-all-day-slot="true"', $html );
+		$this->assertStringContainsString( 'data-business-hours=""', $html, 'off by default' );
+	}
+
+	/**
+	 * FullCalendar keeps a definition with no days and shades every hour of
+	 * every day, so no days has to mean off.
+	 */
+	public function test_business_hours_with_no_days_are_sent_as_off(): void {
+		update_option(
+			SettingsPage::OPTION_NAME,
+			[
+				'calendar_business_hours' => true,
+				'calendar_business_days'  => [],
+			]
+		);
+
+		$html = $this->render( 'blockendar/calendar-view' );
+
+		$this->assertStringContainsString( 'data-business-hours=""', $html );
+	}
+
 	// -------------------------------------------------------------------------
 	// timezone_mode — event-datetime
 	// -------------------------------------------------------------------------

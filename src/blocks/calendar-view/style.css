@@ -24,6 +24,9 @@
 	--blockendar-cal-btn-active-bg: #e2e4e7;
 	--blockendar-cal-btn-radius: 3px;
 
+	/* The current-time line in the week and day views */
+	--blockendar-cal-now-color: #d63638;
+
 	/* FullCalendar internals */
 	--fc-button-bg-color: var(--blockendar-cal-btn-bg);
 	--fc-button-border-color: var(--blockendar-cal-btn-border);
@@ -43,6 +46,10 @@
 	--fc-event-bg-color: #2271b1;
 	--fc-event-border-color: #2271b1;
 	--fc-list-event-hover-bg-color: color-mix(in srgb, currentcolor 5%, transparent);
+	--fc-now-indicator-color: var(--blockendar-cal-now-color);
+
+	/* Hours outside business hours, when the site shades them */
+	--fc-non-business-color: color-mix(in srgb, currentcolor 6%, transparent);
 
 	font-family: inherit;
 }
@@ -73,8 +80,9 @@
 	justify-content: center;
 }
 
-/* Column headers (Mon, Tue …) */
-.wp-block-blockendar-calendar-view .fc-col-header-cell-cushion {
+/* Column headers (Mon, Tue …) and the week-number column beside them */
+.wp-block-blockendar-calendar-view .fc-col-header-cell-cushion,
+.wp-block-blockendar-calendar-view .fc-daygrid-week-number {
 	text-decoration: none;
 	font-size: var(--blockendar-cal-header-size);
 	text-transform: uppercase;
@@ -160,6 +168,88 @@
 /* Hide the all-day indicator dot on desktop */
 .wp-block-blockendar-calendar-view .fc-daygrid-event-dot {
 	display: none;
+}
+
+/* --------------------------------------------------------------------------
+	Year view: twelve small months. FullCalendar fixes each row at the month's
+	width over its aspect ratio, about 50px, and folds any event that does not
+	fit into a "more" link. A chip here is a dot and the link a count, and the
+	day number gives up the month view's padding, so a row has room for both.
+	-------------------------------------------------------------------------- */
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-day-top {
+	padding: 2px 4px 0;
+}
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-day-number {
+	font-size: var(--blockendar-cal-header-size);
+	font-weight: 400;
+}
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-day-events {
+	padding: 0 4px;
+}
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-event {
+	flex-direction: row;
+	font-size: var(--blockendar-cal-event-time-size);
+	line-height: 1;
+}
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-event-dot {
+	display: inline-block;
+}
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-event-title,
+.wp-block-blockendar-calendar-view .fc-direction-ltr .fc-multimonth .fc-daygrid-event .fc-event-time,
+.wp-block-blockendar-calendar-view .fc-direction-rtl .fc-multimonth .fc-daygrid-event .fc-event-time {
+	display: none;
+}
+
+/* FullCalendar gives the link a border and block layout in this view */
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-more-link {
+	font-size: var(--blockendar-cal-event-time-size);
+	line-height: 1;
+	padding: 0;
+	border: 0;
+	text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+	Venue and cost under the title, in the week, day and list views.
+	Colour is inherited so the line stays readable on a type's own colour.
+	-------------------------------------------------------------------------- */
+
+.wp-block-blockendar-calendar-view .blockendar-calendar-event__meta {
+	display: block;
+	font-size: var(--blockendar-cal-event-time-size);
+	line-height: 1.3;
+	opacity: 0.85;
+}
+
+.wp-block-blockendar-calendar-view .blockendar-calendar-event__venue + .blockendar-calendar-event__cost::before {
+	content: " · ";
+}
+
+/*
+ * A chip too short for its title has no room for a second line. FullCalendar
+ * marks a chip "short" below 30px; one a little taller still clips the line,
+ * so the chip's own height decides. The harness has its height set by
+ * FullCalendar, so size containment costs it nothing.
+ */
+.wp-block-blockendar-calendar-view .fc-timegrid-event-harness {
+	container-type: size;
+}
+
+.wp-block-blockendar-calendar-view .fc-timegrid-event-short .blockendar-calendar-event__meta {
+	display: none;
+}
+
+@container (max-height: 72px) {
+
+	.wp-block-blockendar-calendar-view .blockendar-calendar-event__meta {
+		display: none;
+	}
 }
 
 /* --------------------------------------------------------------------------

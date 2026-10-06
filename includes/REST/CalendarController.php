@@ -400,9 +400,11 @@ class CalendarController extends AbstractController {
 			return null;
 		}
 
+		// Term names are stored with entities, so an "&" arrives as "&amp;".
+		// The calendar writes the name as text, not HTML, like the title.
 		return [
 			'id'   => $term->term_id,
-			'name' => $term->name,
+			'name' => html_entity_decode( $term->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
 			'city' => get_term_meta( $term->term_id, 'blockendar_venue_city', true ),
 		];
 	}
@@ -425,7 +427,7 @@ class CalendarController extends AbstractController {
 
 			$types[] = [
 				'id'   => $term->term_id,
-				'name' => $term->name,
+				'name' => html_entity_decode( $term->name, ENT_QUOTES | ENT_HTML5, 'UTF-8' ),
 				'slug' => $term->slug,
 			];
 		}

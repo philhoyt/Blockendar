@@ -8,6 +8,7 @@
  * FullCalendar and its view plugins are loaded with dynamic import() so webpack
  * emits them as separate chunks: the entry script stays small, and a calendar
  * configured for month view alone never downloads the timeGrid or list code.
+ * The chunks are named so a test can tell which plugin a request was for.
  */
 import {
 	createRoot,
@@ -20,29 +21,19 @@ import { speak } from '@wordpress/a11y';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { eventTimeFormat, localeCandidates } from './locale';
 import { LOCALE_LOADERS } from './locale-loaders';
+import {
+	pluginForView,
+	navLinkOptions,
+	siteNow,
+	eventsPerDay,
+	eventMeta,
+	timeOfDay,
+	businessHoursFromDataset,
+} from './view-config';
 
 const MOBILE_MQ = '(max-width: 767px)';
 const MOBILE_VIEW = 'listNextMonth';
 const DEFAULT_VIEWS = [ 'dayGridMonth', 'timeGridWeek', 'listNextMonth' ];
-
-/**
- * Map a FullCalendar view name to the plugin package that provides it.
- *
- * @param {string} view View name, e.g. 'dayGridMonth' or 'listNextMonth'.
- * @return {string|null} Plugin key, or null when the view is unrecognised.
- */
-function pluginForView( view ) {
-	if ( view.startsWith( 'dayGrid' ) ) {
-		return 'dayGrid';
-	}
-	if ( view.startsWith( 'timeGrid' ) ) {
-		return 'timeGrid';
-	}
-	if ( view.startsWith( 'list' ) ) {
-		return 'list';
-	}
-	return null;
-}
 
 /**
  * Load FullCalendar's strings for the site's language.
@@ -95,15 +86,28 @@ async function loadCalendar( views, localeCandidates ) {
 
 	const [ locale, { default: Calendar }, ...plugins ] = await Promise.all( [
 		loadLocale( localeCandidates ),
-		import( '@fullcalendar/react' ),
+		import(
+			/* webpackChunkName: "fullcalendar-core" */ '@fullcalendar/react'
+		),
 		...[ ...needed ].map( ( plugin ) => {
 			if ( 'dayGrid' === plugin ) {
-				return import( '@fullcalendar/daygrid' );
+				return import(
+					/* webpackChunkName: "fullcalendar-daygrid" */ '@fullcalendar/daygrid'
+				);
 			}
 			if ( 'timeGrid' === plugin ) {
-				return import( '@fullcalendar/timegrid' );
+				return import(
+					/* webpackChunkName: "fullcalendar-timegrid" */ '@fullcalendar/timegrid'
+				);
 			}
-			return import( '@fullcalendar/list' );
+			if ( 'multiMonth' === plugin ) {
+				return import(
+					/* webpackChunkName: "fullcalendar-multimonth" */ '@fullcalendar/multimonth'
+				);
+			}
+			return import(
+				/* webpackChunkName: "fullcalendar-list" */ '@fullcalendar/list'
+			);
 		} ),
 	] );
 
@@ -138,6 +142,100 @@ function parseList( raw, fallback = [] ) {
 	}
 }
 
+/**
+ * The venue and cost line under an event's title, or null.
+ *
+ * @param {Object} event FullCalendar event.
+ * @return {JSX.Element|null} The line.
+ */
+function MetaLine( { event } ) {
+	const meta = eventMeta( event.extendedProps );
+
+	if ( ! meta ) {
+		return null;
+	}
+
+	return (
+		<span className="blockendar-calendar-event__meta">
+			{ meta.venue && (
+				<span className="blockendar-calendar-event__venue">
+					{ meta.venue }
+				</span>
+			) }
+			{ meta.cost && (
+				<span className="blockendar-calendar-event__cost">
+					{ meta.cost }
+				</span>
+			) }
+		</span>
+	);
+}
+
+/**
+ * What goes inside an event chip.
+ *
+ * The month and year views, and the all-day strip of the week and day views,
+ * keep FullCalendar's own content: a chip there is too small for a second
+ * line. Timed events in the week and day views, and every event in the list
+ * view, get the venue and cost under the title.
+ *
+ * Custom content replaces FullCalendar's inner markup, so the time-grid
+ * branch reproduces its structure (the block's stylesheet and FullCalendar's
+ * short-event layout both key off those class names), and the list branch
+ * renders the anchor FullCalendar would have: the row's click still goes
+ * through eventClick, which is bound on the row, but the link and its
+ * keyboard focus live on this element.
+ *
+ * @param {Object} arg FullCalendar's eventContent argument.
+ * @return {JSX.Element|boolean} Content, or true for the default.
+ */
+function renderEventContent( arg ) {
+	const { event, timeText, view } = arg;
+
+	if ( view.type.startsWith( 'list' ) ) {
+		return (
+			<>
+				<a href={ event.url }>{ event.title }</a>
+				<MetaLine event={ event } />
+			</>
+		);
+	}
+
+	// The all-day strip above the hours draws its chips sideways, with no
+	// room for a second line; they keep FullCalendar's own content.
+	if ( ! view.type.startsWith( 'timeGrid' ) || event.allDay ) {
+		return true;
+	}
+
+	return (
+		<div className="fc-event-main-frame">
+			{ timeText && <div className="fc-event-time">{ timeText }</div> }
+			<div className="fc-event-title-container">
+				<div className="fc-event-title fc-sticky">
+					{ event.title || '\u00A0' }
+				</div>
+				<MetaLine event={ event } />
+			</div>
+		</div>
+	);
+}
+
+/**
+ * The text of a "+N more" link.
+ *
+ * A year-view cell is too narrow for the words, so it gets the count alone.
+ *
+ * @param {Object} arg FullCalendar's moreLinkContent argument.
+ * @return {string|boolean} The short text, or true for the default.
+ */
+function renderMoreLink( arg ) {
+	if ( arg.view.type.startsWith( 'multiMonth' ) ) {
+		return arg.shortText || `+${ arg.num }`;
+	}
+
+	return true;
+}
+
 function BlockendarCalendar( { dataset, onReady } ) {
 	const calendarRef = useRef( null );
 	const [ loaded, setLoaded ] = useState( null );
@@ -153,8 +251,18 @@ function BlockendarCalendar( { dataset, onReady } ) {
 	const slotDuration = dataset.slotDuration || undefined;
 	const timezone = dataset.timezone ?? 'UTC';
 	const enabledViews = parseList( dataset.enabledViews, DEFAULT_VIEWS );
+	const weekNumbers = dataset.weekNumbers === 'true';
+	const dayMaxEvents = eventsPerDay( dataset.eventsPerDay );
+	const slotMinTime = timeOfDay( dataset.slotMinTime, '00:00:00' );
+	const slotMaxTime = timeOfDay( dataset.slotMaxTime, '24:00:00' );
+	const allDaySlot = dataset.allDaySlot !== 'false';
+	const businessHours = businessHoursFromDataset( dataset.businessHours );
 
 	const viewButtons = enabledViews.join( ',' );
+
+	// Every view the calendar can render: the loader downloads plugins for
+	// the same list, so a nav link never targets a view that is not loaded.
+	const renderableViews = [ ...enabledViews, defaultView ];
 
 	// Custom view: rolling 31-day list starting from today. FullCalendar has no
 	// label of its own for a custom view, so it borrows the locale's for "list".
@@ -172,10 +280,7 @@ function BlockendarCalendar( { dataset, onReady } ) {
 	useEffect( () => {
 		let cancelled = false;
 
-		loadCalendar(
-			[ ...enabledViews, defaultView ],
-			localeCandidates( dataset.locale )
-		)
+		loadCalendar( renderableViews, localeCandidates( dataset.locale ) )
 			.then( ( result ) => {
 				if ( ! cancelled ) {
 					setLoaded( result );
@@ -311,17 +416,32 @@ function BlockendarCalendar( { dataset, onReady } ) {
 				direction={ 'rtl' === dataset.direction ? 'rtl' : 'ltr' }
 				eventTimeFormat={ eventTimeFormat( dataset.timeFormat ) }
 				timeZone={ timezone }
+				now={ () => siteNow( timezone ) }
+				nowIndicator
+				weekNumbers={ weekNumbers }
 				initialView={ isMobile() ? MOBILE_VIEW : defaultView }
 				firstDay={ firstDay }
 				slotDuration={ slotDuration }
+				slotMinTime={ slotMinTime }
+				slotMaxTime={ slotMaxTime }
+				allDaySlot={ allDaySlot }
+				businessHours={ businessHours }
 				views={ customViews }
+				multiMonthMaxColumns={ 3 }
+				{ ...navLinkOptions( renderableViews ) }
 				headerToolbar={ {
 					left: 'prev,next today',
 					center: 'title',
 					right: viewButtons,
 				} }
 				events={ fetchEvents }
-				dayMaxEvents={ 3 }
+				eventContent={ renderEventContent }
+				moreLinkContent={ renderMoreLink }
+				noEventsContent={ __(
+					'No events in this period.',
+					'blockendar'
+				) }
+				dayMaxEvents={ dayMaxEvents }
 				eventClick={ ( info ) => {
 					if ( info.event.url ) {
 						info.jsEvent.preventDefault();
