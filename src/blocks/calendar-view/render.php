@@ -26,6 +26,27 @@ $first_day     = (int) ( $attributes['firstDay'] ?? \Blockendar\Admin\SettingsPa
 
 // Applies to the time-grid views only; FullCalendar ignores it elsewhere.
 $slot_duration = (string) \Blockendar\Admin\SettingsPage::get( 'calendar_slot_duration' );
+$slot_min_time = (string) \Blockendar\Admin\SettingsPage::get( 'calendar_slot_min_time' );
+$slot_max_time = (string) \Blockendar\Admin\SettingsPage::get( 'calendar_slot_max_time' );
+$all_day_slot  = \Blockendar\Admin\SettingsPage::get( 'calendar_all_day_slot' ) ? 'true' : 'false';
+
+/*
+ * Business hours travel as one JSON object in FullCalendar's own shape, or
+ * an empty attribute when off. An empty day list is "off" too: FullCalendar
+ * would otherwise keep the definition and shade every hour of every day.
+ */
+$business_days  = array_values( array_map( 'intval', (array) \Blockendar\Admin\SettingsPage::get( 'calendar_business_days' ) ) );
+$business_hours = '';
+
+if ( \Blockendar\Admin\SettingsPage::get( 'calendar_business_hours' ) && ! empty( $business_days ) ) {
+	$business_hours = (string) wp_json_encode(
+		[
+			'daysOfWeek' => $business_days,
+			'startTime'  => (string) \Blockendar\Admin\SettingsPage::get( 'calendar_business_start' ),
+			'endTime'    => (string) \Blockendar\Admin\SettingsPage::get( 'calendar_business_end' ),
+		]
+	);
+}
 $venue_ids     = array_map( 'intval', (array) ( $attributes['venueIds'] ?? [] ) );
 $type_ids      = array_map( 'intval', (array) ( $attributes['typeIds'] ?? [] ) );
 $featured_only = ! empty( $attributes['featuredOnly'] ) ? 'true' : 'false';
@@ -69,6 +90,10 @@ $data_attrs = [
 	'data-default-view'   => $default_view,
 	'data-first-day'      => (string) $first_day,
 	'data-slot-duration'  => $slot_duration,
+	'data-slot-min-time'  => $slot_min_time,
+	'data-slot-max-time'  => $slot_max_time,
+	'data-all-day-slot'   => $all_day_slot,
+	'data-business-hours' => $business_hours,
 	'data-enabled-views'  => wp_json_encode( $enabled_views ),
 	'data-featured-only'  => $featured_only,
 	'data-week-numbers'   => $week_numbers,
