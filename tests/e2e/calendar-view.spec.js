@@ -343,8 +343,11 @@ test( 'a failed events request says so and offers a retry', async ( {
 test( 'the fallback list stays when the calendar chunks fail to load', async ( {
 	page,
 } ) => {
-	// Everything in build/ except the block's own entry script.
-	await page.route( /\/build\/\d+\.js/, ( route ) => route.abort() );
+	// Everything in build/ except the block's own entry script: the named
+	// FullCalendar chunks and the numbered locale chunks.
+	await page.route( /\/build\/(\d+|fullcalendar-[a-z]+)\.js/, ( route ) =>
+		route.abort()
+	);
 
 	await page.goto( `/?p=${ pageId }` );
 

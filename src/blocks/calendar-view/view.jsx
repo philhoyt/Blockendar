@@ -8,6 +8,7 @@
  * FullCalendar and its view plugins are loaded with dynamic import() so webpack
  * emits them as separate chunks: the entry script stays small, and a calendar
  * configured for month view alone never downloads the timeGrid or list code.
+ * The chunks are named so a test can tell which plugin a request was for.
  */
 import {
 	createRoot,
@@ -95,15 +96,23 @@ async function loadCalendar( views, localeCandidates ) {
 
 	const [ locale, { default: Calendar }, ...plugins ] = await Promise.all( [
 		loadLocale( localeCandidates ),
-		import( '@fullcalendar/react' ),
+		import(
+			/* webpackChunkName: "fullcalendar-core" */ '@fullcalendar/react'
+		),
 		...[ ...needed ].map( ( plugin ) => {
 			if ( 'dayGrid' === plugin ) {
-				return import( '@fullcalendar/daygrid' );
+				return import(
+					/* webpackChunkName: "fullcalendar-daygrid" */ '@fullcalendar/daygrid'
+				);
 			}
 			if ( 'timeGrid' === plugin ) {
-				return import( '@fullcalendar/timegrid' );
+				return import(
+					/* webpackChunkName: "fullcalendar-timegrid" */ '@fullcalendar/timegrid'
+				);
 			}
-			return import( '@fullcalendar/list' );
+			return import(
+				/* webpackChunkName: "fullcalendar-list" */ '@fullcalendar/list'
+			);
 		} ),
 	] );
 
