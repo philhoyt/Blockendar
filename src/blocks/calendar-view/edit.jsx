@@ -19,6 +19,7 @@ const VIEW_OPTIONS = [
 	{ label: __( 'Week', 'blockendar' ), value: 'timeGridWeek' },
 	{ label: __( 'Day', 'blockendar' ), value: 'timeGridDay' },
 	{ label: __( 'List', 'blockendar' ), value: 'listNextMonth' },
+	{ label: __( 'Year', 'blockendar' ), value: 'multiMonthYear' },
 ];
 
 const FIRST_DAY_OPTIONS = [

@@ -8,7 +8,8 @@ const VIEW_OPTIONS = [
 	{ label: __( 'Month (Grid)', 'blockendar' ), value: 'dayGridMonth' },
 	{ label: __( 'Week (Time)', 'blockendar' ), value: 'timeGridWeek' },
 	{ label: __( 'Day (Time)', 'blockendar' ), value: 'timeGridDay' },
-	{ label: __( 'List (Week)', 'blockendar' ), value: 'listWeek' },
+	{ label: __( 'List (Next 31 days)', 'blockendar' ), value: 'listNextMonth' },
+	{ label: __( 'Year', 'blockendar' ), value: 'multiMonthYear' },
 ];
 
 // All seven: the default follows WordPress's "Week Starts On", which can be
