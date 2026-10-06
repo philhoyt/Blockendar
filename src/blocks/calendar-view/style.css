@@ -24,6 +24,9 @@
 	--blockendar-cal-btn-active-bg: #e2e4e7;
 	--blockendar-cal-btn-radius: 3px;
 
+	/* The current-time line in the week and day views */
+	--blockendar-cal-now-color: #d63638;
+
 	/* FullCalendar internals */
 	--fc-button-bg-color: var(--blockendar-cal-btn-bg);
 	--fc-button-border-color: var(--blockendar-cal-btn-border);
@@ -43,6 +46,7 @@
 	--fc-event-bg-color: #2271b1;
 	--fc-event-border-color: #2271b1;
 	--fc-list-event-hover-bg-color: color-mix(in srgb, currentcolor 5%, transparent);
+	--fc-now-indicator-color: var(--blockendar-cal-now-color);
 
 	font-family: inherit;
 }
@@ -73,8 +77,9 @@
 	justify-content: center;
 }
 
-/* Column headers (Mon, Tue …) */
-.wp-block-blockendar-calendar-view .fc-col-header-cell-cushion {
+/* Column headers (Mon, Tue …) and the week-number column beside them */
+.wp-block-blockendar-calendar-view .fc-col-header-cell-cushion,
+.wp-block-blockendar-calendar-view .fc-daygrid-week-number {
 	text-decoration: none;
 	font-size: var(--blockendar-cal-header-size);
 	text-transform: uppercase;
