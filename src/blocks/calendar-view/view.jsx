@@ -21,29 +21,11 @@ import { speak } from '@wordpress/a11y';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { eventTimeFormat, localeCandidates } from './locale';
 import { LOCALE_LOADERS } from './locale-loaders';
+import { pluginForView, navLinkOptions } from './view-config';
 
 const MOBILE_MQ = '(max-width: 767px)';
 const MOBILE_VIEW = 'listNextMonth';
 const DEFAULT_VIEWS = [ 'dayGridMonth', 'timeGridWeek', 'listNextMonth' ];
-
-/**
- * Map a FullCalendar view name to the plugin package that provides it.
- *
- * @param {string} view View name, e.g. 'dayGridMonth' or 'listNextMonth'.
- * @return {string|null} Plugin key, or null when the view is unrecognised.
- */
-function pluginForView( view ) {
-	if ( view.startsWith( 'dayGrid' ) ) {
-		return 'dayGrid';
-	}
-	if ( view.startsWith( 'timeGrid' ) ) {
-		return 'timeGrid';
-	}
-	if ( view.startsWith( 'list' ) ) {
-		return 'list';
-	}
-	return null;
-}
 
 /**
  * Load FullCalendar's strings for the site's language.
@@ -110,6 +92,11 @@ async function loadCalendar( views, localeCandidates ) {
 					/* webpackChunkName: "fullcalendar-timegrid" */ '@fullcalendar/timegrid'
 				);
 			}
+			if ( 'multiMonth' === plugin ) {
+				return import(
+					/* webpackChunkName: "fullcalendar-multimonth" */ '@fullcalendar/multimonth'
+				);
+			}
 			return import(
 				/* webpackChunkName: "fullcalendar-list" */ '@fullcalendar/list'
 			);
@@ -165,6 +152,10 @@ function BlockendarCalendar( { dataset, onReady } ) {
 
 	const viewButtons = enabledViews.join( ',' );
 
+	// Every view the calendar can render: the loader downloads plugins for
+	// the same list, so a nav link never targets a view that is not loaded.
+	const renderableViews = [ ...enabledViews, defaultView ];
+
 	// Custom view: rolling 31-day list starting from today. FullCalendar has no
 	// label of its own for a custom view, so it borrows the locale's for "list".
 	const customViews = {
@@ -181,10 +172,7 @@ function BlockendarCalendar( { dataset, onReady } ) {
 	useEffect( () => {
 		let cancelled = false;
 
-		loadCalendar(
-			[ ...enabledViews, defaultView ],
-			localeCandidates( dataset.locale )
-		)
+		loadCalendar( renderableViews, localeCandidates( dataset.locale ) )
 			.then( ( result ) => {
 				if ( ! cancelled ) {
 					setLoaded( result );
@@ -324,6 +312,8 @@ function BlockendarCalendar( { dataset, onReady } ) {
 				firstDay={ firstDay }
 				slotDuration={ slotDuration }
 				views={ customViews }
+				multiMonthMaxColumns={ 3 }
+				{ ...navLinkOptions( renderableViews ) }
 				headerToolbar={ {
 					left: 'prev,next today',
 					center: 'title',
