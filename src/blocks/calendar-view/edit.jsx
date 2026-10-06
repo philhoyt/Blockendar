@@ -281,7 +281,7 @@ export function Edit( { attributes, setAttributes } ) {
 						<ToggleControl
 							label={ __( 'Show week numbers', 'blockendar' ) }
 							help={ __(
-								'Adds a column of week numbers to the month view. With the week view enabled, each one links to its week.',
+								'Shows week numbers in the month, week, day and year views. With the week view enabled, each one links to its week.',
 								'blockendar'
 							) }
 							checked={ weekNumbers }
