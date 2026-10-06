@@ -21,7 +21,12 @@ import { speak } from '@wordpress/a11y';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { eventTimeFormat, localeCandidates } from './locale';
 import { LOCALE_LOADERS } from './locale-loaders';
-import { pluginForView, navLinkOptions } from './view-config';
+import {
+	pluginForView,
+	navLinkOptions,
+	siteNow,
+	eventsPerDay,
+} from './view-config';
 
 const MOBILE_MQ = '(max-width: 767px)';
 const MOBILE_VIEW = 'listNextMonth';
@@ -149,6 +154,8 @@ function BlockendarCalendar( { dataset, onReady } ) {
 	const slotDuration = dataset.slotDuration || undefined;
 	const timezone = dataset.timezone ?? 'UTC';
 	const enabledViews = parseList( dataset.enabledViews, DEFAULT_VIEWS );
+	const weekNumbers = dataset.weekNumbers === 'true';
+	const dayMaxEvents = eventsPerDay( dataset.eventsPerDay );
 
 	const viewButtons = enabledViews.join( ',' );
 
@@ -308,6 +315,9 @@ function BlockendarCalendar( { dataset, onReady } ) {
 				direction={ 'rtl' === dataset.direction ? 'rtl' : 'ltr' }
 				eventTimeFormat={ eventTimeFormat( dataset.timeFormat ) }
 				timeZone={ timezone }
+				now={ () => siteNow( timezone ) }
+				nowIndicator
+				weekNumbers={ weekNumbers }
 				initialView={ isMobile() ? MOBILE_VIEW : defaultView }
 				firstDay={ firstDay }
 				slotDuration={ slotDuration }
@@ -320,7 +330,7 @@ function BlockendarCalendar( { dataset, onReady } ) {
 					right: viewButtons,
 				} }
 				events={ fetchEvents }
-				dayMaxEvents={ 3 }
+				dayMaxEvents={ dayMaxEvents }
 				eventClick={ ( info ) => {
 					if ( info.event.url ) {
 						info.jsEvent.preventDefault();

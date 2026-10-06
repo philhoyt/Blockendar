@@ -58,3 +58,78 @@ export function navLinkOptions( views ) {
 		navLinkWeekClick: hasWeek ? WEEK_VIEW : DAY_VIEW,
 	};
 }
+
+/**
+ * Two-digit zero-padded number.
+ *
+ * @param {number} n Value.
+ * @return {string} Padded value.
+ */
+function pad( n ) {
+	return String( n ).padStart( 2, '0' );
+}
+
+/**
+ * The current wall-clock time in the site's zone, as a naive ISO string.
+ *
+ * The calendar is given a named IANA zone with no timezone plugin, so it
+ * cannot work out offsets itself and would place "now" at the visitor's local
+ * wall clock while drawing events at the site's. FullCalendar reads a naive
+ * string as wall clock in its own zone, so handing it this string puts the
+ * now indicator and the "today" highlight where the site's clock says.
+ *
+ * Computed in the browser from the zone name rather than from a server
+ * offset: a cached page would otherwise carry a stale offset across a
+ * daylight-saving change.
+ *
+ * @param {string} timeZone IANA zone name, 'UTC', or 'local'.
+ * @param {Date}   [date]   The instant to format; defaults to now.
+ * @return {string} 'YYYY-MM-DDTHH:MM:SS' in that zone.
+ */
+export function siteNow( timeZone, date = new Date() ) {
+	if ( timeZone && 'local' !== timeZone ) {
+		try {
+			const parts = new Intl.DateTimeFormat( 'en-CA', {
+				timeZone,
+				hourCycle: 'h23',
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit',
+				second: '2-digit',
+			} ).formatToParts( date );
+			const get = ( type ) =>
+				parts.find( ( part ) => part.type === type )?.value;
+
+			return `${ get( 'year' ) }-${ get( 'month' ) }-${ get(
+				'day'
+			) }T${ get( 'hour' ) }:${ get( 'minute' ) }:${ get( 'second' ) }`;
+		} catch {
+			// An unknown zone name throws. The browser's clock is the same
+			// fallback FullCalendar uses on its own.
+		}
+	}
+
+	return `${ date.getFullYear() }-${ pad( date.getMonth() + 1 ) }-${ pad(
+		date.getDate()
+	) }T${ pad( date.getHours() ) }:${ pad( date.getMinutes() ) }:${ pad(
+		date.getSeconds()
+	) }`;
+}
+
+/**
+ * Events a day may show before the rest fold into a "more" link.
+ *
+ * @param {string|undefined} raw The data attribute value.
+ * @return {number} An integer from 1 to 10; 3 when the value is unusable.
+ */
+export function eventsPerDay( raw ) {
+	const n = parseInt( raw, 10 );
+
+	if ( Number.isNaN( n ) ) {
+		return 3;
+	}
+
+	return Math.min( 10, Math.max( 1, n ) );
+}
