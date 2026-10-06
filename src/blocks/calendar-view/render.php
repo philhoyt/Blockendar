@@ -22,7 +22,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 $enabled_views = $attributes['enabledViews'] ?? [ 'dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listNextMonth' ];
 $default_view  = $attributes['defaultView'] ?? \Blockendar\Admin\SettingsPage::get( 'calendar_default_view' );
-$first_day     = (int) ( $attributes['firstDay'] ?? \Blockendar\Admin\SettingsPage::get( 'calendar_first_day' ) );
+
+// Until 2.3.0 the settings page offered FullCalendar's listWeek, a view this
+// block never had a button for. The setting is rewritten on its next save;
+// until then get() hands back what is stored, so the block maps it itself.
+if ( 'listWeek' === $default_view ) {
+	$default_view = 'listNextMonth';
+}
+$first_day = (int) ( $attributes['firstDay'] ?? \Blockendar\Admin\SettingsPage::get( 'calendar_first_day' ) );
 
 // Applies to the time-grid views only; FullCalendar ignores it elsewhere.
 $slot_duration = (string) \Blockendar\Admin\SettingsPage::get( 'calendar_slot_duration' );
