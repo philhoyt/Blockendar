@@ -133,3 +133,34 @@ export function eventsPerDay( raw ) {
 
 	return Math.min( 10, Math.max( 1, n ) );
 }
+
+/**
+ * The venue and cost line shown under an event's title.
+ *
+ * Read from the extendedProps the calendar feed already sends for every
+ * event. The month and year views have no room for it; the week, day and
+ * list views do.
+ *
+ * @param {Object} [extendedProps]       The event's extendedProps.
+ * @param {Object} [extendedProps.venue] Venue summary: id, name, city.
+ * @param {string} [extendedProps.cost]  Cost as the editor entered it.
+ * @return {{venue: string|null, cost: string|null}|null} The two strings, or
+ *   null when the event has neither.
+ */
+export function eventMeta( extendedProps = {} ) {
+	const name = extendedProps.venue?.name?.trim() || '';
+	const city = extendedProps.venue?.city?.trim() || '';
+	const cost = String( extendedProps.cost ?? '' ).trim();
+
+	let venue = null;
+
+	if ( name ) {
+		venue = city ? `${ name }, ${ city }` : name;
+	}
+
+	if ( ! venue && ! cost ) {
+		return null;
+	}
+
+	return { venue, cost: cost || null };
+}
