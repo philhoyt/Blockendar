@@ -217,6 +217,22 @@ function renderEventContent( arg ) {
 	);
 }
 
+/**
+ * The text of a "+N more" link.
+ *
+ * A year-view cell is too narrow for the words, so it gets the count alone.
+ *
+ * @param {Object} arg FullCalendar's moreLinkContent argument.
+ * @return {string|boolean} The short text, or true for the default.
+ */
+function renderMoreLink( arg ) {
+	if ( arg.view.type.startsWith( 'multiMonth' ) ) {
+		return arg.shortText || `+${ arg.num }`;
+	}
+
+	return true;
+}
+
 function BlockendarCalendar( { dataset, onReady } ) {
 	const calendarRef = useRef( null );
 	const [ loaded, setLoaded ] = useState( null );
@@ -417,6 +433,7 @@ function BlockendarCalendar( { dataset, onReady } ) {
 				} }
 				events={ fetchEvents }
 				eventContent={ renderEventContent }
+				moreLinkContent={ renderMoreLink }
 				noEventsContent={ __(
 					'No events in this period.',
 					'blockendar'

@@ -171,6 +171,51 @@
 }
 
 /* --------------------------------------------------------------------------
+	Year view: twelve small months. FullCalendar fixes each row at the month's
+	width over its aspect ratio, about 50px, and folds any event that does not
+	fit into a "more" link. A chip here is a dot and the link a count, and the
+	day number gives up the month view's padding, so a row has room for both.
+	-------------------------------------------------------------------------- */
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-day-top {
+	padding: 2px 4px 0;
+}
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-day-number {
+	font-size: var(--blockendar-cal-header-size);
+	font-weight: 400;
+}
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-day-events {
+	padding: 0 4px;
+}
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-event {
+	flex-direction: row;
+	font-size: var(--blockendar-cal-event-time-size);
+	line-height: 1;
+}
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-event-dot {
+	display: inline-block;
+}
+
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-event-title,
+.wp-block-blockendar-calendar-view .fc-direction-ltr .fc-multimonth .fc-daygrid-event .fc-event-time,
+.wp-block-blockendar-calendar-view .fc-direction-rtl .fc-multimonth .fc-daygrid-event .fc-event-time {
+	display: none;
+}
+
+/* FullCalendar gives the link a border and block layout in this view */
+.wp-block-blockendar-calendar-view .fc-multimonth .fc-daygrid-more-link {
+	font-size: var(--blockendar-cal-event-time-size);
+	line-height: 1;
+	padding: 0;
+	border: 0;
+	text-align: center;
+}
+
+/* --------------------------------------------------------------------------
 	Venue and cost under the title, in the week, day and list views.
 	Colour is inherited so the line stays readable on a type's own colour.
 	-------------------------------------------------------------------------- */
