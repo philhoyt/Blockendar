@@ -26,6 +26,7 @@ import {
 	navLinkOptions,
 	siteNow,
 	eventsPerDay,
+	eventMeta,
 } from './view-config';
 
 const MOBILE_MQ = '(max-width: 767px)';
@@ -137,6 +138,81 @@ function parseList( raw, fallback = [] ) {
 	} catch {
 		return fallback;
 	}
+}
+
+/**
+ * The venue and cost line under an event's title, or null.
+ *
+ * @param {Object} event FullCalendar event.
+ * @return {JSX.Element|null} The line.
+ */
+function MetaLine( { event } ) {
+	const meta = eventMeta( event.extendedProps );
+
+	if ( ! meta ) {
+		return null;
+	}
+
+	return (
+		<span className="blockendar-calendar-event__meta">
+			{ meta.venue && (
+				<span className="blockendar-calendar-event__venue">
+					{ meta.venue }
+				</span>
+			) }
+			{ meta.cost && (
+				<span className="blockendar-calendar-event__cost">
+					{ meta.cost }
+				</span>
+			) }
+		</span>
+	);
+}
+
+/**
+ * What goes inside an event chip.
+ *
+ * The month and year views keep FullCalendar's own content: a chip there is
+ * too small for a second line. The week, day and list views get the venue
+ * and cost under the title.
+ *
+ * Custom content replaces FullCalendar's inner markup, so the time-grid
+ * branch reproduces its structure (the block's stylesheet and FullCalendar's
+ * short-event layout both key off those class names), and the list branch
+ * renders the anchor FullCalendar would have: the row's click still goes
+ * through eventClick, which is bound on the row, but the link and its
+ * keyboard focus live on this element.
+ *
+ * @param {Object} arg FullCalendar's eventContent argument.
+ * @return {JSX.Element|boolean} Content, or true for the default.
+ */
+function renderEventContent( arg ) {
+	const { event, timeText, view } = arg;
+
+	if ( view.type.startsWith( 'list' ) ) {
+		return (
+			<>
+				<a href={ event.url }>{ event.title }</a>
+				<MetaLine event={ event } />
+			</>
+		);
+	}
+
+	if ( ! view.type.startsWith( 'timeGrid' ) ) {
+		return true;
+	}
+
+	return (
+		<div className="fc-event-main-frame">
+			{ timeText && <div className="fc-event-time">{ timeText }</div> }
+			<div className="fc-event-title-container">
+				<div className="fc-event-title fc-sticky">
+					{ event.title || '\u00A0' }
+				</div>
+				<MetaLine event={ event } />
+			</div>
+		</div>
+	);
 }
 
 function BlockendarCalendar( { dataset, onReady } ) {
@@ -330,6 +406,7 @@ function BlockendarCalendar( { dataset, onReady } ) {
 					right: viewButtons,
 				} }
 				events={ fetchEvents }
+				eventContent={ renderEventContent }
 				dayMaxEvents={ dayMaxEvents }
 				eventClick={ ( info ) => {
 					if ( info.event.url ) {

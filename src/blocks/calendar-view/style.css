@@ -168,6 +168,27 @@
 }
 
 /* --------------------------------------------------------------------------
+	Venue and cost under the title, in the week, day and list views.
+	Colour is inherited so the line stays readable on a type's own colour.
+	-------------------------------------------------------------------------- */
+
+.wp-block-blockendar-calendar-view .blockendar-calendar-event__meta {
+	display: block;
+	font-size: var(--blockendar-cal-event-time-size);
+	line-height: 1.3;
+	opacity: 0.85;
+}
+
+.wp-block-blockendar-calendar-view .blockendar-calendar-event__venue + .blockendar-calendar-event__cost::before {
+	content: " · ";
+}
+
+/* A chip too short for its title has no room for a second line */
+.wp-block-blockendar-calendar-view .fc-timegrid-event-short .blockendar-calendar-event__meta {
+	display: none;
+}
+
+/* --------------------------------------------------------------------------
 	Featured and cancelled events. The classes come with each event from the
 	server. A cancelled event is struck through, not faded: fading would take
 	its text below a readable contrast. A featured event is set in bold.
