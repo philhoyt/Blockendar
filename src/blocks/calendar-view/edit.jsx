@@ -8,6 +8,7 @@ import {
 	ToggleControl,
 	SelectControl,
 	TextControl,
+	RangeControl,
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
@@ -82,6 +83,8 @@ export function Edit( { attributes, setAttributes } ) {
 		enabledViews,
 		defaultView,
 		firstDay,
+		weekNumbers,
+		eventsPerDay,
 		showSubscribe,
 		subscribeLabel,
 		subscribeIcal,
@@ -274,6 +277,34 @@ export function Edit( { attributes, setAttributes } ) {
 							}
 							__nextHasNoMarginBottom
 						/>
+
+						<ToggleControl
+							label={ __( 'Show week numbers', 'blockendar' ) }
+							help={ __(
+								'Adds a column of week numbers to the month view. With the week view enabled, each one links to its week.',
+								'blockendar'
+							) }
+							checked={ weekNumbers }
+							onChange={ ( val ) =>
+								setAttributes( { weekNumbers: val } )
+							}
+							__nextHasNoMarginBottom
+						/>
+
+						<RangeControl
+							label={ __( 'Events per day', 'blockendar' ) }
+							help={ __(
+								'How many events a day shows in the month view and in the all-day row of the week and day views before the rest fold into a "more" link.',
+								'blockendar'
+							) }
+							value={ eventsPerDay }
+							onChange={ ( val ) =>
+								setAttributes( { eventsPerDay: val } )
+							}
+							min={ 1 }
+							max={ 10 }
+							__nextHasNoMarginBottom
+						/>
 					</VStack>
 				</PanelBody>
 
@@ -393,6 +424,25 @@ export function Edit( { attributes, setAttributes } ) {
 								)?.label ?? __( 'Site default', 'blockendar' ) }
 							</span>
 						</div>
+
+						{ weekNumbers && (
+							<div className="blockendar-calendar-placeholder__row">
+								<span className="blockendar-calendar-placeholder__badge">
+									{ __( 'Week numbers', 'blockendar' ) }
+								</span>
+							</div>
+						) }
+
+						{ eventsPerDay !== 3 && (
+							<div className="blockendar-calendar-placeholder__row">
+								<span className="blockendar-calendar-placeholder__label">
+									{ __( 'Events per day', 'blockendar' ) }
+								</span>
+								<span className="blockendar-calendar-placeholder__value">
+									{ eventsPerDay }
+								</span>
+							</div>
+						) }
 
 						{ types.length > 0 && (
 							<div className="blockendar-calendar-placeholder__row">
