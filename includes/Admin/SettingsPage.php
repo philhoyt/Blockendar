@@ -277,40 +277,63 @@ class SettingsPage {
 
 		$d = self::defaults();
 
+		// Each pair is validated together: a range whose end is not after its
+		// start would give FullCalendar nothing to draw, so both reset.
+		[ $slot_min, $slot_max ] = self::sanitize_time_range(
+			$raw['calendar_slot_min_time'] ?? $d['calendar_slot_min_time'],
+			$raw['calendar_slot_max_time'] ?? $d['calendar_slot_max_time'],
+			$d['calendar_slot_min_time'],
+			$d['calendar_slot_max_time']
+		);
+
+		[ $business_start, $business_end ] = self::sanitize_time_range(
+			$raw['calendar_business_start'] ?? $d['calendar_business_start'],
+			$raw['calendar_business_end'] ?? $d['calendar_business_end'],
+			$d['calendar_business_start'],
+			$d['calendar_business_end']
+		);
+
 		return [
 			// General.
-			'date_format'            => sanitize_text_field( $raw['date_format'] ?? $d['date_format'] ),
-			'time_format'            => sanitize_text_field( $raw['time_format'] ?? $d['time_format'] ),
-			'timezone_mode'          => in_array( $raw['timezone_mode'] ?? '', [ 'event', 'site' ], true )
+			'date_format'             => sanitize_text_field( $raw['date_format'] ?? $d['date_format'] ),
+			'time_format'             => sanitize_text_field( $raw['time_format'] ?? $d['time_format'] ),
+			'timezone_mode'           => in_array( $raw['timezone_mode'] ?? '', [ 'event', 'site' ], true )
 				? $raw['timezone_mode'] : $d['timezone_mode'],
 
 			// Calendar display.
-			'calendar_default_view'  => self::sanitize_default_view( $raw['calendar_default_view'] ?? '', $d['calendar_default_view'] ),
-			'calendar_first_day'     => max( 0, min( 6, (int) ( $raw['calendar_first_day'] ?? $d['calendar_first_day'] ) ) ),
-			'calendar_slot_duration' => sanitize_text_field( $raw['calendar_slot_duration'] ?? $d['calendar_slot_duration'] ),
+			'calendar_default_view'   => self::sanitize_default_view( $raw['calendar_default_view'] ?? '', $d['calendar_default_view'] ),
+			'calendar_first_day'      => max( 0, min( 6, (int) ( $raw['calendar_first_day'] ?? $d['calendar_first_day'] ) ) ),
+			'calendar_slot_duration'  => sanitize_text_field( $raw['calendar_slot_duration'] ?? $d['calendar_slot_duration'] ),
+			'calendar_slot_min_time'  => $slot_min,
+			'calendar_slot_max_time'  => $slot_max,
+			'calendar_all_day_slot'   => (bool) ( $raw['calendar_all_day_slot'] ?? $d['calendar_all_day_slot'] ),
+			'calendar_business_hours' => (bool) ( $raw['calendar_business_hours'] ?? $d['calendar_business_hours'] ),
+			'calendar_business_days'  => self::sanitize_weekdays( $raw['calendar_business_days'] ?? $d['calendar_business_days'], $d['calendar_business_days'] ),
+			'calendar_business_start' => $business_start,
+			'calendar_business_end'   => $business_end,
 
 			// Permalinks.
-			'events_slug'            => sanitize_title( $raw['events_slug'] ?? '' ) ?: $d['events_slug'],
+			'events_slug'             => sanitize_title( $raw['events_slug'] ?? '' ) ?: $d['events_slug'],
 
 			// Map.
-			'map_default_zoom'       => max( 1, min( 20, (int) ( $raw['map_default_zoom'] ?? $d['map_default_zoom'] ) ) ),
+			'map_default_zoom'        => max( 1, min( 20, (int) ( $raw['map_default_zoom'] ?? $d['map_default_zoom'] ) ) ),
 
 			// Currency.
-			'default_currency'       => strtoupper( sanitize_text_field( $raw['default_currency'] ?? $d['default_currency'] ) ),
-			'currency_position'      => in_array( $raw['currency_position'] ?? '', [ 'before', 'after' ], true )
+			'default_currency'        => strtoupper( sanitize_text_field( $raw['default_currency'] ?? $d['default_currency'] ) ),
+			'currency_position'       => in_array( $raw['currency_position'] ?? '', [ 'before', 'after' ], true )
 				? $raw['currency_position'] : $d['currency_position'],
 
 			// Recurring events.
-			'horizon_days'           => max( 30, min( 3650, (int) ( $raw['horizon_days'] ?? $d['horizon_days'] ) ) ),
-			'max_instances'          => max( 1, min( 3650, (int) ( $raw['max_instances'] ?? $d['max_instances'] ) ) ),
-			'subscribe_past_days'    => max( 0, min( 3650, (int) ( $raw['subscribe_past_days'] ?? $d['subscribe_past_days'] ) ) ),
-			'subscribe_future_days'  => max( 1, min( 3650, (int) ( $raw['subscribe_future_days'] ?? $d['subscribe_future_days'] ) ) ),
-			'generation_strategy'    => in_array( $raw['generation_strategy'] ?? '', [ 'on_save', 'cron' ], true )
+			'horizon_days'            => max( 30, min( 3650, (int) ( $raw['horizon_days'] ?? $d['horizon_days'] ) ) ),
+			'max_instances'           => max( 1, min( 3650, (int) ( $raw['max_instances'] ?? $d['max_instances'] ) ) ),
+			'subscribe_past_days'     => max( 0, min( 3650, (int) ( $raw['subscribe_past_days'] ?? $d['subscribe_past_days'] ) ) ),
+			'subscribe_future_days'   => max( 1, min( 3650, (int) ( $raw['subscribe_future_days'] ?? $d['subscribe_future_days'] ) ) ),
+			'generation_strategy'     => in_array( $raw['generation_strategy'] ?? '', [ 'on_save', 'cron' ], true )
 				? $raw['generation_strategy'] : $d['generation_strategy'],
 
 			// REST API.
-			'rest_public'            => (bool) ( $raw['rest_public'] ?? $d['rest_public'] ),
-			'rest_feed_token'        => self::sanitize_feed_token( $raw['rest_feed_token'] ?? '' ),
+			'rest_public'             => (bool) ( $raw['rest_public'] ?? $d['rest_public'] ),
+			'rest_feed_token'         => self::sanitize_feed_token( $raw['rest_feed_token'] ?? '' ),
 		];
 	}
 
@@ -340,6 +363,104 @@ class SettingsPage {
 		}
 
 		return in_array( $value, self::DEFAULT_VIEWS, true ) ? $value : $fallback;
+	}
+
+	/**
+	 * Validate a time of day for FullCalendar.
+	 *
+	 * FullCalendar wants `HH:MM:SS`; anything else it silently turns into
+	 * null, which would drop the option rather than report it. `24:00:00`
+	 * is allowed because it is FullCalendar's own default for the last slot
+	 * and the only way to say "the end of the day".
+	 *
+	 * @param mixed  $value    Raw value.
+	 * @param string $fallback Value used when the time is unusable.
+	 */
+	private static function sanitize_time_of_day( mixed $value, string $fallback ): string {
+		if ( ! is_string( $value ) || ! preg_match( '/^(\d{2}):(\d{2}):(\d{2})$/', $value, $m ) ) {
+			return $fallback;
+		}
+
+		[ , $hours, $minutes, $seconds ] = array_map( 'intval', $m );
+
+		if ( $minutes > 59 || $seconds > 59 || $hours > 24 ) {
+			return $fallback;
+		}
+
+		if ( 24 === $hours && ( $minutes > 0 || $seconds > 0 ) ) {
+			return $fallback;
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Validate a start and end time as a pair.
+	 *
+	 * `HH:MM:SS` strings compare correctly as strings, so an end that is not
+	 * later than its start is caught without parsing. Either value failing
+	 * on its own, or the pair being inverted, resets both to the defaults:
+	 * a half-valid range is harder to reason about than none.
+	 *
+	 * @param mixed  $start         Raw start.
+	 * @param mixed  $end           Raw end.
+	 * @param string $default_start Default start.
+	 * @param string $default_end   Default end.
+	 * @return string[] Tuple of [ start, end ].
+	 */
+	private static function sanitize_time_range( mixed $start, mixed $end, string $default_start, string $default_end ): array {
+		$start = self::sanitize_time_of_day( $start, '' );
+		$end   = self::sanitize_time_of_day( $end, '' );
+
+		if ( '' === $start || '' === $end || strcmp( $end, $start ) <= 0 ) {
+			return [ $default_start, $default_end ];
+		}
+
+		return [ $start, $end ];
+	}
+
+	/**
+	 * Validate a list of weekdays, 0 (Sunday) to 6.
+	 *
+	 * Accepts an array, as the settings screen sends, or a comma-separated
+	 * string, as a query string or WP-CLI would. Members outside 0 to 6 are
+	 * dropped rather than clamped, since clamping would invent a day the
+	 * site never chose. A value that is not a list at all keeps the default.
+	 * Always a list with no gaps, which is what the REST schema's `array`
+	 * type requires.
+	 *
+	 * @param mixed $value    Raw value.
+	 * @param int[] $fallback Default list.
+	 * @return int[]
+	 */
+	private static function sanitize_weekdays( mixed $value, array $fallback ): array {
+		if ( is_string( $value ) ) {
+			if ( ! preg_match( '/^[\d,\s]*$/', $value ) ) {
+				return $fallback;
+			}
+
+			$value = explode( ',', $value );
+		}
+
+		if ( ! is_array( $value ) ) {
+			return $fallback;
+		}
+
+		$days = [];
+
+		foreach ( $value as $day ) {
+			if ( ! is_numeric( $day ) ) {
+				continue;
+			}
+
+			$day = (int) $day;
+
+			if ( $day >= 0 && $day <= 6 ) {
+				$days[ $day ] = $day;
+			}
+		}
+
+		return array_values( $days );
 	}
 
 	/**
@@ -424,24 +545,32 @@ class SettingsPage {
 	 */
 	public static function defaults(): array {
 		return [
-			'date_format'            => get_option( 'date_format', 'F j, Y' ),
-			'time_format'            => get_option( 'time_format', 'g:i a' ),
-			'timezone_mode'          => 'site',
-			'calendar_default_view'  => 'dayGridMonth',
+			'date_format'             => get_option( 'date_format', 'F j, Y' ),
+			'time_format'             => get_option( 'time_format', 'g:i a' ),
+			'timezone_mode'           => 'site',
+			'calendar_default_view'   => 'dayGridMonth',
 			// WordPress's own "Week Starts On", until the site chooses otherwise.
-			'calendar_first_day'     => max( 0, min( 6, (int) get_option( 'start_of_week', 0 ) ) ),
-			'calendar_slot_duration' => '00:30:00',
-			'events_slug'            => 'events',
-			'map_default_zoom'       => 14,
-			'default_currency'       => 'USD',
-			'currency_position'      => 'before',
-			'horizon_days'           => 365,
-			'max_instances'          => 3650,
-			'subscribe_past_days'    => 30,
-			'subscribe_future_days'  => 365,
-			'generation_strategy'    => 'on_save',
-			'rest_public'            => true,
-			'rest_feed_token'        => '',
+			'calendar_first_day'      => max( 0, min( 6, (int) get_option( 'start_of_week', 0 ) ) ),
+			'calendar_slot_duration'  => '00:30:00',
+			// FullCalendar's own defaults: the whole day, with the all-day row.
+			'calendar_slot_min_time'  => '00:00:00',
+			'calendar_slot_max_time'  => '24:00:00',
+			'calendar_all_day_slot'   => true,
+			'calendar_business_hours' => false,
+			'calendar_business_days'  => [ 1, 2, 3, 4, 5 ],
+			'calendar_business_start' => '09:00:00',
+			'calendar_business_end'   => '17:00:00',
+			'events_slug'             => 'events',
+			'map_default_zoom'        => 14,
+			'default_currency'        => 'USD',
+			'currency_position'       => 'before',
+			'horizon_days'            => 365,
+			'max_instances'           => 3650,
+			'subscribe_past_days'     => 30,
+			'subscribe_future_days'   => 365,
+			'generation_strategy'     => 'on_save',
+			'rest_public'             => true,
+			'rest_feed_token'         => '',
 		];
 	}
 
@@ -452,32 +581,45 @@ class SettingsPage {
 	 */
 	private static function schema_properties(): array {
 		return [
-			'date_format'            => [ 'type' => 'string' ],
-			'time_format'            => [ 'type' => 'string' ],
-			'timezone_mode'          => [
+			'date_format'             => [ 'type' => 'string' ],
+			'time_format'             => [ 'type' => 'string' ],
+			'timezone_mode'           => [
 				'type' => 'string',
 				'enum' => [ 'event', 'site' ],
 			],
-			'calendar_default_view'  => [ 'type' => 'string' ],
-			'calendar_first_day'     => [ 'type' => 'integer' ],
-			'calendar_slot_duration' => [ 'type' => 'string' ],
-			'events_slug'            => [ 'type' => 'string' ],
-			'map_default_zoom'       => [ 'type' => 'integer' ],
-			'default_currency'       => [ 'type' => 'string' ],
-			'currency_position'      => [
+			'calendar_default_view'   => [ 'type' => 'string' ],
+			'calendar_first_day'      => [ 'type' => 'integer' ],
+			'calendar_slot_duration'  => [ 'type' => 'string' ],
+			'calendar_slot_min_time'  => [ 'type' => 'string' ],
+			'calendar_slot_max_time'  => [ 'type' => 'string' ],
+			'calendar_all_day_slot'   => [ 'type' => 'boolean' ],
+			'calendar_business_hours' => [ 'type' => 'boolean' ],
+			'calendar_business_days'  => [
+				'type'  => 'array',
+				'items' => [
+					'type' => 'integer',
+					'enum' => [ 0, 1, 2, 3, 4, 5, 6 ],
+				],
+			],
+			'calendar_business_start' => [ 'type' => 'string' ],
+			'calendar_business_end'   => [ 'type' => 'string' ],
+			'events_slug'             => [ 'type' => 'string' ],
+			'map_default_zoom'        => [ 'type' => 'integer' ],
+			'default_currency'        => [ 'type' => 'string' ],
+			'currency_position'       => [
 				'type' => 'string',
 				'enum' => [ 'before', 'after' ],
 			],
-			'horizon_days'           => [ 'type' => 'integer' ],
-			'max_instances'          => [ 'type' => 'integer' ],
-			'subscribe_past_days'    => [ 'type' => 'integer' ],
-			'subscribe_future_days'  => [ 'type' => 'integer' ],
-			'generation_strategy'    => [
+			'horizon_days'            => [ 'type' => 'integer' ],
+			'max_instances'           => [ 'type' => 'integer' ],
+			'subscribe_past_days'     => [ 'type' => 'integer' ],
+			'subscribe_future_days'   => [ 'type' => 'integer' ],
+			'generation_strategy'     => [
 				'type' => 'string',
 				'enum' => [ 'on_save', 'cron' ],
 			],
-			'rest_public'            => [ 'type' => 'boolean' ],
-			'rest_feed_token'        => [ 'type' => 'string' ],
+			'rest_public'             => [ 'type' => 'boolean' ],
+			'rest_feed_token'         => [ 'type' => 'string' ],
 		];
 	}
 }
