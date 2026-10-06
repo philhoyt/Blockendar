@@ -265,8 +265,9 @@ class SettingsRestValueTest extends WP_UnitTestCase {
 	public function test_a_well_formed_time_is_kept( string $key ): void {
 		$page = new SettingsPage();
 
-		// Each key is tested with a value that keeps its pair in order.
-		$value = str_contains( $key, 'end' ) || str_contains( $key, 'max' ) ? '23:00:00' : '01:00:00';
+		// Each key is tested with a value that keeps its pair in order. (Not
+		// str_contains( 'end' ): "calendar" contains it.)
+		$value = str_ends_with( $key, '_end' ) || str_ends_with( $key, '_max_time' ) ? '23:00:00' : '01:00:00';
 
 		$this->assertSame( $value, $page->sanitize( [ $key => $value ] )[ $key ] );
 	}
@@ -367,6 +368,19 @@ class SettingsRestValueTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'listWeek', get_option( SettingsPage::OPTION_NAME )['calendar_default_view'], 'Precondition: the old name is really stored.' );
 		$this->assertSame( 'listNextMonth', $this->from_the_endpoint()['calendar_default_view'] );
-		$this->assertSame( 'listNextMonth', SettingsPage::get( 'calendar_default_view' ), 'the block reads through get()' );
+
+		// get() hands the block what is stored, so the block maps it itself.
+		\Blockendar\DB\Schema::create_tables();
+		$html = (string) render_block(
+			[
+				'blockName'    => 'blockendar/calendar-view',
+				'attrs'        => [],
+				'innerBlocks'  => [],
+				'innerHTML'    => '',
+				'innerContent' => [],
+			]
+		);
+
+		$this->assertStringContainsString( 'data-default-view="listNextMonth"', $html );
 	}
 }
