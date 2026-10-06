@@ -202,6 +202,12 @@ test( 'only the view plugins the calendar needs are downloaded', async ( {
 		chunks.length,
 		`chunks loaded: ${ chunks.join( ', ' ) }`
 	).toBeGreaterThan( 1 );
+
+	// A block with the default views has no year view, so the multimonth
+	// plugin must not be downloaded for it. The year-view spec asserts the
+	// opposite for a block that enables it.
+	expect( chunks ).toContain( 'fullcalendar-daygrid.js' );
+	expect( chunks ).not.toContain( 'fullcalendar-multimonth.js' );
 } );
 
 /*
