@@ -285,11 +285,7 @@ class SettingsPage {
 				? $raw['timezone_mode'] : $d['timezone_mode'],
 
 			// Calendar display.
-			'calendar_default_view'  => in_array(
-				$raw['calendar_default_view'] ?? '',
-				[ 'dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listWeek' ],
-				true
-			) ? $raw['calendar_default_view'] : $d['calendar_default_view'],
+			'calendar_default_view'  => self::sanitize_default_view( $raw['calendar_default_view'] ?? '', $d['calendar_default_view'] ),
 			'calendar_first_day'     => max( 0, min( 6, (int) ( $raw['calendar_first_day'] ?? $d['calendar_first_day'] ) ) ),
 			'calendar_slot_duration' => sanitize_text_field( $raw['calendar_slot_duration'] ?? $d['calendar_slot_duration'] ),
 
@@ -316,6 +312,34 @@ class SettingsPage {
 			'rest_public'            => (bool) ( $raw['rest_public'] ?? $d['rest_public'] ),
 			'rest_feed_token'        => self::sanitize_feed_token( $raw['rest_feed_token'] ?? '' ),
 		];
+	}
+
+	/**
+	 * Views the calendar block can open by default.
+	 *
+	 * The list view is the block's rolling 31-day custom view, not
+	 * FullCalendar's listWeek: the two must agree or a site default has no
+	 * toolbar button to light up.
+	 */
+	private const DEFAULT_VIEWS = [ 'dayGridMonth', 'timeGridWeek', 'timeGridDay', 'listNextMonth', 'multiMonthYear' ];
+
+	/**
+	 * Validate the default calendar view.
+	 *
+	 * Sites that saved a default before 2.3.0 could only pick `listWeek`,
+	 * which the block never offered. It is read as the block's own list view
+	 * so the settings page, the editor and the front end agree; the next
+	 * save stores the mapped name.
+	 *
+	 * @param mixed  $value   Raw value.
+	 * @param string $fallback Value used when the view is unknown.
+	 */
+	private static function sanitize_default_view( mixed $value, string $fallback ): string {
+		if ( 'listWeek' === $value ) {
+			return 'listNextMonth';
+		}
+
+		return in_array( $value, self::DEFAULT_VIEWS, true ) ? $value : $fallback;
 	}
 
 	/**
