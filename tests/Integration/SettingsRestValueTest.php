@@ -214,7 +214,12 @@ class SettingsRestValueTest extends WP_UnitTestCase {
 			'the defaults'       => SettingsPage::defaults(),
 			'nothing at all'     => [],
 			'a 0.x site'         => $this->settings_from_before_one_point_oh(),
-			'everything as text' => array_map( 'strval', array_map( static fn( $v ) => is_bool( $v ) ? (int) $v : $v, SettingsPage::defaults() ) ),
+			// A list arrives as a comma string, the way a query string would
+			// carry it; strval() on an array would only warn.
+			'everything as text' => array_map(
+				static fn( $v ) => is_array( $v ) ? implode( ',', $v ) : (string) ( is_bool( $v ) ? (int) $v : $v ),
+				SettingsPage::defaults()
+			),
 			'nonsense'           => array_fill_keys( array_keys( SettingsPage::defaults() ), 'nonsense' ),
 		];
 
