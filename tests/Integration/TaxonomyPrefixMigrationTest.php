@@ -338,7 +338,13 @@ class TaxonomyPrefixMigrationTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $this->rows_under( 'event_type' ) );
 		$this->assertTrue( $this->migration->needs_migration() );
 
-		$other->close(); // Releases the lock with the session.
+		// Release the lock before closing. Closing alone would release it with
+		// the session, but close() returns before the server has torn the
+		// session down, and GET_LOCK() in the run below waits for nobody: on a
+		// slow CI database it still found the lock held. RELEASE_LOCK() answers
+		// only once the lock is free.
+		$other->query( "SELECT RELEASE_LOCK('" . $other->real_escape_string( $name ) . "')" );
+		$other->close();
 		$this->assertTrue( $this->migration->run(), 'once the holder is gone the run proceeds' );
 	}
 
