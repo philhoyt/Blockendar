@@ -59,6 +59,7 @@ module.exports = [
 				'@wordpress/data',
 				'@wordpress/plugins',
 				'@wordpress/edit-post',
+				'@wordpress/editor',
 				'@wordpress/primitives',
 				'@wordpress/api-fetch',
 				'@wordpress/url',
