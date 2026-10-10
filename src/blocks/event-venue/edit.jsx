@@ -23,7 +23,9 @@ export function Edit( { attributes, setAttributes, context } ) {
 	// Get all term IDs assigned to this post.
 	const termIds = useSelect(
 		( select ) => {
-			if ( ! postId ) return [];
+			if ( ! postId ) {
+				return [];
+			}
 			const post = select( coreStore ).getEditedEntityRecord(
 				'postType',
 				'blockendar_event',
@@ -42,7 +44,9 @@ export function Edit( { attributes, setAttributes, context } ) {
 	// Fetch all term records.
 	const terms = useSelect(
 		( select ) => {
-			if ( ! termIds?.length ) return null;
+			if ( ! termIds?.length ) {
+				return null;
+			}
 			const records = termIds.map( ( id ) =>
 				select( coreStore ).getEntityRecord(
 					'taxonomy',

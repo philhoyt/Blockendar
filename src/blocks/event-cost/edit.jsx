@@ -71,7 +71,11 @@ export function Edit( { attributes, setAttributes, context } ) {
 
 	const isPlaceholder = ! cost && ! regUrl;
 	const rawCost = isPlaceholder ? '25.00' : cost;
-	const displayCost = formatCost( rawCost, defaultCurrency, currencyPosition );
+	const displayCost = formatCost(
+		rawCost,
+		defaultCurrency,
+		currencyPosition
+	);
 	const hasButton = isPlaceholder || !! regUrl;
 	const displayLabel =
 		buttonLabel || __( 'Register / Get Tickets', 'blockendar' );

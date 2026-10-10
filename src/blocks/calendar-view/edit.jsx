@@ -97,19 +97,27 @@ export function Edit( { attributes, setAttributes } ) {
 
 	const venues = useSelect(
 		( select ) =>
-			select( coreStore ).getEntityRecords( 'taxonomy', 'blockendar_event_venue', {
-				per_page: 100,
-				hide_empty: false,
-			} ) ?? [],
+			select( coreStore ).getEntityRecords(
+				'taxonomy',
+				'blockendar_event_venue',
+				{
+					per_page: 100,
+					hide_empty: false,
+				}
+			) ?? [],
 		[]
 	);
 
 	const types = useSelect(
 		( select ) =>
-			select( coreStore ).getEntityRecords( 'taxonomy', 'blockendar_event_type', {
-				per_page: 100,
-				hide_empty: false,
-			} ) ?? [],
+			select( coreStore ).getEntityRecords(
+				'taxonomy',
+				'blockendar_event_type',
+				{
+					per_page: 100,
+					hide_empty: false,
+				}
+			) ?? [],
 		[]
 	);
 
@@ -133,8 +141,8 @@ export function Edit( { attributes, setAttributes } ) {
 	 * Label for the "Site default" option, naming the resolved value when it
 	 * can be read.
 	 *
-	 * @param {Array}  options The option list to resolve against.
-	 * @param {*}      value   The site-wide value, or null when unreadable.
+	 * @param {Array} options The option list to resolve against.
+	 * @param {*}     value   The site-wide value, or null when unreadable.
 	 * @return {string} The option label.
 	 */
 	const siteDefaultLabel = ( options, value ) => {
@@ -314,7 +322,10 @@ export function Edit( { attributes, setAttributes } ) {
 				>
 					<VStack spacing={ 3 }>
 						<ToggleControl
-							label={ __( 'Show subscribe button', 'blockendar' ) }
+							label={ __(
+								'Show subscribe button',
+								'blockendar'
+							) }
 							help={ __(
 								'Adds a link that opens this calendar in a visitor calendar app, carrying the filters set above. The button is hidden on the front end while public REST access is turned off in Blockendar settings, because a private feed cannot be linked without exposing its token.',
 								'blockendar'

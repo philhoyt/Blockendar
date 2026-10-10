@@ -11,7 +11,8 @@ import {
 import { __ } from '@wordpress/i18n';
 
 export default function Edit( { attributes, setAttributes } ) {
-	const { displayStyle, showEmpty, showVirtual, label , triggerLabel } = attributes;
+	const { displayStyle, showEmpty, showVirtual, label, triggerLabel } =
+		attributes;
 	const blockProps = useBlockProps( {
 		className: 'blockendar-filter-venue',
 	} );

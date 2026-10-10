@@ -10,7 +10,10 @@ const VIEW_OPTIONS = [
 	{ label: __( 'Month (Grid)', 'blockendar' ), value: 'dayGridMonth' },
 	{ label: __( 'Week (Time)', 'blockendar' ), value: 'timeGridWeek' },
 	{ label: __( 'Day (Time)', 'blockendar' ), value: 'timeGridDay' },
-	{ label: __( 'List (Next 31 days)', 'blockendar' ), value: 'listNextMonth' },
+	{
+		label: __( 'List (Next 31 days)', 'blockendar' ),
+		value: 'listNextMonth',
+	},
 	{ label: __( 'Year', 'blockendar' ), value: 'multiMonthYear' },
 ];
 
@@ -134,7 +137,10 @@ export function CalendarSection( { settings, update } ) {
 			/>
 
 			<ToggleControl
-				label={ __( 'Shade hours outside business hours', 'blockendar' ) }
+				label={ __(
+					'Shade hours outside business hours',
+					'blockendar'
+				) }
 				help={ __(
 					'Tints the hours and days you are not open, so the hours you are stand out.',
 					'blockendar'
@@ -207,9 +213,7 @@ function BusinessHours( { settings, update } ) {
 				) }
 				value={ settings.calendar_business_end ?? '17:00:00' }
 				options={ HOUR_OPTIONS.slice( 1 ) }
-				onChange={ ( val ) =>
-					update( { calendar_business_end: val } )
-				}
+				onChange={ ( val ) => update( { calendar_business_end: val } ) }
 				__nextHasNoMarginBottom
 			/>
 		</VStack>

@@ -8,10 +8,8 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
-const {
-	feedUrl: FEED_URL = '',
-	feedUrlWebcal: FEED_URL_WEBCAL = '',
-} = window.blockendarSettings ?? {};
+const { feedUrl: FEED_URL = '', feedUrlWebcal: FEED_URL_WEBCAL = '' } =
+	window.blockendarSettings ?? {};
 
 /**
  * Generate a feed token.
@@ -106,9 +104,9 @@ export function RestApiSection( { settings, update } ) {
 	// public feed URL would put a credential in circulation for no benefit.
 	const withToken = ( url ) =>
 		! isPublic && token
-			? `${ url }${ url.includes( '?' ) ? '&' : '?' }token=${ encodeURIComponent(
-					token
-			  ) }`
+			? `${ url }${
+					url.includes( '?' ) ? '&' : '?'
+			  }token=${ encodeURIComponent( token ) }`
 			: url;
 
 	return (
@@ -157,7 +155,9 @@ export function RestApiSection( { settings, update } ) {
 					max={ 3650 }
 					value={ settings.subscribe_past_days ?? 30 }
 					onChange={ ( val ) =>
-						update( { subscribe_past_days: parseInt( val, 10 ) || 0 } )
+						update( {
+							subscribe_past_days: parseInt( val, 10 ) || 0,
+						} )
 					}
 					help={ __(
 						'Days of history the subscription includes. Keeps recently finished events visible in a subscriber calendar.',

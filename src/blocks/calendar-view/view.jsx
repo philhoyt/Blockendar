@@ -145,7 +145,8 @@ function parseList( raw, fallback = [] ) {
 /**
  * The venue and cost line under an event's title, or null.
  *
- * @param {Object} event FullCalendar event.
+ * @param          event.event
+ * @param {Object} event       FullCalendar event.
  * @return {JSX.Element|null} The line.
  */
 function MetaLine( { event } ) {
@@ -321,7 +322,7 @@ function BlockendarCalendar( { dataset, onReady } ) {
 	 * one failure into a loop. Everything it reads comes from the block's data
 	 * attributes, which do not change.
 	 */
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+
 	const fetchEvents = useCallback(
 		( fetchInfo, successCallback, failureCallback ) => {
 			const params = new URLSearchParams( {
