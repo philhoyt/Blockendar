@@ -24,8 +24,7 @@ import { createBlock, cloneBlock } from '@wordpress/blocks';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useState } from '@wordpress/element';
 import { useResizeObserver } from '@wordpress/compose';
-import { store as coreStore } from '@wordpress/core-data';
-import { useEntityRecords } from '@wordpress/core-data';
+import { store as coreStore, useEntityRecords } from '@wordpress/core-data';
 import { __, _x } from '@wordpress/i18n';
 import {
 	cardBlocksFor,

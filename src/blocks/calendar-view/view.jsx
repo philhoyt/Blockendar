@@ -13,6 +13,7 @@
 import {
 	createRoot,
 	useCallback,
+	useMemo,
 	useRef,
 	useEffect,
 	useState,
@@ -66,11 +67,11 @@ async function loadLocale( candidates ) {
 /**
  * Dynamically load FullCalendar plus only the plugins the given views require.
  *
- * @param {string[]} views            View names that must be renderable.
- * @param {string[]} localeCandidates Locale file names to try, best first.
+ * @param {string[]} views       View names that must be renderable.
+ * @param {string[]} localeFiles Locale file names to try, best first.
  * @return {Promise<{Calendar: Object, plugins: Object[], locale: Object|null}>} Loaded module refs.
  */
-async function loadCalendar( views, localeCandidates ) {
+async function loadCalendar( views, localeFiles ) {
 	const needed = new Set();
 
 	views.forEach( ( view ) => {
@@ -85,7 +86,7 @@ async function loadCalendar( views, localeCandidates ) {
 	needed.add( pluginForView( MOBILE_VIEW ) );
 
 	const [ locale, { default: Calendar }, ...plugins ] = await Promise.all( [
-		loadLocale( localeCandidates ),
+		loadLocale( localeFiles ),
 		import(
 			/* webpackChunkName: "fullcalendar-core" */ '@fullcalendar/react'
 		),
@@ -145,9 +146,9 @@ function parseList( raw, fallback = [] ) {
 /**
  * The venue and cost line under an event's title, or null.
  *
- * @param          event.event
- * @param {Object} event       FullCalendar event.
- * @return {JSX.Element|null} The line.
+ * @param {Object} props       Component props.
+ * @param {Object} props.event FullCalendar event.
+ * @return {Element|null} The line.
  */
 function MetaLine( { event } ) {
 	const meta = eventMeta( event.extendedProps );
@@ -188,7 +189,7 @@ function MetaLine( { event } ) {
  * keyboard focus live on this element.
  *
  * @param {Object} arg FullCalendar's eventContent argument.
- * @return {JSX.Element|boolean} Content, or true for the default.
+ * @return {Element|boolean} Content, or true for the default.
  */
 function renderEventContent( arg ) {
 	const { event, timeText, view } = arg;
@@ -244,8 +245,16 @@ function BlockendarCalendar( { dataset, onReady } ) {
 
 	const restUrl = dataset.restUrl ?? '/wp-json/blockendar/v1';
 	const restNonce = dataset.restNonce;
-	const venueIds = parseList( dataset.venueIds );
-	const typeIds = parseList( dataset.typeIds );
+	// Memoised on the raw attribute strings so fetchEvents below keeps the same
+	// identity across renders; a fresh array each render would refetch.
+	const venueIds = useMemo(
+		() => parseList( dataset.venueIds ),
+		[ dataset.venueIds ]
+	);
+	const typeIds = useMemo(
+		() => parseList( dataset.typeIds ),
+		[ dataset.typeIds ]
+	);
 	const featuredOnly = dataset.featuredOnly === 'true';
 	const defaultView = dataset.defaultView || 'dayGridMonth';
 	const firstDay = dataset.firstDay ? parseInt( dataset.firstDay, 10 ) : 0;
@@ -253,13 +262,7 @@ function BlockendarCalendar( { dataset, onReady } ) {
 	const timezone = dataset.timezone ?? 'UTC';
 	const enabledViews = parseList( dataset.enabledViews, DEFAULT_VIEWS );
 	const weekNumbers = dataset.weekNumbers === 'true';
-	const dayMaxEvents = eventsPerDay( dataset.eventsPerDay );
-	const slotMinTime = timeOfDay( dataset.slotMinTime, '00:00:00' );
-	const slotMaxTime = timeOfDay( dataset.slotMaxTime, '24:00:00' );
 	const allDaySlot = dataset.allDaySlot !== 'false';
-	const businessHours = businessHoursFromDataset( dataset.businessHours );
-
-	const viewButtons = enabledViews.join( ',' );
 
 	// Every view the calendar can render: the loader downloads plugins for
 	// the same list, so a nav link never targets a view that is not loaded.
@@ -320,7 +323,7 @@ function BlockendarCalendar( { dataset, onReady } ) {
 	 * Memoised because it sets state. FullCalendar refetches whenever the
 	 * function it is given changes, and a new one on every render would turn
 	 * one failure into a loop. Everything it reads comes from the block's data
-	 * attributes, which do not change.
+	 * attributes, so the dependencies only change when those do.
 	 */
 
 	const fetchEvents = useCallback(
@@ -380,7 +383,7 @@ function BlockendarCalendar( { dataset, onReady } ) {
 					failureCallback( error );
 				} );
 		},
-		[]
+		[ venueIds, typeIds, featuredOnly, restNonce, restUrl ]
 	);
 
 	if ( ! loaded ) {
@@ -388,6 +391,11 @@ function BlockendarCalendar( { dataset, onReady } ) {
 	}
 
 	const { Calendar, plugins, locale } = loaded;
+	const dayMaxEvents = eventsPerDay( dataset.eventsPerDay );
+	const slotMinTime = timeOfDay( dataset.slotMinTime, '00:00:00' );
+	const slotMaxTime = timeOfDay( dataset.slotMaxTime, '24:00:00' );
+	const businessHours = businessHoursFromDataset( dataset.businessHours );
+	const viewButtons = enabledViews.join( ',' );
 
 	return (
 		<>

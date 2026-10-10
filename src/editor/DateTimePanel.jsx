@@ -390,7 +390,6 @@ function RecurrenceSection( { startDate, ongoing } ) {
 	}, [ startDate ] );
 
 	const { preset, endType, untilDate, count } = form;
-	const freqOptions = buildFreqOptions( startDate );
 
 	// Ongoing events are never recurring. Keep this section mounted so the
 	// loaded rule survives a round trip, but replace the controls with a notice
@@ -409,6 +408,8 @@ function RecurrenceSection( { startDate, ongoing } ) {
 			</Notice>
 		);
 	}
+
+	const freqOptions = buildFreqOptions( startDate );
 
 	return (
 		<VStack spacing={ 4 }>
