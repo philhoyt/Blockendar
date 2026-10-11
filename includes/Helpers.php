@@ -128,6 +128,47 @@ function blockendar_display_timezone( int $post_id ): array {
 }
 
 /**
+ * The timezone an event's times are given in: its own, or the site's.
+ *
+ * An event's `blockendar_timezone` meta is empty when it was never set, and
+ * may name a zone PHP no longer knows; the site's zone stands in for both.
+ *
+ * @param int $post_id Event post ID.
+ */
+function blockendar_event_timezone( int $post_id ): \DateTimeZone {
+	$own = blockendar_normalize_timezone( (string) get_post_meta( $post_id, 'blockendar_timezone', true ) );
+
+	if ( '' !== $own ) {
+		try {
+			return new \DateTimeZone( $own );
+		} catch ( \Exception ) {
+			return wp_timezone();
+		}
+	}
+
+	return wp_timezone();
+}
+
+/**
+ * A UTC datetime from the index as ISO 8601 local time with its offset.
+ *
+ * The index stores every instant as 'Y-m-d H:i:s' in UTC with nothing to say
+ * so. This gives the same instant in a form that carries its own zone, so a
+ * consumer can read it without knowing the convention.
+ *
+ * @param string        $utc_datetime Y-m-d H:i:s in UTC.
+ * @param \DateTimeZone $timezone     Zone to give the time in.
+ * @return string Y-m-d\TH:i:sP, or the input as UTC if it is not a datetime.
+ */
+function blockendar_iso8601( string $utc_datetime, \DateTimeZone $timezone ): string {
+	try {
+		return ( new \DateTimeImmutable( $utc_datetime, new \DateTimeZone( 'UTC' ) ) )->setTimezone( $timezone )->format( 'Y-m-d\TH:i:sP' );
+	} catch ( \Exception ) {
+		return str_replace( ' ', 'T', $utc_datetime ) . '+00:00';
+	}
+}
+
+/**
  * Convert a local date and time from one timezone to another.
  *
  * Both timezones may be UTC-offset strings rather than IANA names when the site

@@ -145,6 +145,7 @@ class CalendarController extends AbstractController {
 			'per_page'      => $fetch,
 			'max_per_page'  => $fetch,
 			'page'          => 1,
+			'context'       => $is_ics ? 'ics' : 'calendar',
 		];
 
 		$rows = $this->index->get_events_in_range( $start, $end, $filters );
@@ -343,7 +344,23 @@ class CalendarController extends AbstractController {
 				: $this->to_iso8601( $row->end_datetime, false, $row->end_date );
 		}
 
-		return $event;
+		/**
+		 * Filters one event of the calendar's JSON response.
+		 *
+		 * Runs for every row of GET /blockendar/v1/calendar, after the event
+		 * has been shaped for FullCalendar and before it is sent. Anything a
+		 * calendar script should see that FullCalendar does not define belongs
+		 * in `extendedProps`. The post's caches are primed, so get_post_meta()
+		 * and get_the_terms() on $row->post_id are cheap.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array  $event The event as FullCalendar will receive it.
+		 * @param object $row   The index row it was built from, joined with wp_posts.
+		 */
+		$filtered = apply_filters( 'blockendar_calendar_event', $event, $row );
+
+		return is_array( $filtered ) ? $filtered : $event;
 	}
 
 	/**

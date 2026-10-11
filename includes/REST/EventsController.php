@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Blockendar\Blocks\Cutoff;
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\IndexBuilder;
+use Blockendar\Meta\EventMeta;
 use Blockendar\Recurrence\RuleRepository;
 use Blockendar\Recurrence\Generator;
 use Blockendar\Taxonomy\EventTag;
@@ -59,10 +60,13 @@ class EventsController extends AbstractController {
 			self::NAMESPACE,
 			'/events',
 			[
-				'methods'             => 'GET',
-				'callback'            => [ $this, 'get_events' ],
-				'permission_callback' => [ $this, 'check_public_read' ],
-				'args'                => $this->collection_args(),
+				[
+					'methods'             => 'GET',
+					'callback'            => [ $this, 'get_events' ],
+					'permission_callback' => [ $this, 'check_public_read' ],
+					'args'                => $this->collection_args(),
+				],
+				'schema' => [ $this, 'get_occurrence_schema' ],
 			]
 		);
 
@@ -71,16 +75,20 @@ class EventsController extends AbstractController {
 			self::NAMESPACE,
 			'/events/(?P<id>\d+)',
 			[
-				'methods'             => 'GET',
-				'callback'            => [ $this, 'get_event' ],
-				'permission_callback' => [ $this, 'check_public_read' ],
-				'args'                => [
-					'id' => [
-						'type'     => 'integer',
-						'required' => true,
-						'minimum'  => 1,
+				[
+					'methods'             => 'GET',
+					'callback'            => [ $this, 'get_event' ],
+					'permission_callback' => [ $this, 'check_public_read' ],
+					'args'                => [
+						'id' => [
+							'description' => __( 'The event\'s post ID.', 'blockendar' ),
+							'type'        => 'integer',
+							'required'    => true,
+							'minimum'     => 1,
+						],
 					],
 				],
+				'schema' => [ $this, 'get_event_schema' ],
 			]
 		);
 
@@ -89,15 +97,19 @@ class EventsController extends AbstractController {
 			self::NAMESPACE,
 			'/events/(?P<id>\d+)/instances',
 			[
-				'methods'             => 'GET',
-				'callback'            => [ $this, 'get_instances' ],
-				'permission_callback' => [ $this, 'check_public_read' ],
-				'args'                => [
-					'id' => [
-						'type'    => 'integer',
-						'minimum' => 1,
+				[
+					'methods'             => 'GET',
+					'callback'            => [ $this, 'get_instances' ],
+					'permission_callback' => [ $this, 'check_public_read' ],
+					'args'                => [
+						'id' => [
+							'description' => __( 'The event\'s post ID.', 'blockendar' ),
+							'type'        => 'integer',
+							'minimum'     => 1,
+						],
 					],
 				],
+				'schema' => [ $this, 'get_instance_schema' ],
 			]
 		);
 
@@ -215,6 +227,7 @@ class EventsController extends AbstractController {
 			'page'          => $page,
 			'orderby'       => $request->get_param( 'orderby' ) ?: 'start_datetime',
 			'order'         => strtoupper( (string) ( $request->get_param( 'order' ) ?? 'ASC' ) ),
+			'context'       => 'rest',
 		];
 
 		$events = $this->index->get_events_in_range( $start, $end, $filters );
@@ -226,11 +239,7 @@ class EventsController extends AbstractController {
 
 		$data = array_map( [ $this, 'format_event_row' ], $events );
 
-		return $this->respond(
-			$data,
-			200,
-			$this->pagination_headers( $total, $per_page, $page, $request )
-		);
+		return $this->paginate( $this->respond( $data ), $request, $total, $per_page, $page );
 	}
 
 	/**
@@ -519,7 +528,7 @@ class EventsController extends AbstractController {
 	private function format_event_row( object $row ): array {
 		$ongoing = ! empty( $row->ongoing );
 
-		return [
+		$data = [
 			'id'             => (int) $row->id,
 			'post_id'        => (int) $row->post_id,
 			'title'          => $row->post_title,
@@ -533,7 +542,23 @@ class EventsController extends AbstractController {
 			'status'         => $row->status,
 			'venue_term_id'  => $row->venue_term_id ? (int) $row->venue_term_id : null,
 			'type_term_ids'  => $row->type_term_ids ? json_decode( $row->type_term_ids, true ) : [],
-		];
+		] + $this->local_times( $row );
+
+		/**
+		 * Filters one event of the REST collection response.
+		 *
+		 * Runs for every row of GET /blockendar/v1/events, after the row has
+		 * been formatted and before it is sent. The post's caches are primed,
+		 * so get_post_meta() and get_the_terms() on $row->post_id are cheap.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array  $data The event as it will be sent.
+		 * @param object $row  The index row it was built from, joined with wp_posts.
+		 */
+		$filtered = apply_filters( 'blockendar_rest_event', $data, $row );
+
+		return is_array( $filtered ) ? $filtered : $data;
 	}
 
 	/**
@@ -555,6 +580,29 @@ class EventsController extends AbstractController {
 			'ongoing'        => $ongoing,
 			'status'         => $row->status,
 			'recurrence_id'  => $row->recurrence_id ? (int) $row->recurrence_id : null,
+		] + $this->local_times( $row );
+	}
+
+	/**
+	 * The fields that say when an occurrence is, in a form that says its zone.
+	 *
+	 * `start_datetime` and `end_datetime` are UTC by convention and nothing in
+	 * the response says so. These three carry the event's own timezone (its
+	 * meta, or the site's zone when that is empty) and the same instants as
+	 * ISO 8601 with that zone's offset. The display mode under the plugin's
+	 * `timezone_mode` setting is left to the consumer: the payload describes
+	 * the event, not a page.
+	 *
+	 * @param object $row Index row.
+	 * @return array{timezone: string, start: string, end: ?string}
+	 */
+	private function local_times( object $row ): array {
+		$timezone = blockendar_event_timezone( (int) $row->post_id );
+
+		return [
+			'timezone' => $timezone->getName(),
+			'start'    => blockendar_iso8601( $row->start_datetime, $timezone ),
+			'end'      => empty( $row->ongoing ) ? blockendar_iso8601( $row->end_datetime, $timezone ) : null,
 		];
 	}
 
@@ -697,48 +745,264 @@ class EventsController extends AbstractController {
 	private function collection_args(): array {
 		return [
 			'start'    => [
-				'type'    => 'string',
-				'default' => '',
+				'description' => __( 'Start of the range. A date (Y-m-d) is a day in the site\'s timezone; a datetime (Y-m-d H:i:s) is UTC; ISO 8601 is read with its offset. Default: now.', 'blockendar' ),
+				'type'        => 'string',
+				'default'     => '',
 			],
 			'end'      => [
-				'type'    => 'string',
-				'default' => '',
+				'description' => __( 'End of the range, in the same forms as start. A date includes the whole of that day. Default: one year ahead.', 'blockendar' ),
+				'type'        => 'string',
+				'default'     => '',
 			],
 			'venue'    => [
-				'type'    => 'integer',
-				'minimum' => 1,
+				'description' => __( 'Limit to events at this venue term.', 'blockendar' ),
+				'type'        => 'integer',
+				'minimum'     => 1,
 			],
 			'type'     => [
-				'type'    => 'integer',
-				'minimum' => 1,
+				'description' => __( 'Limit to events with this event type term.', 'blockendar' ),
+				'type'        => 'integer',
+				'minimum'     => 1,
 			],
 			'status'   => [
-				'type' => 'string',
-				'enum' => [ 'scheduled', 'cancelled', 'postponed', 'sold_out' ],
+				'description' => __( 'Limit to events with this status.', 'blockendar' ),
+				'type'        => 'string',
+				'enum'        => array_keys( EventMeta::statuses() ),
 			],
-			'featured' => [ 'type' => 'boolean' ],
+			'featured' => [
+				'description' => __( 'Limit to featured events.', 'blockendar' ),
+				'type'        => 'boolean',
+			],
 			'per_page' => [
-				'type'    => 'integer',
-				'default' => 20,
-				'minimum' => 1,
-				'maximum' => 500,
+				'description' => __( 'Maximum number of occurrences in the result set.', 'blockendar' ),
+				'type'        => 'integer',
+				'default'     => 20,
+				'minimum'     => 1,
+				'maximum'     => 500,
 			],
 			'page'     => [
-				'type'    => 'integer',
-				'default' => 1,
-				'minimum' => 1,
+				'description' => __( 'Current page of the collection.', 'blockendar' ),
+				'type'        => 'integer',
+				'default'     => 1,
+				'minimum'     => 1,
 			],
 			'orderby'  => [
-				'type'    => 'string',
-				'default' => 'start_datetime',
-				'enum'    => [ 'start_datetime', 'end_datetime', 'post_title' ],
+				'description' => __( 'Sort the collection by this attribute.', 'blockendar' ),
+				'type'        => 'string',
+				'default'     => 'start_datetime',
+				'enum'        => [ 'start_datetime', 'end_datetime', 'post_title' ],
 			],
 			// Either case: WordPress's own routes spell these in lower case,
 			// and the handler upper-cases whatever it is given.
 			'order'    => [
-				'type'    => 'string',
-				'default' => 'ASC',
-				'enum'    => [ 'ASC', 'DESC', 'asc', 'desc' ],
+				'description' => __( 'Order of the sort.', 'blockendar' ),
+				'type'        => 'string',
+				'default'     => 'ASC',
+				'enum'        => [ 'ASC', 'DESC', 'asc', 'desc' ],
+			],
+		];
+	}
+
+	// -------------------------------------------------------------------------
+	// Schemas
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The properties an occurrence has in every response that lists them.
+	 *
+	 * @return array<string, array>
+	 */
+	private function occurrence_properties(): array {
+		return [
+			'id'             => [
+				'description' => __( 'Unique identifier of the occurrence in the index.', 'blockendar' ),
+				'type'        => 'integer',
+				'readonly'    => true,
+			],
+			'post_id'        => [
+				'description' => __( 'The event\'s post ID.', 'blockendar' ),
+				'type'        => 'integer',
+				'readonly'    => true,
+			],
+			'start_datetime' => [
+				'description' => __( 'Start of the occurrence, Y-m-d H:i:s in UTC.', 'blockendar' ),
+				'type'        => 'string',
+				'readonly'    => true,
+			],
+			'end_datetime'   => [
+				'description' => __( 'End of the occurrence, Y-m-d H:i:s in UTC. Null for an ongoing event.', 'blockendar' ),
+				'type'        => [ 'string', 'null' ],
+				'readonly'    => true,
+			],
+			'start_date'     => [
+				'description' => __( 'First day of the occurrence, Y-m-d, in the event\'s timezone.', 'blockendar' ),
+				'type'        => 'string',
+				'readonly'    => true,
+			],
+			'end_date'       => [
+				'description' => __( 'Last day of the occurrence, Y-m-d, in the event\'s timezone. Null for an ongoing event.', 'blockendar' ),
+				'type'        => [ 'string', 'null' ],
+				'readonly'    => true,
+			],
+			'all_day'        => [
+				'description' => __( 'Whether the occurrence runs all day.', 'blockendar' ),
+				'type'        => 'boolean',
+				'readonly'    => true,
+			],
+			'ongoing'        => [
+				'description' => __( 'Whether the event has no end date.', 'blockendar' ),
+				'type'        => 'boolean',
+				'readonly'    => true,
+			],
+			'status'         => [
+				'description' => __( 'Status of the occurrence.', 'blockendar' ),
+				'type'        => 'string',
+				'enum'        => array_keys( EventMeta::statuses() ),
+				'readonly'    => true,
+			],
+			'timezone'       => [
+				'description' => __( 'The event\'s timezone: an IANA identifier, or a UTC offset on a site set to one.', 'blockendar' ),
+				'type'        => 'string',
+				'readonly'    => true,
+			],
+			'start'          => [
+				'description' => __( 'Start of the occurrence as ISO 8601 in the event\'s timezone.', 'blockendar' ),
+				'type'        => 'string',
+				'format'      => 'date-time',
+				'readonly'    => true,
+			],
+			'end'            => [
+				'description' => __( 'End of the occurrence as ISO 8601 in the event\'s timezone. Null for an ongoing event.', 'blockendar' ),
+				'type'        => [ 'string', 'null' ],
+				'format'      => 'date-time',
+				'readonly'    => true,
+			],
+		];
+	}
+
+	/**
+	 * Schema of one item of GET /events.
+	 */
+	public function get_occurrence_schema(): array {
+		$properties = $this->occurrence_properties() + [
+			'title'         => [
+				'description' => __( 'Title of the event.', 'blockendar' ),
+				'type'        => 'string',
+				'readonly'    => true,
+			],
+			'url'           => [
+				'description' => __( 'Permalink of the event.', 'blockendar' ),
+				'type'        => 'string',
+				'format'      => 'uri',
+				'readonly'    => true,
+			],
+			'venue_term_id' => [
+				'description' => __( 'Venue term ID, or null.', 'blockendar' ),
+				'type'        => [ 'integer', 'null' ],
+				'readonly'    => true,
+			],
+			'type_term_ids' => [
+				'description' => __( 'Event type term IDs.', 'blockendar' ),
+				'type'        => 'array',
+				'items'       => [ 'type' => 'integer' ],
+				'readonly'    => true,
+			],
+		];
+
+		return [
+			'$schema'    => 'http://json-schema.org/draft-04/schema#',
+			'title'      => 'blockendar_occurrence',
+			'type'       => 'object',
+			'properties' => $properties,
+		];
+	}
+
+	/**
+	 * Schema of one item of GET /events/{id}/instances.
+	 */
+	public function get_instance_schema(): array {
+		$properties = $this->occurrence_properties() + [
+			'recurrence_id' => [
+				'description' => __( 'ID of the recurrence rule the occurrence comes from, or null.', 'blockendar' ),
+				'type'        => [ 'integer', 'null' ],
+				'readonly'    => true,
+			],
+		];
+
+		return [
+			'$schema'    => 'http://json-schema.org/draft-04/schema#',
+			'title'      => 'blockendar_instance',
+			'type'       => 'object',
+			'properties' => $properties,
+		];
+	}
+
+	/**
+	 * Schema of GET /events/{id}.
+	 */
+	public function get_event_schema(): array {
+		return [
+			'$schema'    => 'http://json-schema.org/draft-04/schema#',
+			'title'      => 'blockendar_event',
+			'type'       => 'object',
+			'properties' => [
+				'id'          => [
+					'description' => __( 'The event\'s post ID.', 'blockendar' ),
+					'type'        => 'integer',
+					'readonly'    => true,
+				],
+				'title'       => [
+					'description' => __( 'Title of the event.', 'blockendar' ),
+					'type'        => 'string',
+					'readonly'    => true,
+				],
+				'slug'        => [
+					'description' => __( 'Slug of the event.', 'blockendar' ),
+					'type'        => 'string',
+					'readonly'    => true,
+				],
+				'url'         => [
+					'description' => __( 'Permalink of the event.', 'blockendar' ),
+					'type'        => 'string',
+					'format'      => 'uri',
+					'readonly'    => true,
+				],
+				'status'      => [
+					'description' => __( 'Post status of the event.', 'blockendar' ),
+					'type'        => 'string',
+					'readonly'    => true,
+				],
+				'meta'        => [
+					'description' => __( 'The event\'s scheduling fields, without the blockendar_ prefix: dates and times as authored, in the event\'s timezone.', 'blockendar' ),
+					'type'        => 'object',
+					'readonly'    => true,
+				],
+				'recurrence'  => [
+					'description' => __( 'The repeat rule, or null for a single event.', 'blockendar' ),
+					'type'        => [ 'object', 'null' ],
+					'readonly'    => true,
+				],
+				'instances'   => [
+					'description' => __( 'The next ten occurrences that have not ended.', 'blockendar' ),
+					'type'        => 'array',
+					'items'       => $this->get_instance_schema(),
+					'readonly'    => true,
+				],
+				'venue'       => [
+					'description' => __( 'The venue term and its address, or null.', 'blockendar' ),
+					'type'        => [ 'object', 'null' ],
+					'readonly'    => true,
+				],
+				'event_types' => [
+					'description' => __( 'Event type terms.', 'blockendar' ),
+					'type'        => 'array',
+					'readonly'    => true,
+				],
+				'event_tags'  => [
+					'description' => __( 'Event tag terms.', 'blockendar' ),
+					'type'        => 'array',
+					'readonly'    => true,
+				],
 			],
 		];
 	}

@@ -6,11 +6,17 @@ import { PanelBody, ToggleControl } from '@wordpress/components';
 import { useEntityProp } from '@wordpress/core-data';
 import { __ } from '@wordpress/i18n';
 
-const LABELS = {
-	cancelled: __( 'Cancelled', 'blockendar' ),
-	postponed: __( 'Postponed', 'blockendar' ),
-	sold_out: __( 'Sold Out', 'blockendar' ),
-};
+// The event edit screen is told the full list, filter included; elsewhere
+// (a template in the Site Editor) only the shipped labels are known.
+const LABELS = Object.fromEntries(
+	( window.blockendarEditor?.statuses ?? [] )
+		.filter( ( option ) => option && typeof option.value === 'string' )
+		.map( ( option ) => [ option.value, option.label ?? option.value ] )
+);
+
+LABELS.cancelled ??= __( 'Cancelled', 'blockendar' );
+LABELS.postponed ??= __( 'Postponed', 'blockendar' );
+LABELS.sold_out ??= __( 'Sold Out', 'blockendar' );
 
 export function Edit( { attributes, setAttributes, context } ) {
 	const postId = context?.postId;

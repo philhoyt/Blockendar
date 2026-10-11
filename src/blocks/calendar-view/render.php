@@ -190,6 +190,8 @@ if ( ! empty( $attributes['featuredOnly'] ) ) {
 	$fallback_filters['featured'] = true;
 }
 
+$fallback_filters['context'] = 'block';
+
 $fallback_events = ( new \Blockendar\DB\EventIndex() )->get_events_in_range(
 	\Blockendar\Blocks\Cutoff::now(),
 	\Blockendar\Blocks\Cutoff::ahead( 'P1Y' ),

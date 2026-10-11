@@ -38,12 +38,12 @@ if ( 'scheduled' === $status ) {
 	return;
 }
 
-$labels = [
-	'cancelled' => __( 'Cancelled', 'blockendar' ),
-	'postponed' => __( 'Postponed', 'blockendar' ),
-	'sold_out'  => __( 'Sold Out', 'blockendar' ),
-];
-$label  = $labels[ $status ] ?? ucfirst( $status );
+$label = \Blockendar\Meta\EventMeta::statuses()[ $status ] ?? ucfirst( $status );
+
+// The status becomes part of a class name. The sanitizer only stores a status
+// from the list, but the list is filterable and the index's rows are not
+// rewritten when it changes.
+$status_class = sanitize_html_class( $status, 'scheduled' );
 
 /*
  * The reason explains the event's own status. It is not shown when what is
@@ -65,7 +65,7 @@ $reason      = $show_reason && $status === $event_status
  * the visible word is already the accessible name.
  */
 ?>
-<div <?php echo get_block_wrapper_attributes( [ 'class' => "blockendar-event-status blockendar-status blockendar-status--$status" ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+<div <?php echo get_block_wrapper_attributes( [ 'class' => "blockendar-event-status blockendar-status blockendar-status--$status_class" ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php echo esc_html( $label ); ?>
 	<?php if ( '' !== $reason ) : ?>
 		<span class="blockendar-status__reason"><?php echo esc_html( $reason ); ?></span>

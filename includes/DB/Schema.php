@@ -143,9 +143,35 @@ class Schema {
 	}
 
 	/**
+	 * The plugin's tables that do not exist.
+	 *
+	 * A site cloned with its options but without the custom tables passes
+	 * maybe_upgrade(), which looks at the version option alone, and so never
+	 * repairs itself. Site Health asks this to say so.
+	 *
+	 * @return string[] Full table names, empty when all three exist.
+	 */
+	public static function missing_tables(): array {
+		global $wpdb;
+
+		$missing = [];
+
+		foreach ( [ self::events_table(), self::type_terms_table(), self::recurrence_table() ] as $table ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from $wpdb->prefix.
+			$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+
+			if ( $found !== $table ) {
+				$missing[] = $table;
+			}
+		}
+
+		return $missing;
+	}
+
+	/**
 	 * Whether every index this DB_VERSION requires is present on the events table.
 	 */
-	private static function has_required_indexes(): bool {
+	public static function has_required_indexes(): bool {
 		global $wpdb;
 
 		$events_table = self::events_table();

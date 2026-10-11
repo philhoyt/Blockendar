@@ -367,6 +367,27 @@ class Exporter {
 		$ical_status = $status_map[ $row->status ] ?? 'CONFIRMED';
 		$lines[]     = 'STATUS:' . $ical_status;
 
+		/**
+		 * Filters the properties of one VEVENT in the iCalendar output.
+		 *
+		 * Runs for every event in the feed and in a single event's .ics file.
+		 * Each entry is one unfolded content line, `NAME;PARAM=value:value`,
+		 * with its text already escaped as RFC 5545 asks; a line added here is
+		 * folded with the rest when the calendar is written out. The first
+		 * entry is BEGIN:VEVENT. END:VEVENT is added after the filter, so a
+		 * line appended to the end of the array lands inside the event.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param string[] $lines The event's content lines, unfolded.
+		 * @param object   $row   The index row the event was built from, joined with wp_posts.
+		 */
+		$filtered = apply_filters( 'blockendar_ics_event_lines', $lines, $row );
+
+		if ( is_array( $filtered ) ) {
+			$lines = array_values( array_filter( array_map( 'strval', $filtered ), static fn( string $line ): bool => '' !== $line ) );
+		}
+
 		$lines[] = 'END:VEVENT';
 
 		return $lines;

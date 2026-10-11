@@ -439,7 +439,24 @@ class IndexBuilder {
 
 		// Cleared and written as one step: if the new row cannot be written
 		// the event keeps the one it had.
-		$this->index->replace_for_post( $post_id, null === $row ? [] : [ $row ] );
+		if ( ! $this->index->replace_for_post( $post_id, null === $row ? [] : [ $row ] ) ) {
+			return;
+		}
+
+		/**
+		 * Fires after an event's rows in the index have been rewritten.
+		 *
+		 * Once per build, for a single and a recurring event alike, and only
+		 * when the write went through: on failure the event keeps the rows it
+		 * had and nothing has changed. Not fired when an unpublished event's
+		 * rows are removed. The intended use is purging a page cache of the
+		 * pages that list the event.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param int $post_id The event whose rows were written.
+		 */
+		do_action( 'blockendar_index_built', $post_id );
 	}
 
 	/**
@@ -662,7 +679,12 @@ class IndexBuilder {
 	 * Whether a full rebuild is under way or waiting for its first run.
 	 */
 	public function is_rebuild_pending(): bool {
-		return $this->is_rebuilding() || false !== wp_next_scheduled( self::REBUILD_HOOK );
+		// A full rebuild is queued without arguments; a continuation, by
+		// queue_rebuild(), with one. wp_next_scheduled() matches on the
+		// arguments, so both forms have to be asked for.
+		return $this->is_rebuilding()
+			|| false !== wp_next_scheduled( self::REBUILD_HOOK )
+			|| false !== wp_next_scheduled( self::REBUILD_HOOK, [ self::CONTINUE ] );
 	}
 
 	/**

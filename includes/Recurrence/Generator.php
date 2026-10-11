@@ -127,7 +127,12 @@ class Generator {
 		}
 
 		// The old rows go and the new ones arrive as one step, or not at all.
-		$this->index->replace_for_post( $post_id, $rows );
+		if ( ! $this->index->replace_for_post( $post_id, $rows ) ) {
+			return;
+		}
+
+		/** This action is documented in includes/DB/IndexBuilder.php */
+		do_action( 'blockendar_index_built', $post_id );
 	}
 
 	/**

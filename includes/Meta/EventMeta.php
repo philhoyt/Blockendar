@@ -48,6 +48,69 @@ class EventMeta {
 	}
 
 	/**
+	 * The maximum length of a status value.
+	 *
+	 * The index stores the status in a varchar(20) column. A longer value
+	 * would be truncated there and never match what the post meta says.
+	 */
+	public const STATUS_MAX_LENGTH = 20;
+
+	/**
+	 * The statuses an event can have, as stored value => label.
+	 *
+	 * Every place that lists, validates or labels a status reads this: the
+	 * meta schema, the REST collection argument, the editor's dropdown and the
+	 * status block. A status a site adds through the filter is therefore
+	 * accepted everywhere at once.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function statuses(): array {
+		$defaults = [
+			'scheduled' => __( 'Scheduled', 'blockendar' ),
+			'cancelled' => __( 'Cancelled', 'blockendar' ),
+			'postponed' => __( 'Postponed', 'blockendar' ),
+			'sold_out'  => __( 'Sold Out', 'blockendar' ),
+		];
+
+		/**
+		 * Filters the statuses an event can have.
+		 *
+		 * Keys are the values stored in post meta and in the index; labels are
+		 * what the editor and the status block show. A key is passed through
+		 * sanitize_key() and dropped when that leaves it empty or longer than
+		 * 20 characters, the width of the index column. `scheduled` cannot be
+		 * removed: it is the default, and what an unknown value falls back to.
+		 *
+		 * The iCalendar feed exports an added status as CONFIRMED and the
+		 * schema.org markup as EventScheduled; the status block puts the key in
+		 * a class, `blockendar-status--{key}`, for a theme to style.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array<string, string> $statuses Status value => label.
+		 */
+		$filtered = apply_filters( 'blockendar_event_statuses', $defaults );
+		$statuses = [];
+
+		foreach ( (array) $filtered as $key => $label ) {
+			$key = sanitize_key( (string) $key );
+
+			if ( '' === $key || strlen( $key ) > self::STATUS_MAX_LENGTH || ! is_scalar( $label ) ) {
+				continue;
+			}
+
+			$statuses[ $key ] = (string) $label;
+		}
+
+		if ( ! isset( $statuses['scheduled'] ) ) {
+			$statuses = [ 'scheduled' => $defaults['scheduled'] ] + $statuses;
+		}
+
+		return $statuses;
+	}
+
+	/**
 	 * Register all post meta fields.
 	 */
 	public function register_meta(): void {
@@ -135,20 +198,23 @@ class EventMeta {
 			]
 		);
 
-		// Status.
+		// Status. The list is read here, at registration, so a status added
+		// through the filter has to be added before init.
+		$statuses = array_keys( self::statuses() );
+
 		register_post_meta(
 			$post_type,
 			'blockendar_status',
 			[
 				'type'              => 'string',
-				'description'       => 'Event status: scheduled | cancelled | postponed | sold_out.',
+				'description'       => 'Event status: ' . implode( ' | ', $statuses ) . '.',
 				'single'            => true,
 				'default'           => 'scheduled',
 				'sanitize_callback' => [ $this, 'sanitize_status' ],
 				'show_in_rest'      => [
 					'schema' => [
 						'type' => 'string',
-						'enum' => [ 'scheduled', 'cancelled', 'postponed', 'sold_out' ],
+						'enum' => $statuses,
 					],
 				],
 			]
@@ -331,9 +397,8 @@ class EventMeta {
 	 * Sanitize event status to an allowed value.
 	 */
 	public function sanitize_status( mixed $value ): string {
-		$allowed = [ 'scheduled', 'cancelled', 'postponed', 'sold_out' ];
-		$value   = sanitize_text_field( (string) $value );
+		$value = sanitize_text_field( (string) $value );
 
-		return in_array( $value, $allowed, true ) ? $value : 'scheduled';
+		return array_key_exists( $value, self::statuses() ) ? $value : 'scheduled';
 	}
 }

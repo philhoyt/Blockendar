@@ -149,6 +149,26 @@ Four filters are available:
 iCalendar has no pagination, so events past the ceiling are simply absent. A feed
 that hits it says so in `X-WR-CALDESC` and raises a notice on the settings screen.
 
+### REST API
+
+`GET /wp-json/blockendar/v1/events` lists occurrences in a range, one item per
+date of a recurring event. Each item carries the instant two ways: `start_datetime`
+and `end_datetime` are `Y-m-d H:i:s` in UTC, as the index stores them, and `start`
+and `end` are the same instants as ISO 8601 with an offset, in the zone named by
+`timezone`. That zone is the event's own, or the site's when the event has none;
+the **Timezone display** setting is a presentation choice for the blocks and is not
+applied here. An ongoing event has `null` for every end field. The same three
+fields appear on each entry of `instances` in `GET /events/{id}` and on
+`GET /events/{id}/instances`.
+
+The collection is paged with `per_page` (up to 500) and `page`. Every response
+carries `X-WP-Total` and `X-WP-TotalPages`, and a `Link` header with `rel="next"`
+and `rel="prev"` pointing at the neighbouring pages with the request's other
+parameters kept, the way WordPress's own collections do.
+
+An `OPTIONS` request to any of the three routes describes every argument and
+returns the schema of what the route sends.
+
 ## Featured, cancelled and postponed events
 
 Every place an event is listed says what state it is in, with the same classes:
@@ -224,6 +244,149 @@ Two things it does not do. Event listings and the calendar read the plugin's own
 index, which has no notion of language, so they show every language's copy of an
 event. And a recurrence rule belongs to one post, so a translation of a recurring
 event has to be given the same rule by hand.
+
+## Site Health
+
+**Tools → Site Health** carries a Blockendar section on the **Info** tab and three
+checks on the **Status** tab.
+
+The Info section lists what a bug report needs: plugin and database version, how
+many events there are by status, how many occurrences and events are in the
+index, how many recurrence rules, when the index was last rebuilt in full, when
+the next horizon roll is due, the generation strategy, horizon and occurrence
+ceiling, the timezone display mode, the events slug, whether the REST API is
+public, whether a feed token is set, and whether a persistent object cache is in
+use. The token itself is never shown, and the field that says whether one exists
+is left out of the copied report.
+
+The three checks cover the failures that leave a calendar silently empty:
+
+- **Database tables.** Critical when any of the three tables is missing, which
+  happens when a site is copied with its options but without the plugin's tables;
+  the version check alone never repairs that. Recommended when the events table
+  lacks an index the current version relies on.
+- **Event index.** Compares the published events the index builder would index
+  (a start date, and an end date or the ongoing flag) with the events that have
+  rows. Recommended when some are missing or some indexed events are no longer
+  published, with a link to the rebuild button. Not reported while a rebuild is
+  running or queued.
+- **Calendar route.** When the REST API is public, the site requests
+  `/blockendar/v1/calendar` from itself the way a visitor's browser would,
+  without a login. Critical on a 401, 403 or 404, or a body that is not the
+  calendar's JSON: the Calendar block loads its events from this route, so a
+  security plugin or server rule that blocks it blanks the calendar for everyone
+  but the administrator who would notice. Recommended, not critical, when the
+  site cannot make a request to itself at all, since core's loopback check
+  reports that already. This check runs asynchronously, from
+  `GET /blockendar/v1/site-health/calendar-route`, which needs the same
+  capability as core's own Site Health routes.
+
+## Hooks
+
+Blockendar is extended through WordPress filters and actions. Every listing,
+response and feed passes through one, so a site can adjust what the plugin
+shows without forking it. Arguments are kept to what the caller already has
+and are documented in a docblock above each call.
+
+### Queries
+
+**`blockendar_event_query_filters`** (filter) runs before every query against the
+event index: the Events Query and Calendar blocks, the REST collection, the
+calendar's JSON and the iCalendar feed. It receives the filters the query is
+built from, the UTC start and end of the range, and a `$context` naming the
+caller: `block`, `rest`, `calendar` or `ics`. It runs before the cache key is
+built, so a changed query never shares a cached result with the one it replaced.
+A page of results and the count beside it are two queries, so return the same
+thing for both.
+
+```php
+// Show only featured events everywhere but the feed.
+add_filter(
+	'blockendar_event_query_filters',
+	function ( array $filters, string $start, string $end, string $context ) {
+		if ( 'ics' !== $context ) {
+			$filters['featured'] = true;
+		}
+		return $filters;
+	},
+	10,
+	4
+);
+```
+
+The filters are the ones `EventIndex::get_events_in_range()` documents:
+`venue_term_id`, `type_term_id`, `exclude_type_term_id`, `status`, `featured`,
+`hide_hidden`, `ongoing`, `ended_before`, `per_page`, `page`, `orderby` and
+`order`. This is the intended integration point for a multilingual plugin that
+wants a listing limited to one language.
+
+### Payloads
+
+Three filters change one event at a time, after it has been formatted and
+before it is sent. Each receives the index row the event was built from, joined
+with `wp_posts`, as its second argument.
+
+| Hook | Where | First argument |
+|---|---|---|
+| `blockendar_rest_event` | `GET /blockendar/v1/events` | The event, as an array |
+| `blockendar_calendar_event` | `GET /blockendar/v1/calendar` | The FullCalendar event object; put extra data in `extendedProps` |
+| `blockendar_ics_event_lines` | The feed and a single event's `.ics` | The `VEVENT`'s content lines, unfolded; `END:VEVENT` is added afterwards, so a line appended to the array lands inside the event |
+
+```php
+add_filter(
+	'blockendar_ics_event_lines',
+	function ( array $lines, object $row ) {
+		$lines[] = 'CATEGORIES:' . get_post_meta( $row->post_id, 'department', true );
+		return $lines;
+	},
+	10,
+	2
+);
+```
+
+### Statuses
+
+**`blockendar_event_statuses`** (filter) is the one list of statuses an event can
+have, as stored value => label. The meta schema, the REST collection's `status`
+argument, the editor's dropdown and the Event Status block all read it, so a
+status added here can be chosen in the editor, saved, filtered on and shown. A
+key is passed through `sanitize_key()` and dropped if that leaves it empty or
+longer than 20 characters, the width of the index column; `scheduled` cannot be
+removed. The feed exports an added status as `CONFIRMED`, the schema.org markup
+as `EventScheduled`, and the status block gives it the class
+`blockendar-status--{key}` to style.
+
+```php
+add_filter(
+	'blockendar_event_statuses',
+	fn( array $statuses ) => $statuses + [ 'waitlist' => __( 'Waiting list', 'my-theme' ) ]
+);
+```
+
+The filter has to be in place before `init`, when the meta is registered.
+
+### Index
+
+**`blockendar_index_built`** (action) fires after an event's rows in the index have
+been rewritten, once per build for a single and a recurring event alike, and
+only when the write went through. It receives the post ID. Use it to purge a
+page cache of the pages that list the event.
+
+### Other hooks
+
+| Hook | Arguments | What it changes |
+|---|---|---|
+| `blockendar_events_query_cutoff` | `$cutoff, $attributes` | The UTC moment before which an Events Query block treats an event as past |
+| `blockendar_filter_view_modes` | `$modes` | The layout modes a view switcher may select (`list`, `grid`) |
+| `blockendar_filter_date_trigger_format` | `$format, $query_id` | The date format in the date-range filter's closed trigger |
+| `blockendar_ics_calendar_name` | `$title, $rows` | The feed's `X-WR-CALNAME` |
+| `blockendar_ics_refresh_interval` | `$duration` | How often subscribing clients are asked to refresh, as an iCalendar duration (default `PT1H`) |
+| `blockendar_ics_max_events` | `$max` | The ceiling on events in one feed response (default 2000) |
+| `blockendar_ics_window` | `$window, $past, $future` | The rolling `[ start, end ]` a subscribed feed covers |
+| `blockendar_json_ld_enabled` | `$enabled, $post_id, $occurrence` | Whether a single event page prints schema.org markup |
+| `blockendar_json_ld_event` | `$event, $post_id, $occurrence` | The schema.org `Event` |
+| `blockendar_venue_directions_url` | `$url, $term_id` | Where the Event Venue block's directions link goes |
+| `blockendar_generate_recurrence_index` (action) | `$post_id` | Fired when a recurring event's rows need rewriting; the plugin's own recurrence engine answers it |
 
 ## Privacy
 

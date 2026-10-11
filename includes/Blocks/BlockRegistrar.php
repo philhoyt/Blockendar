@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Blockendar\CPT\EventPostType;
+use Blockendar\Meta\EventMeta;
 
 /**
  * Registers every block from the build-time blocks manifest and enqueues
@@ -114,6 +115,7 @@ class BlockRegistrar {
 			'is12Hour'     => $this->is_12_hour_format(),
 			'dateFormat'   => $this->get_date_format(),
 			'timeFormat'   => $this->get_time_format(),
+			'statuses'     => self::editor_statuses(),
 		];
 
 		wp_add_inline_script(
@@ -159,6 +161,24 @@ class BlockRegistrar {
 			'site'    => $site,
 			'options' => $options,
 		];
+	}
+
+	/**
+	 * The statuses the Event Details panel offers, in SelectControl's shape.
+	 *
+	 * @return array<int, array{value: string, label: string}>
+	 */
+	public static function editor_statuses(): array {
+		$options = [];
+
+		foreach ( EventMeta::statuses() as $value => $label ) {
+			$options[] = [
+				'value' => $value,
+				'label' => $label,
+			];
+		}
+
+		return $options;
 	}
 
 	/**
