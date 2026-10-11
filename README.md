@@ -244,6 +244,15 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 2.3.0
+- Added: a **Year** view on the Calendar View block and in the site's default view setting. Each day shows a dot per event and a count when there are more than fit, and clicking a day number or a week heading opens that day or week when the block offers those views.
+- Added: **Show week numbers** and **Events per day** options on the Calendar View block. Week numbers appear in the month, week, day and year views and link to their week. The limit sets how many events a day shows in the month view, and in the all-day row of the week and day views, before the rest fold into a "more" link.
+- Added: a line at the current time in the week and day views, drawn at the site's time rather than the visitor's.
+- Added: the venue and cost under the event title in the week, day and list views, when the event has them.
+- Added: settings for the week and day views under **Settings > Blockendar > Calendar**: the first and last hour shown, whether the all-day row is shown, and business hours by day and time, which shade the hours outside them.
+- Fixed: choosing **List** as the site's default calendar view had no effect, because the setting named a view the block does not have. The saved value is now read as the block's list view, and corrected the next time settings are saved.
+- Fixed: an ampersand or other special character in a venue or event type name showed as code on calendar events.
+
 ### 2.2.0
 - Added: single event pages carry schema.org `Event` markup, so a search engine can show an event with its date and place. It describes the date the page is showing, and is built only from what the event has. Events with an online venue, no venue, or a venue with no address are left out by default, because Google's guidelines do not cover them. Filters: `blockendar_json_ld_enabled` and `blockendar_json_ld_event`.
 - Added: a postal code on venues, shown in the Event Venue block, in calendar feeds, in the Google and Outlook links, and as `postal_code` with the venue in the REST API.
