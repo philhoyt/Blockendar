@@ -30,11 +30,13 @@ define( 'BLOCKENDAR_DEMO_URL', plugin_dir_url( __FILE__ ) );
  *
  * The APIs it calls -- IndexBuilder::build_for_post(),
  * EventIndex::delete_by_post_id() and the Recurrence\RuleRepository CRUD
- * methods -- have been in place since 1.4.0. What moved the floor to 1.7.0 is
- * the markup: the tour wraps the filter blocks in a core/group to lay them out
- * in a row, and before 1.7.0 those blocks declared "parent", which allows them
- * only as direct children of query-filters. On an older Blockendar the pages
- * still render, but the editor reports the filter blocks as not allowed there.
+ * methods -- have been in place since 1.4.0. The floor moved to 1.7.0 for the
+ * markup: the tour wraps the filter blocks in a core/group to lay them out in
+ * a row, and before 1.7.0 those blocks declared "parent", which allows them
+ * only as direct children of query-filters. It moved again to 2.0.0 when the
+ * taxonomies were renamed: the seeder creates its event types and venues
+ * under the prefixed names (blockendar_event_type, blockendar_event_venue)
+ * that 2.0.0 registers, which an older Blockendar does not know.
  */
 define( 'BLOCKENDAR_DEMO_MIN_BLOCKENDAR', '2.0.0' );
 

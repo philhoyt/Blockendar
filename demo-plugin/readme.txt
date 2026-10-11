@@ -23,7 +23,7 @@ Manage it from Tools > Blockendar Demo, or with `wp blockendar-demo seed` and
 Reset removes only what the demo created, and restores your previous front page
 setting. Content of your own is never touched.
 
-Requires Blockendar 1.7.0 or newer.
+Requires Blockendar 2.0.0 or newer.
 
 == Changelog ==
 
