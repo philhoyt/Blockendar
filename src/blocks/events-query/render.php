@@ -170,6 +170,7 @@ $featured_filter = ! empty( $attributes['featuredOnly'] ) ? [ 'featured' => true
 
 $index     = new EventIndex();
 $base_args = $past_filter + $featured_filter + [
+	'context'  => 'block',
 	'per_page' => $per_page + 1,
 	'page'     => $current_page,
 	'orderby'  => 'start_datetime',
@@ -193,6 +194,7 @@ if ( $inherit ) {
 	// WP_Post (singular) and post type archives: no additional filter.
 
 	$inherit_filters = $past_filter + $featured_filter + [
+		'context'       => 'block',
 		'type_term_id'  => $inherit_type,
 		'venue_term_id' => $inherit_venue,
 		'per_page'      => $per_page,
@@ -290,6 +292,7 @@ if ( $inherit ) {
 	}
 
 	$standard_filters = $past_filter + $featured_filter + [
+		'context'              => 'block',
 		'type_term_id'         => ! empty( $effective_type_ids ) ? $effective_type_ids : null,
 		'exclude_type_term_id' => ! empty( $exclude_type_ids ) ? $exclude_type_ids : null,
 		'venue_term_id'        => $url_filters['venue_id'],

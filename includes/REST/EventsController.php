@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Blockendar\Blocks\Cutoff;
 use Blockendar\DB\EventIndex;
 use Blockendar\DB\IndexBuilder;
+use Blockendar\Meta\EventMeta;
 use Blockendar\Recurrence\RuleRepository;
 use Blockendar\Recurrence\Generator;
 use Blockendar\Taxonomy\EventTag;
@@ -215,6 +216,7 @@ class EventsController extends AbstractController {
 			'page'          => $page,
 			'orderby'       => $request->get_param( 'orderby' ) ?: 'start_datetime',
 			'order'         => strtoupper( (string) ( $request->get_param( 'order' ) ?? 'ASC' ) ),
+			'context'       => 'rest',
 		];
 
 		$events = $this->index->get_events_in_range( $start, $end, $filters );
@@ -519,7 +521,7 @@ class EventsController extends AbstractController {
 	private function format_event_row( object $row ): array {
 		$ongoing = ! empty( $row->ongoing );
 
-		return [
+		$data = [
 			'id'             => (int) $row->id,
 			'post_id'        => (int) $row->post_id,
 			'title'          => $row->post_title,
@@ -534,6 +536,22 @@ class EventsController extends AbstractController {
 			'venue_term_id'  => $row->venue_term_id ? (int) $row->venue_term_id : null,
 			'type_term_ids'  => $row->type_term_ids ? json_decode( $row->type_term_ids, true ) : [],
 		];
+
+		/**
+		 * Filters one event of the REST collection response.
+		 *
+		 * Runs for every row of GET /blockendar/v1/events, after the row has
+		 * been formatted and before it is sent. The post's caches are primed,
+		 * so get_post_meta() and get_the_terms() on $row->post_id are cheap.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array  $data The event as it will be sent.
+		 * @param object $row  The index row it was built from, joined with wp_posts.
+		 */
+		$filtered = apply_filters( 'blockendar_rest_event', $data, $row );
+
+		return is_array( $filtered ) ? $filtered : $data;
 	}
 
 	/**
@@ -714,7 +732,7 @@ class EventsController extends AbstractController {
 			],
 			'status'   => [
 				'type' => 'string',
-				'enum' => [ 'scheduled', 'cancelled', 'postponed', 'sold_out' ],
+				'enum' => array_keys( EventMeta::statuses() ),
 			],
 			'featured' => [ 'type' => 'boolean' ],
 			'per_page' => [

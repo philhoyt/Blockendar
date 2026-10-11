@@ -13,14 +13,9 @@ import {
 	__experimentalVStack as VStack,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
-import { statusHasReason, statusUpdate } from './status';
+import { statusHasReason, statusOptions, statusUpdate } from './status';
 
-const STATUS_OPTIONS = [
-	{ label: __( 'Scheduled', 'blockendar' ), value: 'scheduled' },
-	{ label: __( 'Cancelled', 'blockendar' ), value: 'cancelled' },
-	{ label: __( 'Postponed', 'blockendar' ), value: 'postponed' },
-	{ label: __( 'Sold Out', 'blockendar' ), value: 'sold_out' },
-];
+const STATUS_OPTIONS = statusOptions( window.blockendarEditor?.statuses );
 
 export function EventDetailsPanel() {
 	const meta = useSelect(

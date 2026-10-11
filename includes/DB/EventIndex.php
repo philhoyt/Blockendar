@@ -119,6 +119,57 @@ class EventIndex {
 	}
 
 	/**
+	 * Give other code a say in what a range query asks for.
+	 *
+	 * Runs before the filters are reduced and before the cache key is built,
+	 * so a query a filter has changed can never share a cached result with the
+	 * one it would have been. The caller names where the query comes from in
+	 * `$filters['context']`; it is handed to the filter on its own and never
+	 * reaches the SQL.
+	 *
+	 * @param array  $filters Filters as the caller wrote them.
+	 * @param string $start   UTC datetime string (Y-m-d H:i:s).
+	 * @param string $end     UTC datetime string (Y-m-d H:i:s).
+	 * @return array Filters to build the query from.
+	 */
+	private function filter_query( array $filters, string $start, string $end ): array {
+		$context = isset( $filters['context'] ) ? (string) $filters['context'] : '';
+		unset( $filters['context'] );
+
+		/**
+		 * Filters the arguments an index query is built from.
+		 *
+		 * Every listing of events goes through here: the events-query and
+		 * calendar blocks, the REST collection, the calendar's JSON and the
+		 * iCalendar feed. A page of results and the count beside it are two
+		 * queries, so the filter runs for each; return the same thing for both
+		 * or the page links will not match the pages.
+		 *
+		 * The filters are the ones EventIndex::get_events_in_range() documents:
+		 * `venue_term_id`, `type_term_id`, `exclude_type_term_id`, `status`,
+		 * `featured`, `hide_hidden`, `ongoing`, `ended_before`, `per_page`,
+		 * `page`, `orderby` and `order`. The start and end are read-only here.
+		 *
+		 * @since 2.4.0
+		 *
+		 * @param array  $filters Query filters.
+		 * @param string $start   Start of the range, Y-m-d H:i:s in UTC.
+		 * @param string $end     End of the range, Y-m-d H:i:s in UTC.
+		 * @param string $context Where the query comes from: 'block', 'rest',
+		 *                        'calendar' or 'ics'. Empty for a caller that gave none.
+		 */
+		$filtered = apply_filters( 'blockendar_event_query_filters', $filters, $start, $end, $context );
+
+		if ( ! is_array( $filtered ) ) {
+			return $filters;
+		}
+
+		unset( $filtered['context'] );
+
+		return $filtered;
+	}
+
+	/**
 	 * Reduce a caller's filters to the ones that decide which rows match, in
 	 * the one form the WHERE clause is built from.
 	 *
@@ -287,6 +338,9 @@ class EventIndex {
 	 *     @type int       $page           1-based page number (default 1).
 	 *     @type string    $orderby        start_datetime|end_datetime|post_title (default: start_datetime).
 	 *     @type string    $order          ASC|DESC (default: ASC).
+	 *     @type string    $context        Where the query comes from (block|rest|calendar|ics).
+	 *                                     Handed to the blockendar_event_query_filters filter
+	 *                                     and not used in the query.
 	 * }
 	 * @return array<object> Rows from the index joined with wp_posts.
 	 */
@@ -296,6 +350,7 @@ class EventIndex {
 		$events_table = Schema::events_table();
 		$posts_table  = $wpdb->posts;
 
+		$filters  = $this->filter_query( $filters, $start, $end );
 		$matching = $this->canonical_filters( $filters );
 
 		// ORDER BY — whitelist columns to prevent injection.
@@ -386,6 +441,7 @@ class EventIndex {
 		// Sort order, page size and page number are left out of the key as
 		// they are left out of the query: none of them can change a total, and
 		// with them in it every page of a listing counted the listing again.
+		$filters   = $this->filter_query( $filters, $start, $end );
 		$matching  = $this->canonical_filters( $filters );
 		$cache_key = $this->cache_key( 'range_count', [ $start, $end, $matching ] );
 		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
