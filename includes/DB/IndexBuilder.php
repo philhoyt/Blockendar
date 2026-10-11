@@ -679,7 +679,12 @@ class IndexBuilder {
 	 * Whether a full rebuild is under way or waiting for its first run.
 	 */
 	public function is_rebuild_pending(): bool {
-		return $this->is_rebuilding() || false !== wp_next_scheduled( self::REBUILD_HOOK );
+		// A full rebuild is queued without arguments; a continuation, by
+		// queue_rebuild(), with one. wp_next_scheduled() matches on the
+		// arguments, so both forms have to be asked for.
+		return $this->is_rebuilding()
+			|| false !== wp_next_scheduled( self::REBUILD_HOOK )
+			|| false !== wp_next_scheduled( self::REBUILD_HOOK, [ self::CONTINUE ] );
 	}
 
 	/**

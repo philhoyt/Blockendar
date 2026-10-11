@@ -245,6 +245,42 @@ index, which has no notion of language, so they show every language's copy of an
 event. And a recurrence rule belongs to one post, so a translation of a recurring
 event has to be given the same rule by hand.
 
+## Site Health
+
+**Tools → Site Health** carries a Blockendar section on the **Info** tab and three
+checks on the **Status** tab.
+
+The Info section lists what a bug report needs: plugin and database version, how
+many events there are by status, how many occurrences and events are in the
+index, how many recurrence rules, when the index was last rebuilt in full, when
+the next horizon roll is due, the generation strategy, horizon and occurrence
+ceiling, the timezone display mode, the events slug, whether the REST API is
+public, whether a feed token is set, and whether a persistent object cache is in
+use. The token itself is never shown, and the field that says whether one exists
+is left out of the copied report.
+
+The three checks cover the failures that leave a calendar silently empty:
+
+- **Database tables.** Critical when any of the three tables is missing, which
+  happens when a site is copied with its options but without the plugin's tables;
+  the version check alone never repairs that. Recommended when the events table
+  lacks an index the current version relies on.
+- **Event index.** Compares the published events the index builder would index
+  (a start date, and an end date or the ongoing flag) with the events that have
+  rows. Recommended when some are missing or some indexed events are no longer
+  published, with a link to the rebuild button. Not reported while a rebuild is
+  running or queued.
+- **Calendar route.** When the REST API is public, the site requests
+  `/blockendar/v1/calendar` from itself the way a visitor's browser would,
+  without a login. Critical on a 401, 403 or 404, or a body that is not the
+  calendar's JSON: the Calendar block loads its events from this route, so a
+  security plugin or server rule that blocks it blanks the calendar for everyone
+  but the administrator who would notice. Recommended, not critical, when the
+  site cannot make a request to itself at all, since core's loopback check
+  reports that already. This check runs asynchronously, from
+  `GET /blockendar/v1/site-health/calendar-route`, which needs the same
+  capability as core's own Site Health routes.
+
 ## Hooks
 
 Blockendar is extended through WordPress filters and actions. Every listing,

@@ -33,6 +33,7 @@ use Blockendar\Blocks\TemplateRegistrar;
 use Blockendar\Admin\EventColumns;
 use Blockendar\Admin\PrivacyPolicy;
 use Blockendar\Admin\SettingsPage;
+use Blockendar\Admin\SiteHealth;
 use Blockendar\Admin\VenueGeocode;
 use Blockendar\Upgrader;
 use Blockendar\CLI\ImportTribeCommand;
@@ -109,6 +110,11 @@ class Plugin {
 
 		// Admin settings page.
 		( new SettingsPage() )->register();
+
+		// Site Health: an Info section and three status tests. Not gated on
+		// is_admin(): the asynchronous test answers over REST, and the weekly
+		// Site Health check runs from cron.
+		( new SiteHealth() )->register();
 
 		// Admin list table columns for events.
 		if ( is_admin() ) {

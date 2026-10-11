@@ -1165,6 +1165,33 @@ class EventIndex {
 	}
 
 	/**
+	 * How many distinct events have rows in the index.
+	 *
+	 * Beside get_total_row_count() this says how many of the rows are a
+	 * recurring event's dates. Site Health compares it with the published
+	 * events that should be indexed.
+	 */
+	public function get_indexed_post_count(): int {
+		global $wpdb;
+
+		$cache_key = $this->cache_key( 'indexed_posts', [] );
+		$cached    = wp_cache_get( $cache_key, self::CACHE_GROUP );
+
+		if ( false !== $cached ) {
+			return (int) $cached;
+		}
+
+		$events_table = Schema::events_table();
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The table name is built from $wpdb->prefix.
+		$count = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT post_id) FROM {$events_table}" );
+
+		$this->cache_set( $cache_key, $count );
+
+		return $count;
+	}
+
+	/**
 	 * Get the total number of rows in the index (for stats display).
 	 */
 	public function get_total_row_count(): int {
