@@ -390,7 +390,7 @@ class SiteHealth {
 			$result['description'] = sprintf(
 				'<p>%s</p>',
 				sprintf(
-					/* translators: 1: "N published event(s)", 2: "N occurrence(s)". */
+					/* translators: 1: a count of published events, as a phrase. 2: a count of occurrences, as a phrase. */
 					esc_html__( '%1$s indexed as %2$s, which is what the calendar, lists and feeds read.', 'blockendar' ),
 					/* translators: %s: number of events. */
 					sprintf( _n( '%s published event', '%s published events', $events, 'blockendar' ), number_format_i18n( $events ) ),
