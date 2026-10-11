@@ -149,6 +149,26 @@ Four filters are available:
 iCalendar has no pagination, so events past the ceiling are simply absent. A feed
 that hits it says so in `X-WR-CALDESC` and raises a notice on the settings screen.
 
+### REST API
+
+`GET /wp-json/blockendar/v1/events` lists occurrences in a range, one item per
+date of a recurring event. Each item carries the instant two ways: `start_datetime`
+and `end_datetime` are `Y-m-d H:i:s` in UTC, as the index stores them, and `start`
+and `end` are the same instants as ISO 8601 with an offset, in the zone named by
+`timezone`. That zone is the event's own, or the site's when the event has none;
+the **Timezone display** setting is a presentation choice for the blocks and is not
+applied here. An ongoing event has `null` for every end field. The same three
+fields appear on each entry of `instances` in `GET /events/{id}` and on
+`GET /events/{id}/instances`.
+
+The collection is paged with `per_page` (up to 500) and `page`. Every response
+carries `X-WP-Total` and `X-WP-TotalPages`, and a `Link` header with `rel="next"`
+and `rel="prev"` pointing at the neighbouring pages with the request's other
+parameters kept, the way WordPress's own collections do.
+
+An `OPTIONS` request to any of the three routes describes every argument and
+returns the schema of what the route sends.
+
 ## Featured, cancelled and postponed events
 
 Every place an event is listed says what state it is in, with the same classes:

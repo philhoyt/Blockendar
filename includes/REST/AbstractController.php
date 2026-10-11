@@ -202,21 +202,37 @@ abstract class AbstractController {
 	}
 
 	/**
-	 * Build pagination headers from total count and request params.
+	 * Add the pagination headers to a collection response.
 	 *
-	 * @param int             $total    Total matching items.
-	 * @param int             $per_page Items per page.
-	 * @param int             $page     Current page.
-	 * @param WP_REST_Request $request  The REST request.
-	 * @return array Header key => value pairs.
+	 * X-WP-Total and X-WP-TotalPages say how much there is; a Link header with
+	 * rel="next" and rel="prev" says where the rest of it is, the way the core
+	 * collections do. Set on the response rather than returned, because a Link
+	 * header is built by WP_REST_Response::link_header(), which appends to the
+	 * header instead of replacing it.
+	 *
+	 * @param WP_REST_Response $response The collection response.
+	 * @param WP_REST_Request  $request  The request, whose parameters the links keep.
+	 * @param int              $total    Total matching items.
+	 * @param int              $per_page Items per page.
+	 * @param int              $page     Current page, 1-based.
+	 * @return WP_REST_Response The same response.
 	 */
-	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- $page and $request reserved for future Link header support.
-	protected function pagination_headers( int $total, int $per_page, int $page, WP_REST_Request $request ): array {
+	protected function paginate( WP_REST_Response $response, WP_REST_Request $request, int $total, int $per_page, int $page ): WP_REST_Response {
 		$total_pages = $per_page > 0 ? (int) ceil( $total / $per_page ) : 1;
 
-		return [
-			'X-WP-Total'      => (string) $total,
-			'X-WP-TotalPages' => (string) $total_pages,
-		];
+		$response->header( 'X-WP-Total', (string) $total );
+		$response->header( 'X-WP-TotalPages', (string) $total_pages );
+
+		$base = add_query_arg( urlencode_deep( $request->get_query_params() ), rest_url( $request->get_route() ) );
+
+		if ( $page > 1 ) {
+			$response->link_header( 'prev', add_query_arg( 'page', min( $page - 1, max( 1, $total_pages ) ), $base ) );
+		}
+
+		if ( $page < $total_pages ) {
+			$response->link_header( 'next', add_query_arg( 'page', $page + 1, $base ) );
+		}
+
+		return $response;
 	}
 }
