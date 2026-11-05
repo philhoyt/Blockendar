@@ -407,6 +407,15 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ## Changelog
 
+### 2.4.0
+- Added: a Blockendar section on the **Info** tab of **Tools > Site Health**. It lists the plugin and database versions, how many events there are by status, how many occurrences and events are in the index, when the index was last rebuilt, when the next horizon roll is due, the settings that shape the index, and whether a feed token is set. The token itself is never shown, and that field is left out of the copied report.
+- Added: three checks on the **Status** tab of Site Health, for the failures that leave a calendar silently empty: a missing database table or index, an event index out of step with the published events, and a calendar route that does not answer a visitor's request.
+- Added: events in `/blockendar/v1/events` carry `timezone`, `start` and `end`: the event's own timezone, and its start and end as ISO 8601 in that timezone, beside the UTC fields, which are unchanged.
+- Added: the event collection in the REST API answers with `Link` headers for the next and previous pages, every argument has a description, and the three read routes return a schema on an `OPTIONS` request.
+- Added: hooks for extending the plugin. `blockendar_event_query_filters` runs before every query against the event index, with a context naming the caller. `blockendar_rest_event`, `blockendar_calendar_event` and `blockendar_ics_event_lines` each change one event of the REST collection, the calendar's JSON and the iCalendar feed. `blockendar_index_built` fires after an event's rows in the index are written. See [Hooks](#hooks).
+- Added: `blockendar_event_statuses`, one filterable list of the statuses an event can have. The meta schema, the REST `status` argument, the editor's dropdown and the Event Status Badge block all read it, so a status added there can be chosen, saved, filtered on and shown.
+- Fixed: an index rebuild that was queued to continue was reported as finished on the Performance panel while it still had work to do.
+
 ### 2.3.0
 - Added: a **Year** view on the Calendar View block and in the site's default view setting. Each day shows a dot per event and a count when there are more than fit, and clicking a day number or a week heading opens that day or week when the block offers those views.
 - Added: **Show week numbers** and **Events per day** options on the Calendar View block. Week numbers appear in the month, week, day and year views and link to their week. The limit sets how many events a day shows in the month view, and in the all-day row of the week and day views, before the rest fold into a "more" link.

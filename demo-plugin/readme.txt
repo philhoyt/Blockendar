@@ -3,7 +3,7 @@ Contributors: philhoyt
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 8.1
-Stable tag: 2.3.0
+Stable tag: 2.4.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,6 +26,9 @@ setting. Content of your own is never touched.
 Requires Blockendar 2.0.0 or newer.
 
 == Changelog ==
+
+= 2.4.0 =
+* Changed: the readme states the demo needs Blockendar 2.0.0 or newer, matching the check the plugin makes. The demo content and the seeder are unchanged, to stay in step with Blockendar 2.4.0.
 
 = 2.3.0 =
 * Changed: the demo page for the Calendar View block names the calendar's five views. The demo content and the seeder are otherwise unchanged, to stay in step with Blockendar 2.3.0.
