@@ -53,7 +53,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 			? {}
 			: {
 					className: `blockendar-event-status blockendar-status blockendar-status--${ displayStatus }`,
-			  }
+				}
 	);
 
 	if ( isScheduled ) {

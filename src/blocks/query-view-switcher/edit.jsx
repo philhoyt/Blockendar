@@ -107,11 +107,11 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							? __(
 									'The starting layout follows the Events Query block, so the control and the results always agree. Change it on the query itself.',
 									'blockendar'
-							  )
+								)
 							: __(
 									'Place this block with an Events Query block. It follows that block for its starting layout.',
 									'blockendar'
-							  ) }
+								) }
 					</p>
 					<ToggleControl
 						label={ __( 'Show labels', 'blockendar' ) }

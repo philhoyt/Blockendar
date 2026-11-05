@@ -49,7 +49,7 @@ const HOUR_OPTIONS = Array.from( { length: 25 }, ( _, hour ) => ( {
 					/* translators: %s: an hour of the day, 00 to 23. */
 					__( '%s:00', 'blockendar' ),
 					String( hour ).padStart( 2, '0' )
-			  ),
+				),
 } ) );
 
 const DEFAULT_BUSINESS_DAYS = [ 1, 2, 3, 4, 5 ];

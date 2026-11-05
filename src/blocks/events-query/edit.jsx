@@ -261,7 +261,7 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 					'--blockendar-columns': columnCount,
 					'--blockendar-columns-tablet': columnCountTablet,
 					'--blockendar-columns-mobile': columnCountMobile,
-			  }
+				}
 			: undefined,
 	} );
 
@@ -423,11 +423,11 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 										? __(
 												'Editing the grid template. Switch to list view in the toolbar to edit the other one.',
 												'blockendar'
-										  )
+											)
 										: __(
 												'Editing the list template. Switch to grid view in the toolbar to edit the other one.',
 												'blockendar'
-										  ) }
+											) }
 								</p>
 								<Button
 									variant="secondary"
@@ -444,11 +444,11 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 										? __(
 												'Keeps the grid template and discards the list one.',
 												'blockendar'
-										  )
+											)
 										: __(
 												'Keeps the list template and discards the grid one.',
 												'blockendar'
-										  ) }
+											) }
 								</p>
 							</div>
 						) }
@@ -613,7 +613,7 @@ export function Edit( { attributes, setAttributes, clientId } ) {
 										? __(
 												'Shows events sharing the current post\u2019s type or venue. Place this block inside a single-event template.',
 												'blockendar'
-										  )
+											)
 										: undefined
 								}
 								__nextHasNoMarginBottom

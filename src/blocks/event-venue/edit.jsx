@@ -116,7 +116,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 						: !! meta.blockendar_venue_virtual;
 					const stream = isPlaceholder
 						? venue.stream
-						: meta.blockendar_venue_stream_url ?? '';
+						: ( meta.blockendar_venue_stream_url ?? '' );
 					const addressStr = isPlaceholder
 						? venue.address
 						: [
@@ -131,7 +131,7 @@ export function Edit( { attributes, setAttributes, context } ) {
 									.filter( Boolean )
 									.join( ' ' ),
 								meta.blockendar_venue_country ?? '',
-						  ]
+							]
 								.filter( Boolean )
 								.join( ', ' );
 

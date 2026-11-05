@@ -36,7 +36,7 @@ test( 'no PHP errors were logged during the run', () => {
 
 	const grew = truncated
 		? `debug.log is ${ size } bytes but the mark was ${ byteMark }, so it ` +
-		  'was truncated or recreated during the run and the whole file was checked'
+			'was truncated or recreated during the run and the whole file was checked'
 		: `debug.log grew from ${ byteMark } to ${ size } bytes during the run`;
 
 	expect(

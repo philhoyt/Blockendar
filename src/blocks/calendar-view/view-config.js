@@ -221,7 +221,7 @@ export function businessHoursFromDataset( raw ) {
 						.map( ( day ) => parseInt( day, 10 ) )
 						.filter( ( day ) => day >= 0 && day <= 6 )
 				),
-		  ]
+			]
 		: [];
 
 	const startTime = timeOfDay( parsed.startTime, '' );

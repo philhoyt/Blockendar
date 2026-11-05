@@ -37,7 +37,7 @@
     "make-translations": "npm run make-pot && npm run make-json",
     "test:php": "vendor/bin/phpunit",
     "test:integration": "node bin/test-integration.js",
-    "test:js": "wp-scripts test-unit-js",
+    "test:js": "wp-scripts test-unit-jest",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -51,9 +51,16 @@
     "leaflet": "^1.9.4"
   },
   "devDependencies": {
+    "@babel/core": "^7.25.7",
     "@playwright/test": "^1.62.1",
     "@wordpress/a11y": "^4.56.0",
-    "@wordpress/env": "^11.13.0",
-    "@wordpress/scripts": "^34.1.0"
+    "@wordpress/babel-preset-default": "^8.55.0",
+    "@wordpress/env": "^12.1.0",
+    "@wordpress/jest-preset-default": "^14.2.0",
+    "@wordpress/scripts": "^37.1.0",
+    "babel-jest": "^30.5.0",
+    "eslint-plugin-jest": "^29.17.0",
+    "jest": "^30.5.0",
+    "jest-environment-jsdom": "^30.5.0"
   }
 }

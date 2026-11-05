@@ -106,7 +106,7 @@ export function RestApiSection( { settings, update } ) {
 		! isPublic && token
 			? `${ url }${
 					url.includes( '?' ) ? '&' : '?'
-			  }token=${ encodeURIComponent( token ) }`
+				}token=${ encodeURIComponent( token ) }`
 			: url;
 
 	return (

@@ -119,7 +119,7 @@ function newErrorLines( container, byteMark ) {
 					'sh',
 					'-c',
 					`tail -c +${ from } ${ LOG } 2>/dev/null || true`,
-			  ] );
+				] );
 
 	return { lines: filterErrorLines( text ), truncated, size };
 }

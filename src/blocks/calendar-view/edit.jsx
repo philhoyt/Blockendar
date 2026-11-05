@@ -153,7 +153,7 @@ export function Edit( { attributes, setAttributes } ) {
 					/* translators: %s: the value configured in Settings > Blockendar. */
 					__( 'Site default (%s)', 'blockendar' ),
 					match.label
-			  )
+				)
 			: __( 'Site default', 'blockendar' );
 	};
 

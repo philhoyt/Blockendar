@@ -645,7 +645,7 @@ export function DateTimePanel() {
 							? __(
 									'Stays in listings until you set an end date or unpublish it.',
 									'blockendar'
-							  )
+								)
 							: undefined
 					}
 					checked={ ongoing }

@@ -8,6 +8,7 @@
  */
 
 const wpScriptsConfig = require( '@wordpress/scripts/config/eslint.config.cjs' );
+const jestPlugin = require( 'eslint-plugin-jest' );
 
 module.exports = [
 	// Vendored third-party code is not ours to lint.
@@ -32,6 +33,15 @@ module.exports = [
 
 	...wpScriptsConfig,
 
+	{
+		// Playwright specs, not Vitest tests: the wp-scripts default config applies
+		// the Vitest unit-test rules to every *.spec.js, and this one misreads prose
+		// such as "it (see the header)" in a comment as a commented-out test.
+		files: [ 'tests/e2e/**/*.js' ],
+		rules: {
+			'vitest/no-commented-out-tests': 'off',
+		},
+	},
 	{
 		// E2E specs run in Node, but the callbacks passed to page.evaluate() run in
 		// the browser under test. Without these the linter flags browser globals
@@ -76,5 +86,11 @@ module.exports = [
 			// version in use does not yet export the stable equivalents at runtime.
 			'@wordpress/no-unsafe-wp-apis': 'off',
 		},
+	},
+	// The unit suite stays on Jest (wp-scripts test-unit-jest); the default
+	// test override in @wordpress/eslint-plugin 27+ targets Vitest instead.
+	{
+		...jestPlugin.configs[ 'flat/recommended' ],
+		files: [ 'tests/**/*.test.js', 'src/**/__tests__/**/*.js' ],
 	},
 ];
