@@ -3,43 +3,40 @@
 [![CI](https://github.com/philhoyt/Blockendar/actions/workflows/ci.yml/badge.svg)](https://github.com/philhoyt/Blockendar/actions/workflows/ci.yml)
 [![Playground Demo](https://img.shields.io/badge/Playground_Demo-blue?logo=wordpress&logoColor=%23fff&labelColor=%233858e9&color=%23386be9)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/philhoyt/Blockendar/main/_playground/blueprint.json)
 
-A block-native WordPress events plugin.
+Events for the block editor: recurring events, a calendar block, an events query block with filters, iCalendar feeds and a REST API.
 
-## Features
+Blockendar adds a `blockendar_event` post type and does the rest with blocks. There are no shortcodes, widgets or classic meta boxes. An event's date and time, repeat rule, venue, cost, registration link and status are set in sidebar panels in the block editor, and events are shown on the front end with the plugin's sixteen blocks:
 
-- **Block-based event editor** — Date & time, recurrence, venue, cost, registration, and status managed through dedicated block editor sidebar panels
-- **Recurring events** — Full recurrence rule support (daily, weekly, monthly, yearly) with exceptions, custom additions, and a rolling horizon cron job
-- **Calendar View block** — Interactive FullCalendar-powered calendar with month, week, day, list and year views; week numbers, a current-time line, a per-block limit on events shown per day, venue and cost on each event in the week, day and list views, and site-wide settings for the hours shown and business-hours shading; exposes a valid iCal feed and an opt-in subscribe button
-- **Calendar subscriptions** — A live `webcal://` feed people can subscribe to in Apple Calendar, Google Calendar, or Outlook; it rolls forward with the date rather than going stale
-- **Events Query block** — Flexible query block for custom event displays; shows individual occurrences of recurring events with correct dates and occurrence-aware links
-- **7 single-event blocks** — Date/time, venue, cost, status, countdown, map, add-to-calendar
-- **Custom database layer** — All date range queries run against a dedicated indexed table (`{prefix}blockendar_events`)
-- **Search engine markup** — schema.org `Event` data on every single event page, built from the event's own date, venue and price
-- **REST API** — Full read/write API under `blockendar/v1`, including iCal feed and index rebuild endpoints
-- **Venues** — Taxonomy with rich meta (address, coordinates, capacity, website) and inline venue creation in the editor
-- **Admin settings** — Date/time formats, timezone mode, calendar defaults, map provider, currency, recurrence horizon, and more
-- **GitHub-based updates** — Automatic update notifications in wp-admin via tagged releases
+- **Event Calendar**, drawn with FullCalendar: month, week, day, list and year views, week numbers, a line at the current time, business-hours shading, and optional iCalendar and Google Calendar subscribe buttons. With JavaScript off it prints a plain list of upcoming events.
+- **Events Query**, a query block for event listings with list and grid layouts and an Event Template for each. A recurring event appears once per date in the range, each date with its own link.
+- **Events Query Filters**, with Filter by Event Type, Filter by Venue, Filter by Date Range, an Events View Switcher and a No Results block. The filters and the switcher work with JavaScript off.
+- Seven single-event blocks: Event Date & Time, Event Venue, Event Cost, Event Status Badge, Event Countdown, Event Map and Add to Calendar.
+
+A recurring event is one post with a repeat rule (daily, weekly, monthly or yearly, with dates skipped or added by hand). The rule is expanded into the `{prefix}blockendar_events` index table, which every date-range query reads instead of post meta, and a daily WP-Cron job extends the index as the horizon moves forward. One date of a series can be cancelled on its own.
+
+Venues are a taxonomy with an address, postal code, country, coordinates and, for online venues, a stream link. A "Look up coordinates" button on the venue screen geocodes the address through OpenStreetMap's Nominatim with no API key. The Event Map block draws venues with Leaflet on OpenStreetMap tiles. Single event pages carry schema.org `Event` markup, and the REST API under `blockendar/v1` reads and writes events, occurrences and repeat rules, serves the calendar's JSON and an iCalendar feed, and rebuilds the index. Updates are delivered from GitHub releases through Plugin Update Checker.
 
 ## Requirements
 
 | | Minimum | Tested up to |
 |---|---|---|
 | WordPress | 6.8 | 7.1 |
-| PHP | 8.1 | 8.1 |
+| PHP | 8.1 | 8.4 |
+
+Node 22 and Composer are needed for development only.
 
 ## Installation
 
-1. Go to the [Releases page](https://github.com/philhoyt/Blockendar/releases) and download the latest `blockendar.zip` asset.
-2. In your WordPress admin, go to **Plugins → Add New Plugin → Upload Plugin**.
-3. Choose the downloaded `.zip` file and click **Install Now**.
-4. Click **Activate Plugin**.
+1. Download `blockendar.zip` from the latest [release](https://github.com/philhoyt/Blockendar/releases).
+2. In wp-admin go to **Plugins > Add New Plugin > Upload Plugin**, choose the zip and click **Install Now**.
+3. Activate the plugin.
 
 ## Try the demo
 
 The [Playground demo](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/philhoyt/Blockendar/main/_playground/blueprint.json)
-runs the plugin in your browser with no install.
+runs the plugin in your browser with nothing to install.
 
-To preview the working tree instead — no Docker needed, it runs on php-wasm:
+To preview the working tree instead, with no Docker (it runs on php-wasm):
 
 ```bash
 npm run playground   # http://127.0.0.1:9400
@@ -47,17 +44,48 @@ npm run playground   # http://127.0.0.1:9400
 
 To get the same content on a site of your own, download `blockendar_demo.zip`
 from the [Releases page](https://github.com/philhoyt/Blockendar/releases) and
-install it alongside Blockendar. Activating it creates 31 events, 5 venues and a
-six-page guided tour. Every date is generated when you activate it, so the demo
-is always current.
+install it alongside Blockendar. Activating it creates event types, 5 venues, 31
+events and a six-page tour of the blocks. Dates are generated when it is
+activated, so the demo never goes stale.
 
-Manage it from **Tools → Blockendar Demo**, or with `wp blockendar-demo seed`
+Manage it from **Tools > Blockendar Demo**, or with `wp blockendar-demo seed`
 and `wp blockendar-demo reset`. Reset removes only what the demo created and
-restores your previous front page setting — your own content is never touched.
+restores your previous front page setting. The demo plugin lives in
+[`demo-plugin/`](demo-plugin/) and ships as its own zip from the same tag.
+
+## Usage
+
+Add events under **Events** in the admin menu. The editor sidebar has a Date &
+Time panel (start, end, all-day, ongoing with no end date, timezone, repeat
+rule) and an Event Details panel (status and reason, featured, hide from
+listings, cost, registration link). Venues, event types and event tags are
+chosen in the editor's taxonomy panels; a venue's address, coordinates and
+stream link are set on its term screen under **Events > Venues**.
+
+Put an **Event Calendar** or **Events Query** block on a page to list events.
+Inside an Events Query, the Event Template holds the single-event blocks that
+render each occurrence, and an **Events Query Filters** block holds the type,
+venue and date filters and the view switcher. The single-event blocks also work
+in the single event template, which the plugin registers for block themes along
+with the events archive and event type archive templates.
+
+Settings are under **Events > Settings**: General (date and time formats,
+timezone display), Calendar Display, Permalinks (the events URL slug), Map
+(default zoom), Currency, Recurring Events (horizon and occurrence ceiling),
+Performance (index strategy and the rebuild button) and REST API (public
+access, feed token, feed URLs).
+
+Three WP-CLI commands are registered:
+
+```bash
+wp blockendar rebuild-index
+wp blockendar import-tribe <file> [--dry-run]
+wp blockendar migrate-taxonomies --status|--dry-run|--run|--rollback|--clear-backups
+```
 
 ## Migrating from The Events Calendar
 
-Export your events on the source site (**Tools → Export**, choosing *Events*),
+Export your events on the source site (**Tools > Export**, choosing *Events*),
 then import them with WP-CLI:
 
 ```bash
@@ -71,30 +99,14 @@ first: it lists every value the import would change or leave out, event by
 event.
 
 There is no upload screen. A one-off migration does not need a permanent HTTP
-endpoint, and a real export runs to thousands of events — more than a single
+endpoint, and a real export runs to thousands of events, more than a single
 web request can parse and insert before it times out.
-
-## Development
-
-```bash
-npm run start          # Watch mode
-npm run build          # Production build
-npm run lint:js        # JS lint
-npm run lint:css       # CSS lint
-npm run lint:php       # PHP lint (WPCS)
-npm run lint:php:fix   # Auto-fix PHP lint issues
-npm run plugin-zip     # Build distributable zip
-npm run plugin-zip:demo # Build the demo companion zip
-```
-
-The demo companion plugin lives in [`demo-plugin/`](demo-plugin/) and ships as
-its own zip.
 
 ## Architecture
 
-- **Namespace:** `Blockendar\` → `includes/` (PSR-4)
+- **Namespace:** `Blockendar\` maps to `includes/` (PSR-4)
 - **REST namespace:** `blockendar/v1`
-- **CPT:** `blockendar_event` (authoring only — never queried by date via `WP_Query`)
+- **CPT:** `blockendar_event` (authoring only; never queried by date through `WP_Query`)
 - **Taxonomies:** `blockendar_event_type` (hierarchical), `blockendar_event_tag` (flat), `blockendar_event_venue` (hierarchical)
 - **DB tables:** `{prefix}blockendar_events` (occurrence index), `{prefix}blockendar_recurrence` (RRULE storage)
 
@@ -102,10 +114,10 @@ its own zip.
 
 The calendar feed is served from `GET /wp-json/blockendar/v1/calendar?format=ics`.
 The same URL with a `webcal://` scheme is what calendar apps expect; both forms
-are shown under **Events → Settings → REST API**.
+are shown under **Events > Settings > REST API**.
 
 Requested without `start` and `end`, the feed returns a window relative to the
-moment of the request — 30 days back and 365 days ahead by default — so a
+moment of the request, 30 days back and 365 days ahead by default, so a
 subscription keeps moving instead of freezing on the range it was first fetched
 with. Both bounds are configurable in settings. The feed cannot show events
 further ahead than the recurrence horizon has generated.
@@ -146,7 +158,7 @@ Four filters are available:
 | `blockendar_ics_refresh_interval` | Refresh hint as an iCalendar duration (default `PT1H`) |
 | `blockendar_ics_calendar_name` | The calendar name shown in a subscriber app |
 
-iCalendar has no pagination, so events past the ceiling are simply absent. A feed
+iCalendar has no pagination, so events past the ceiling are absent. A feed
 that hits it says so in `X-WR-CALDESC` and raises a notice on the settings screen.
 
 ### REST API
@@ -168,6 +180,16 @@ parameters kept, the way WordPress's own collections do.
 
 An `OPTIONS` request to any of the three routes describes every argument and
 returns the schema of what the route sends.
+
+The other routes: `GET /events/{id}/ical` (one event, or one occurrence with
+`occurrence_date`), `POST` and `DELETE /events/{id}/recurrence`,
+`POST /events/{id}/instances/{date}/cancel` and `.../exception`,
+`POST /index/rebuild`, `GET /settings/stats` and
+`GET /site-health/calendar-route`. The write routes check the caller's
+permission on the specific event. With **Public REST endpoints** off, every
+read route and the core `/wp/v2` routes for events, venues, types and tags
+need a login; the calendar and iCalendar routes also accept the feed token as
+`?token=`.
 
 ## Featured, cancelled and postponed events
 
@@ -247,7 +269,7 @@ event has to be given the same rule by hand.
 
 ## Site Health
 
-**Tools → Site Health** carries a Blockendar section on the **Info** tab and three
+**Tools > Site Health** carries a Blockendar section on the **Info** tab and three
 checks on the **Status** tab.
 
 The Info section lists what a bug report needs: plugin and database version, how
@@ -283,10 +305,9 @@ The three checks cover the failures that leave a calendar silently empty:
 
 ## Hooks
 
-Blockendar is extended through WordPress filters and actions. Every listing,
-response and feed passes through one, so a site can adjust what the plugin
-shows without forking it. Arguments are kept to what the caller already has
-and are documented in a docblock above each call.
+Every listing, response and feed passes through a filter or action, so a site
+can adjust what the plugin shows without forking it. Arguments are kept to what
+the caller already has and are documented in a docblock above each call.
 
 ### Queries
 
@@ -390,8 +411,8 @@ page cache of the pages that list the event.
 
 ## Privacy
 
-Blockendar stores no personal data about site visitors — no names, email
-addresses, or IP addresses, and no cookies.
+Blockendar stores no personal data about site visitors: no names, email
+addresses or IP addresses, and no cookies.
 
 Two third-party requests to OpenStreetMap are possible:
 
@@ -404,6 +425,81 @@ Two third-party requests to OpenStreetMap are possible:
   `tile.openstreetmap.org` in the visitor's browser when a map is displayed.
 
 See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Policy).
+Suggested wording for a site's privacy policy is added under **Settings > Privacy**.
+
+## Development
+
+```bash
+npm install && composer install
+
+npm run start            # webpack watch
+npm run build            # production build (writes the blocks manifest)
+npm run lint:js
+npm run lint:css
+npm run lint:php         # phpcs (WPCS)
+npm run lint:php:fix     # phpcbf
+npm run test:php         # PHPUnit unit tests (Brain Monkey, no WordPress loaded)
+npm run test:js          # Jest
+
+npm run env:start        # wp-env, needed by the next two
+npm run test:integration # PHPUnit against a real WordPress (bin/test-integration.js)
+npm run test:e2e         # Playwright, the calendar block in a browser
+
+npm run make-translations  # regenerate languages/blockendar.pot and the JSON files (needs wp-env)
+npm run plugin-zip       # build blockendar.zip
+npm run plugin-zip:demo  # build the demo companion zip
+npm run playground       # serve the working tree on php-wasm at http://127.0.0.1:9400
+```
+
+`composer.json` has no scripts; it installs phpcs, WPCS, PHPUnit 9 and Brain
+Monkey. PHPUnit stays on 9.x because the WordPress core test suite calls a
+method PHPUnit 10 removed. Unit tests run against `includes/` directly, but the
+blocks are registered from `build/`, so a change to a block's `render.php` needs
+`npm run build` before any test sees it. The integration and E2E suites fail on
+any PHP notice, warning or deprecation written to the test site's log.
+
+Benchmark scripts live in `bin/bench/` and run with
+`npx wp-env run cli -- wp eval-file wp-content/plugins/blockendar/bin/bench/<name>.php`.
+
+## Releases
+
+A release is a lowercase `v` tag; the demo plugin ships from the same tag, so
+its version tracks the main plugin's.
+
+```bash
+git tag v2.4.0 && git push origin v2.4.0
+```
+
+`.github/workflows/release.yml` builds the assets, zips the plugin and the demo
+plugin (renamed `blockendar_demo.zip` so it sorts after `blockendar.zip`),
+pulls that version's section out of `readme.txt` for the release notes, and
+attaches `blockendar.zip`, `blockendar_demo.zip` and `readme.txt` to the GitHub
+release. Plugin Update Checker on installed sites picks up the `blockendar.zip`
+asset by name. An uppercase `V` tag is ignored on purpose: the update checker
+only strips a lowercase prefix.
+
+Before tagging, bump the version in `blockendar.php` (header and
+`BLOCKENDAR_VERSION`), `package.json`, every `src/blocks/*/block.json`, the
+`Stable tag` and changelog in `readme.txt`, the changelog in `README.md`, and
+the three demo-plugin files (`demo-plugin/blockendar-demo.php`,
+`demo-plugin/package.json`, `demo-plugin/readme.txt`).
+
+## Limitations
+
+- The single event, events archive and event type archive templates are block
+  templates. A classic theme renders the blocks but uses its own templates.
+- Events always open in the block editor; the Classic Editor plugin cannot be
+  used for them.
+- Listings and the calendar show every language's copy of an event under WPML
+  or Polylang, and a translated recurring event needs its repeat rule set by
+  hand. See [Working with other plugins](#working-with-other-plugins).
+- The iCalendar feed stops at 2000 events (`blockendar_ics_max_events`) and
+  cannot show dates beyond the recurrence horizon.
+- The schema.org markup has no organiser or performer, and online-only events
+  get none by default.
+- The Events Calendar import runs only from WP-CLI; there is no upload screen.
+- Each site in a multisite network gets its own tables, but the plugin has not
+  been tested at length on multisite.
 
 ## Changelog
 
@@ -455,7 +551,7 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 - Fixed: an event whose end was entered before its start could appear in the wrong date ranges.
 - Fixed: on a site whose settings were last saved before 1.0.0, the settings page showed default values instead of the saved ones, and saving overwrote them.
 - Fixed: the Start Date, End Date, Start Time and End Time fields in the event editor now have names for screen readers.
-- Fixed: the No events found message and past day numbers on the calendar were too faint to read easily, and the calendar's buttons were small on touch screens.
+- Fixed: the No events found message and past day numbers on the calendar were too faint to read, and the calendar's buttons were small on touch screens.
 - Fixed: `/blockendar/v1/events` refused `order=asc` and `order=desc` in lower case.
 - Fixed: the events list and the venue, event type and event tag screens used WordPress's wording for categories and tags.
 - Fixed: deleting a site from a multisite network left the plugin's tables behind.
@@ -501,7 +597,7 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ### 2.0.0
 - Changed: the three taxonomies are renamed from `event_type`, `event_tag` and `event_venue` to `blockendar_event_type`, `blockendar_event_tag` and `blockendar_event_venue`, so they can no longer collide with another events plugin that uses the same names. Existing sites are migrated the first time a page loads after the update: event types, tags and venues with their assignments and settings, classic menu items that point at them, Site Editor template customisations, and the core blocks that name a taxonomy (Post Terms, Categories List, Tag Cloud, Post Navigation Link, Navigation links, Query Loop filters) in pages and block widgets are all moved. Permalinks, REST routes and calendar feed URLs are unchanged.
-- Changed: block markup in theme files, template parts, patterns and restored revisions that still names an old taxonomy — a Post Terms block with `term: event_type`, a Query Loop filtered by it, a navigation link to one of its terms — keeps working. The migration cannot rewrite files, so those attributes are translated as each block renders and as the Site Editor loads a theme template.
+- Changed: block markup in theme files, template parts, patterns and restored revisions that still names an old taxonomy -- a Post Terms block with `term: event_type`, a Query Loop filtered by it, a navigation link to one of its terms -- keeps working. The migration cannot rewrite files, so those attributes are translated as each block renders and as the Site Editor loads a theme template.
 - Changed: a theme template file still named after an old taxonomy, such as `templates/taxonomy-event_type.html`, keeps applying to that archive. The migration cannot rename files, so the plugin serves the file under the new name until the theme renames it; the Site Editor says which file to rename.
 - Added: `wp blockendar migrate-taxonomies` with `--status`, `--dry-run`, `--run`, `--rollback` and `--clear-backups`. Under WP-CLI the migration runs only when asked, so a site can be inspected before its first page load.
 - Changed: when another plugin already has data under the old names, or anything exists under the new ones, the migration refuses to run, shows administrators a notice saying why, and retries hourly. Nothing is moved until the conflict is resolved.
@@ -529,7 +625,7 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 - Fixed: the event map showed nothing when JavaScript was unavailable. It now prints the venue name and address, which the map replaces once it loads.
 - Fixed: screen reader and keyboard problems across the filter, countdown, status and time controls: unlabelled time fields in the editor, filter lists that misreported their grouping, a countdown that changed under the cursor once a second, and a view switch that gave no indication anything had happened.
 - Fixed: translations of text in the block editor and the settings screen were never loaded, so those strings stayed in English however complete the translation.
-- Changed: the Venue and Type filters apply when the Apply button is pressed, rather than the moment a choice is made. Changing a choice with the keyboard used to navigate away before the intended option was reached.
+- Changed: the Venue and Type filters apply when the Apply button is pressed, rather than the moment a choice is made. Changing a choice with the keyboard used to leave the page before the intended option was reached.
 - Changed: the nightly recurrence job adds the occurrences that have come into range instead of rebuilding every occurrence of every recurring event, which could exceed the time limit on a busy site and quietly stop.
 - Changed: event listings, the calendar feed and the iCalendar export load the data they need in bulk rather than once per event.
 - Changed: the events archive and the event type archive draw their calendar at wide width, so a month grid has room for its day cells. A site that has customised either template in the Site Editor keeps its own copy and sees no change.
@@ -562,7 +658,7 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 - Removed: `bin/generate-test-events.php`. Its fixtures now live in the demo plugin and are available through the seeder.
 
 ### 1.4.0
-- Added: a "Hide events" setting on the Events Query block that chooses when an event leaves the upcoming list — when it ends, at the end of its day, or a number of hours after it ends. The same moment decides when an event counts as past, so an event is never in both an upcoming and a past list at once. Developers can override the cutoff with the `blockendar_events_query_cutoff` filter.
+- Added: a "Hide events" setting on the Events Query block that chooses when an event leaves the upcoming list -- when it ends, at the end of its day, or a number of hours after it ends. The same moment decides when an event counts as past, so an event is never in both an upcoming and a past list at once. Developers can override the cutoff with the `blockendar_events_query_cutoff` filter.
 - Changed: events now stay in upcoming lists until the end of their day by default, and enter past lists the following day. Before, an event dropped out the moment it ended, and an event with no end time dropped out at its start time.
 - Changed: the venue and type filters offer a venue or type whose only event ended earlier today, matching what the query lists.
 - Fixed: the date range filter treated the chosen dates as UTC, so on sites in other timezones a filter for today could miss events at the start or end of the day.
@@ -579,7 +675,7 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 - Fixed: filter controls in a Row shared the space evenly regardless of their labels, so "All venues" was truncated beside "All dates" and resized whenever a date range was chosen or cleared. Each control now keeps at least the width of its own label.
 
 ### 1.3.1
-- Fixed: "Show past" listed events that had started but not finished — an exhibit still open for another month appeared under past events. Past now means the event has ended; ongoing events never appear there, and past listings default to most recent first.
+- Fixed: "Show past" listed events that had started but not finished -- an exhibit still open for another month appeared under past events. Past now means the event has ended; ongoing events never appear there, and past listings default to most recent first.
 - Fixed: a single-event block placed on a page, in a template part, or rendered outside a post (for example from WP-CLI) caused a fatal error. Those blocks now render nothing when there is no event to show.
 - Fixed: rebuilding an event's index rows appended instead of replacing them, so a site indexed twice listed every event twice. Rebuilding is now safe to repeat.
 - Fixed: after updating the plugin, event type and venue archive URLs could resolve to the wrong page until rewrite rules were flushed by hand. Rules are now flushed once on the first load after an update.
@@ -596,10 +692,10 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 - Database schema upgraded to version 3 (new `ongoing` column). The event index is rebuilt automatically on first load after upgrading.
 
 ### 1.2.0
-- Added: a separate event template per layout — list and grid can each show their own blocks. Splitting is opt-in per block, so existing content is untouched.
+- Added: a separate event template per layout -- list and grid can each show their own blocks. Splitting is opt-in per block, so existing content is untouched.
 - Added: a WordPress Playground demo blueprint, so the plugin can be tried in a browser.
 - Changed: switching between list and grid no longer reloads the page.
-- Changed: the view switcher's starting layout follows the Events Query block. The separate Default view control is gone — it was what let the two disagree.
+- Changed: the view switcher's starting layout follows the Events Query block. The separate Default view control is gone -- it was what let the two disagree.
 - Changed: every Events Query starts with an Event Template container, matching the core Query Loop's Post Template.
 - Changed: the view switcher draws real SVG icons, in the editor preview as well as the front end.
 - Fixed: undoing a list/grid change in the editor did not revert it, and left the page permanently unsaved
@@ -608,7 +704,7 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 - Fixed: "No events found." appeared beneath every event in editor previews
 
 ### 1.1.0
-- Added: Events View Switcher block — visitors can switch the event list between list and grid layouts. The choice travels in the URL, and the control works without JavaScript.
+- Added: Events View Switcher block -- visitors can switch the event list between list and grid layouts. The choice travels in the URL, and the control works without JavaScript.
 - Added: filter blocks for event type, venue and date range, each as a dropdown with its choices in a panel.
 - Added: base styling for all filter controls, taking colour from the theme.
 - Added: a translation template (`languages/blockendar.pot`).
@@ -616,14 +712,14 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 - Changed: the Date Range filter shows a calendar directly in its dropdown, and dates apply on Apply rather than as you click.
 - Changed: the Event Type and Venue filters list only terms that have upcoming events.
 - Changed: the Events Query block previews real events in the editor instead of grey placeholder bars.
-- Fixed: the Event Type filter never actually filtered anything
+- Fixed: the Event Type filter never filtered anything
 - Fixed: filter blocks collapsed to zero width inside a Row block
 - Fixed: the date picker opened far below its field, and closing it reloaded the page
 - Fixed: a backwards date range showed "no events found" instead of the range you meant
 - Fixed: the filter blocks' own stylesheets were never loaded on the front end
 - Fixed: an invalid datetime attribute on single-day events with an end time
 - Fixed: filter parameters given as arrays in a URL could select the wrong term
-- Performance: calendar front-end script 263 KB → 5 KB, and event queries are now cached
+- Performance: calendar front-end script 263 KB > 5 KB, and event queries are now cached
 - Tested up to WordPress 7.1
 
 ### 1.0.1
@@ -633,16 +729,16 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 - Event Cost block: added Show Cost and Show Button toggles; removed unused min/max cost, currency, and capacity meta fields
 - Event Venue block: support for multiple venue terms with horizontal rule dividers; removed redundant Show Map toggle (use the dedicated Event Map block instead)
 - Event Map block: support for multiple venue pins with automatic bounds fitting
-- Event Countdown block: added three-state display — counting down, started (event in progress), and passed (after end time)
-- Venue admin: added "Look up coordinates" button using Nominatim (OpenStreetMap) geocoding — no API key required
-- Removed Google Maps integration — all map and geocoding features now use OpenStreetMap/Nominatim exclusively
+- Event Countdown block: added three-state display -- counting down, started (event in progress), and passed (after end time)
+- Venue admin: added "Look up coordinates" button using Nominatim (OpenStreetMap) geocoding -- no API key required
+- Removed Google Maps integration -- all map and geocoding features now use OpenStreetMap/Nominatim exclusively
 - Performance: replaced `wp_postmeta` subqueries for `featured` and `hide_from_listings` with denormalised columns in the event index table
 - Performance: replaced `JSON_CONTAINS` type-term filtering with a dedicated junction table (`blockendar_event_type_terms`)
 - DB schema upgraded to version 2; existing sites will rebuild the event index automatically on upgrade
 
 ### 0.10.0
-- Calendar View block: automatically switches to list view on mobile (≤767px)
-- Calendar View block: view switcher buttons hidden on mobile (≤767px)
+- Calendar View block: automatically switches to list view on mobile (767px and narrower)
+- Calendar View block: view switcher buttons hidden on mobile (767px and narrower)
 - Calendar View block: toolbar buttons smaller below 425px
 - Calendar View block: toolbar title right-aligned below 425px
 - Calendar View block: list event time allowed to wrap below 425px
@@ -656,7 +752,7 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 - Events Query block: `No Results - Events Query` block is included in the default template
 
 ### 0.9.7
-- Events Query block: added responsive column controls for grid layout — separate column counts for mobile (≤599px), tablet (600–781px), and desktop
+- Events Query block: added responsive column controls for grid layout -- separate column counts for mobile (599px and narrower), tablet (600-781px), and desktop
 
 ### 0.9.6
 - Event Date & Time block: editor preview now reads date/time format from Blockendar settings via the WordPress data layer (fixes preview showing WP core format instead of plugin setting)
@@ -687,15 +783,15 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 - Added inline warning in the Event Details panel when min cost exceeds max cost
 
 ### 0.9.3
-- Reworked Date & Time editor panel — new field order (start date → start time → end time → end date), smart defaults, end date/time safeguards, and past-date prevention on the start date field
+- Reworked Date & Time editor panel -- new field order (start date > start time > end time > end date), smart defaults, end date/time safeguards, and past-date prevention on the start date field
 - Recurrence preset labels are context-aware and derived from the selected start date ("Weekly on Thursday", "Monthly on the third Thursday", "Annually on March 13")
-- Fixed: recurring events auto-save their recurrence rule when the post is updated — no separate save step required
+- Fixed: recurring events auto-save their recurrence rule when the post is updated -- no separate save step required
 - Fixed: changing a recurrence preset now marks the post dirty, activating the Update button immediately
 - Calendar View event pills use `contrast-color()` (CSS Color Level 6) for automatic black/white text contrast against the event type background colour
 - Added `blockendar_recurrence_preset` post meta field (REST-exposed) as a dirty-state proxy for recurrence changes
 
 ### 0.9.2
-- Occurrence-aware routing — calendar chip links include `?occurrence_date=YYYY-MM-DD`; single-event blocks (`event-datetime`, `event-countdown`, `add-to-calendar`) display the clicked occurrence rather than always defaulting to the next upcoming one
+- Occurrence-aware routing -- calendar chip links include `?occurrence_date=YYYY-MM-DD`; single-event blocks (`event-datetime`, `event-countdown`, `add-to-calendar`) display the clicked occurrence rather than always defaulting to the next upcoming one
 - Events Query block now shows each occurrence in the queried range as its own list item with correct dates and permalinks; removed post-ID deduplication
 - Calendar View block editor placeholder replaced with a live settings summary
 - Added recurrence save/delete REST endpoints (`POST`/`DELETE /blockendar/v1/events/{id}/recurrence`)
@@ -704,9 +800,9 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 
 ### 0.9.1
 - Recurrence fields merged into the Date & Time editor panel
-- Removed custom Venue editor panel — uses native taxonomy panel; venue details managed via term editor
+- Removed custom Venue editor panel -- uses native taxonomy panel; venue details managed via term editor
 - Added ABSPATH guard to all PHP files
-- Simplified plugin URL constants — replaced symlink-aware IIFE with direct `plugins_url()` calls
+- Simplified plugin URL constants -- replaced symlink-aware IIFE with direct `plugins_url()` calls
 - Fixed stale `editorStyle` and `interactivity` flags in `calendar-view` and `event-list` block.json
 - Plugin zip now correctly includes the `templates/` directory
 - Added Git Updater headers for automatic update notifications via tagged GitHub releases
@@ -715,6 +811,7 @@ See the [OpenStreetMap privacy policy](https://osmfoundation.org/wiki/Privacy_Po
 ### 0.9.0
 - Initial public release candidate
 
+
 ## License
 
-GPL-2.0-or-later — see [LICENSE](https://www.gnu.org/licenses/gpl-2.0.html).
+GPL-2.0-or-later. See [LICENSE](https://www.gnu.org/licenses/gpl-2.0.html).
