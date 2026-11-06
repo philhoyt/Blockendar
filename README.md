@@ -503,6 +503,10 @@ the three demo-plugin files (`demo-plugin/blockendar-demo.php`,
 
 ## Changelog
 
+### 2.4.1
+- Fixed: the update checker so a release that is missing its zip is skipped instead of installing GitHub's source archive.
+- Changed: rewrote the readme files in plain English.
+
 ### 2.4.0
 - Added: a Blockendar section on the **Info** tab of **Tools > Site Health**. It lists the plugin and database versions, how many events there are by status, how many occurrences and events are in the index, when the index was last rebuilt, when the next horizon roll is due, the settings that shape the index, and whether a feed token is set. The token itself is never shown, and that field is left out of the copied report.
 - Added: three checks on the **Status** tab of Site Health, for the failures that leave a calendar silently empty: a missing database table or index, an event index out of step with the published events, and a calendar route that does not answer a visitor's request.

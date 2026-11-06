@@ -3,7 +3,7 @@ Contributors: philhoyt
 Tags: events, calendar, blocks, gutenberg, recurring events
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 2.4.0
+Stable tag: 2.4.1
 Requires PHP: 8.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -100,6 +100,10 @@ Each site in a network gets its own tables, and deleting a site removes them. It
 4. Settings page.
 
 == Changelog ==
+
+= 2.4.1 =
+* Fixed: the update checker so a release that is missing its zip is skipped instead of installing GitHub's source archive.
+* Changed: rewrote the readme files in plain English.
 
 = 2.4.0 =
 * Added: a Blockendar section on the Info tab of Tools > Site Health. It lists the plugin and database versions, how many events there are by status, how many occurrences and events are in the index, when the index was last rebuilt, when the next horizon roll is due, the settings that shape the index, and whether a feed token is set. The token itself is never shown, and that field is left out of the copied report.
