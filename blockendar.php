@@ -73,8 +73,15 @@ $blockendar_update_checker = PucFactory::buildUpdateChecker(
  * of blockendar.zip ('-' is 0x2D, '.' is 0x2E) and updates installed the demo
  * plugin over Blockendar. The demo asset is also named so it sorts last, which
  * protects installs still running the unfiltered 1.5.0 code.
+ *
+ * REQUIRE_RELEASE_ASSETS: a release without a matching zip reports no update
+ * instead of falling back to GitHub's source archive, which installs as
+ * <Repo>-<tag>/ and breaks the plugin directory.
  */
-$blockendar_update_checker->getVcsApi()->enableReleaseAssets( '/^blockendar\.zip$/' );
+$blockendar_vcs_api = $blockendar_update_checker->getVcsApi();
+if ( method_exists( $blockendar_vcs_api, 'enableReleaseAssets' ) ) {
+	$blockendar_vcs_api->enableReleaseAssets( '/^blockendar\.zip$/', $blockendar_vcs_api::REQUIRE_RELEASE_ASSETS );
+}
 
 // Activation / deactivation hooks — registered before the plugin loads.
 register_activation_hook(
