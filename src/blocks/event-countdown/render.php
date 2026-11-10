@@ -37,10 +37,12 @@ if ( $pinned_id > 0 ) {
 	$occurrence = blockendar_resolve_occurrence( $post_id );
 }
 
+// Both ends come from the occurrence: the series meta holds the first
+// occurrence's end, which for a later occurrence is already in the past.
 $start_date = $occurrence ? $occurrence->start_date : get_post_meta( $post_id, 'blockendar_start_date', true );
+$end_date   = $occurrence ? $occurrence->end_date : get_post_meta( $post_id, 'blockendar_end_date', true );
 
 $start_time = get_post_meta( $post_id, 'blockendar_start_time', true );
-$end_date   = get_post_meta( $post_id, 'blockendar_end_date', true );
 $end_time   = get_post_meta( $post_id, 'blockendar_end_time', true );
 $tz_str     = get_post_meta( $post_id, 'blockendar_timezone', true ) ?: wp_timezone_string();
 $ongoing    = $occurrence ? ! empty( $occurrence->ongoing ) : (bool) get_post_meta( $post_id, 'blockendar_ongoing', true );

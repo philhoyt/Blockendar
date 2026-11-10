@@ -165,6 +165,7 @@ class VenueMeta {
 	public function render_venue_add_fields(): void {
 		?>
 		<div class="form-field">
+			<input type="hidden" name="blockendar_venue_form" value="1" />
 			<label for="blockendar_venue_virtual">
 				<input
 					type="checkbox"
@@ -288,6 +289,7 @@ class VenueMeta {
 		<tr class="form-field">
 			<th scope="row"><?php esc_html_e( 'Virtual venue', 'blockendar' ); ?></th>
 			<td>
+				<input type="hidden" name="blockendar_venue_form" value="1" />
 				<label for="blockendar_venue_virtual">
 					<input
 						type="checkbox"
@@ -437,7 +439,14 @@ class VenueMeta {
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput -- Nonce verified by WP core before firing these actions.
 
-		update_term_meta( $term_id, 'blockendar_venue_virtual', isset( $_POST['blockendar_venue_virtual'] ) );
+		/*
+		 * An unchecked box sends nothing, so absence only means "unchecked"
+		 * when the venue form itself was submitted. Quick Edit, REST updates
+		 * and wp_update_term() fire the same hooks without these fields.
+		 */
+		if ( isset( $_POST['blockendar_venue_form'] ) ) {
+			update_term_meta( $term_id, 'blockendar_venue_virtual', isset( $_POST['blockendar_venue_virtual'] ) );
+		}
 
 		$string_fields = [
 			'blockendar_venue_address'     => 'sanitize_text_field',
