@@ -64,16 +64,34 @@ function blockendar_resolve_occurrence( int|false|null $post_id ): ?object {
  * WP-CLI — there is nothing to render, and the block must bail rather than
  * hand a false ID to helpers that expect an event.
  *
+ * A password-protected event renders nothing until its password is entered.
+ * These blocks sit outside core/post-content in the single-event template,
+ * so core's password form does not cover them.
+ *
+ * A pinned ID comes from block attributes, which any block author can set, so
+ * it must be published unless the viewer can edit it. A context post is
+ * already one WordPress chose to show.
+ *
  * @param WP_Block $block   The block being rendered.
  * @param int      $post_id Optional explicit post ID (e.g. a pinned event).
  * @return int The event post ID, or 0 when there is no event to render.
  */
 function blockendar_block_event_id( WP_Block $block, int $post_id = 0 ): int {
-	if ( $post_id <= 0 ) {
+	$pinned = $post_id > 0;
+
+	if ( ! $pinned ) {
 		$post_id = (int) ( $block->context['postId'] ?? get_the_ID() );
 	}
 
 	if ( $post_id <= 0 || \Blockendar\CPT\EventPostType::POST_TYPE !== get_post_type( $post_id ) ) {
+		return 0;
+	}
+
+	if ( post_password_required( $post_id ) ) {
+		return 0;
+	}
+
+	if ( $pinned && 'publish' !== get_post_status( $post_id ) && ! current_user_can( 'edit_post', $post_id ) ) {
 		return 0;
 	}
 
